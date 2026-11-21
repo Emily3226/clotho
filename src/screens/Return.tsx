@@ -15,7 +15,6 @@ export function Return() {
   const setState = useStore((s) => s.setState);
   const setStep = useStore((s) => s.setStep);
   const [answer, setAnswer] = useState<'yes' | 'notyet' | 'changed' | null>(null);
-  const [saved, setSaved] = useState(inputs.saved);
 
   // Run the futures with the committed habit locked in, plus the raise habit
   // if it was added at a check-in.
@@ -56,7 +55,6 @@ export function Return() {
       commitment: { ...commitment, streak: streak + months, lastCheckISO: new Date().toISOString() },
       inputs: { ...inputs, saved: Math.round(inputs.saved + add) },
     });
-    setSaved(Math.round(inputs.saved + add));
     setAnswer('yes');
   };
 
@@ -108,15 +106,14 @@ export function Return() {
             <Field
               id="saved-now"
               label="About how much have you saved now? (optional)"
-              value={saved}
+              value={inputs.saved}
               min={0}
               max={100000}
               step={100}
               prefix="$"
-              onChange={(v) => {
-                setSaved(v);
-                setState({ inputs: { ...useStore.getState().inputs, saved: v } });
-              }}
+              // Read from the store, so a bonus added below shows here and
+              // editing this field builds on it rather than erasing it.
+              onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })}
             />
           </>
         )}

@@ -22,6 +22,15 @@ export function leversFor(lever: LeverId, alsoRaises = false): Levers {
   return alsoRaises ? { ...l, raises: true } : l;
 }
 
+// What a check-in added that picking a step again must keep: the raise habit
+// they chose, and this month's answer, so the same bonus can't be added twice.
+export function windfallCarryOver(prev: { alsoRaises?: boolean; lastWindfallISO?: string | null } | null | undefined) {
+  return {
+    ...(prev?.alsoRaises ? { alsoRaises: true } : {}),
+    ...(prev?.lastWindfallISO ? { lastWindfallISO: prev.lastWindfallISO } : {}),
+  };
+}
+
 // Already saving part of every raise: just ask whether they did. Otherwise
 // offer the habit on top of their step.
 export function raiseOffer(lever: LeverId, alsoRaises = false): 'ask' | 'offer' {
@@ -54,4 +63,11 @@ export function bonusEffect(inputs: Inputs, levers: Levers, putAside: number, se
     before: summarise(count(inputs, levers, seed, set)).counts[0],
     after: summarise(count(withBonus(inputs, putAside), levers, seed, set)).counts[0],
   };
+}
+
+// Whether a result moves the count enough to be worth quoting. When it
+// doesn't, the copy says what the money does instead of "0 more" or
+// "948 instead of 948".
+export function countMoves(before: number, after: number, rescued = after - before): boolean {
+  return after > before && rescued > 0;
 }
