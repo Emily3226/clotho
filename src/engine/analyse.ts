@@ -21,8 +21,15 @@ export interface WorryCard {
   id: WorryId | 'all';
   affected: number;
   recovered: number;
-  best: { lever: LeverId; protects: number } | null;
+  // The habit that leaves the most futures in control under this worry.
+  best: { lever: LeverId; protects: number; inControl: number } | null;
   mask: Uint8Array;
+  // Futures in control, and savings at 65 in the middle future, without
+  // the worry and with it. A worry is sized by how far these move.
+  baseInControl: number;
+  inControl: number;
+  baseMiddleAt65: number;
+  middleAt65: number;
 }
 
 export interface LeverRow {
@@ -135,6 +142,12 @@ const lite = (p: PathResult): PathLite => ({
   events: p.events,
 });
 
+// Savings at 65 in the middle future, rounded to the nearest $1,000.
+function middle(paths: PathResult[]): number {
+  const v = paths.map((p) => p.at65).sort((x, y) => x - y);
+  return Math.round(v[Math.floor(v.length / 2)] / 1000) * 1000;
+}
+
 const ageDelta = (a: number | null, b: number | null): number | null => (a === null || b === null ? null : a - b);
 
 // Runs variants on demand and remembers them, so toggling a lever only
@@ -195,16 +208,30 @@ export class Engine {
           if (worried[i].workOptionalAge !== null) recovered++;
         }
       }
+      const inControl = summarise(worried).counts[0];
       let best: WorryCard['best'] = null;
       if (affected > 0) {
         for (const lever of available) {
           const helped = run(s, leverOnly(lever));
           let protects = 0;
           for (let i = 0; i < n; i++) if (mask[i] && helped[i].status < worried[i].status) protects++;
-          if (protects > 0 && (!best || protects > best.protects)) best = { lever, protects };
+          const kept = summarise(helped).counts[0];
+          if (protects > 0 && (!best || kept > best.inControl || (kept === best.inControl && protects > best.protects))) {
+            best = { lever, protects, inControl: kept };
+          }
         }
       }
-      return { id, affected, recovered, best, mask };
+      return {
+        id,
+        affected,
+        recovered,
+        best,
+        mask,
+        baseInControl: baseSummary.counts[0],
+        inControl,
+        baseMiddleAt65: middle(base),
+        middleAt65: middle(worried),
+      };
     });
 
     // Lever ranking against the current scenario.

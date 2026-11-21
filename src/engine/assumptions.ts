@@ -28,6 +28,11 @@ const TAX_URL =
   'https://www.canada.ca/en/revenue-agency/services/tax/individuals/frequently-asked-questions-individuals/canadian-income-tax-rates-individuals-current-previous-years.html';
 const FP_URL = 'https://www.fpcanada.ca/planners/projection-assumption-guidelines';
 const STATCAN_URL = 'https://www150.statcan.gc.ca/n1/en/subjects/labour';
+// Statistics Canada, The Daily, 29 Nov 2012: earnings losses of displaced workers.
+const DISPLACED_URL = 'https://www150.statcan.gc.ca/n1/daily-quotidien/121129/dq121129c-eng.htm';
+// ADP Canada Pay Insights, August 2026, as reported by Benefits and Pensions Monitor.
+const JOB_CHANGE_URL =
+  'https://www.benefitsandpensionsmonitor.com/news/industry-news/job-changers-pocket-56-pay-bump-while-stayers-settle-for-3/394104';
 const EI_URL = 'https://www.canada.ca/en/services/benefits/ei/ei-regular-benefit/benefit-amount.html';
 
 export const A = {
@@ -65,6 +70,12 @@ export const A = {
   wageNoise: 0.02,
   jobLossYoung: 0.05,
   jobLossLater: 0.035,
+  // Good luck at work: a step up in pay that lasts.
+  stepUpChance: 0.04,
+  stepUpRaise: 0.06,
+  stepUpUntilAge: 45,
+  // Share of a lasting gap between plan and life that lifestyle closes each year.
+  adaptSpeed: 0.25,
   jobLossAgeSplit: 30,
   spellMedianMonths: 4,
   spellSigma: 0.6,
@@ -181,19 +192,22 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('cushionReturn', 'Cushion return', '+0.5% a year after inflation', FP_URL, 'Illustrative, short-term savings'),
   illustrative('taxableDrag', 'Tax drag outside registered accounts', '0.5% a year', FP_URL, 'Illustrative'),
   illustrative('wages', 'Real wage growth', '+2.5% to +3.5% a year to 30 (by field), +1.5% to 40, +0.5% to 50, then flat; ±2% yearly noise', STATCAN_URL, 'Illustrative, shaped like Statistics Canada age-earnings profiles'),
-  illustrative('jobLoss', 'Job loss', '5% a year under 30, 3.5% after', STATCAN_URL, 'Illustrative, in the range of Statistics Canada layoff rates', 'Time out of work has a median of 4 months, capped at 18. Pay on return is 5% lower. No layoffs while in school.'),
+  illustrative('jobLoss', 'Job loss', '5% a year under 30, 3.5% after', STATCAN_URL, 'Illustrative, in the range of Statistics Canada layoff rates', 'Time out of work has a median of 4 months, capped at 18. No layoffs while in school.'),
+  illustrative('scar', 'Pay after a layoff', '5% lower on return, and it stays lower', DISPLACED_URL, 'Illustrative, at the mild end of Statistics Canada findings', 'Statistics Canada found that workers laid off in the early 2000s earned 2% to 15% less five years later, and those laid off in the early 1990s 15% to 30% less. The tool uses 5% for everyone, so it leans mild.'),
+  illustrative('stepUp', 'A step up at work', 'A 4% chance each year before 45 of a lasting 6% rise in pay', JOB_CHANGE_URL, 'Illustrative: size in line with ADP Canada pay data, chance set to balance layoffs', 'A bigger promotion or a better job, on top of ordinary raises, which are already in wage growth. The size follows what is measured: in ADP Canada payroll data for August 2026, people who changed jobs saw total pay grow 9.6% in a year, against 4.4% for those who stayed, a gap of about 5 points (2.6 points on base pay alone). The chance is then set so good and bad luck cancel out on average: a 4% chance of +6% adds about 0.24% a year, and a 5% chance of a layoff with a 5% lasting cut takes away about 0.25%. Spending follows a step up like any raise.'),
   illustrative('gig', 'Gig or contract work', 'Income noise ±12% a year; an 8% chance each year of a 3-month slow stretch at half pay', STATCAN_URL, 'Illustrative', 'Replaces layoffs for gig and contract workers.'),
   illustrative('student', 'Students and co-op', 'Part-time or co-op pay until school ends, then full-time pay for the chosen field', STATCAN_URL, 'Illustrative', 'Full-time work starts at the later of 23 or two years from now, unless you say when you finish.'),
   illustrative('jobless', 'Income while out of work', '45% of previous pay', EI_URL, 'Illustrative; EI replaces up to 55% of insured earnings'),
   illustrative('tax', 'Income tax', 'about 12% at $30k, 18% at $50k, 23% at $75k, 27% at $100k, 32% at $150k, 36% at $200k', TAX_URL, 'Approximate effective rates, single Ontario earner', 'Interpolated between points. Workplace-plan contributions lower taxable income at the approximate marginal rate.'),
   illustrative('spending', 'Spending', 'Take-home pay minus saving; rises by 85% of each raise in Toronto or Vancouver, 80% in another big city, 75% in a smaller city or town', FP_URL, 'Illustrative behaviour rule', 'Lifestyle follows the expected career: a layoff or slower career squeezes saving, not spending. Living with family saves the rent not paid ($9,000, $7,000 or $5,000 a year by city, at most a quarter of take-home pay) until moving out (default age 25). The results are sensitive to this rule.'),
+  illustrative('adapt', 'Lifestyle adjusts', 'A quarter of a lasting gap is closed each year', FP_URL, 'Our assumption; no published figure', 'When pay stays below the career you planned, or costs run higher, people cut back, but not overnight: rent and bills are slow to change. At a quarter a year, about half the adjustment is made within 3 years and three quarters within 5. In the end spending moves by the same share of the gap that a raise adds to it (75% to 85%, by city), so a lasting pay cut squeezes saving but does not end it. After a step up, spending rises the same way. Trimming never lowers the work-optional and room-to-move targets, which stay set by the lifestyle you planned; spending more after a step up raises them.'),
   illustrative('withdrawal', 'Sustainable income from savings', '4% a year of long-term savings', FP_URL, 'A common rule of thumb', 'Workplace-plan income is taxed at 15%.'),
   illustrative('raid', 'Emergency withdrawal from the workplace plan', '30% lost to tax; the room is gone', 'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/making-withdrawals/tax-rates-on-withdrawals.html', 'Based on RRSP withholding rates'),
   illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of the spending you’re used to', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 30. Before 65, savings must first stand in for public pensions until they start, so early freedom takes a lot more.'),
   illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
   official('downPayment', 'Minimum down payment', '5% of the first $500,000, 10% of the rest; 20% at $1.5 million or more', 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html', 'Financial Consumer Agency of Canada'),
   illustrative('homePrices', 'Home prices', 'Toronto or Vancouver: condo $650k, townhouse $950k, house $1.4M. Another big city: $400k, $550k, $750k. Smaller city or town: $300k, $400k, $500k.', 'https://stats.crea.ca/en-CA/', 'Illustrative, in the range of CREA average prices', 'Counted on its own: a home goal does not change whether a future is in control.'),
-  illustrative('debt', 'Student debt', 'Paid over 10 years, starting when school ends; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative', 'The chips use 5% before inflation. Payments come out of saving first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work. The federal part of Canada Student Loans is interest-free; provincial parts vary.'),
+  illustrative('debt', 'Student debt', 'Paid over 10 years, starting when school ends; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative', 'The chips use 5% before inflation. The saving you enter includes what goes to student loans, so payments come out of it first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work. The federal part of Canada Student Loans is interest-free; provincial parts vary.'),
   illustrative('levers', 'Habits', 'Save part of every raise: +1 point of pay at each raise of 3% or more, up to 5 points. Cushion first: $90 a month while the cushion is filling. Automate: $25, $50 or $100 a month. Cost of waiting: 5 years.', FP_URL, 'Illustrative'),
 ];
 

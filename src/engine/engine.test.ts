@@ -7,6 +7,7 @@ import { matchGoal } from './goals';
 import { inputsForStage, minDownPayment } from './profile';
 import { simulate, summarise } from './simulate';
 import { LEVER_IDS, NO_LEVERS, WORRY_IDS, leverOnly, type Inputs, type Levers, type PathResult, type Scenario } from './types';
+import { WORRY } from './worries';
 
 const SEED = 2026;
 const maya = PERSONAS[0].inputs;
@@ -161,7 +162,8 @@ describe('worries', () => {
         expect(summarise(severe).counts[0]).toBeLessThanOrEqual(summarise(moderate).counts[0]);
       }
     }
-  });
+    // 72 runs of 1,000 lives: slow when the whole suite runs at once.
+  }, 20000);
 
   it('sizes every worry and names a protection', () => {
     const all: Scenario = Object.fromEntries(WORRY_IDS.map((id) => [id, 'moderate']));
@@ -174,9 +176,45 @@ describe('worries', () => {
         expect(card.best).not.toBeNull();
         expect(card.best!.protects).toBeLessThanOrEqual(card.affected);
         expect(card.mask.reduce((s, v) => s + v, 0)).toBe(card.affected);
+        // Sized by how far things move: never better than without the worry,
+        // and the best habit never makes it worse.
+        expect(card.inControl).toBeLessThanOrEqual(card.baseInControl);
+        expect(card.middleAt65).toBeLessThanOrEqual(card.baseMiddleAt65);
+        expect(card.best!.inControl).toBeGreaterThanOrEqual(card.inControl);
       }
     }
   }, 30000);
+
+  it('lets lifestyle adjust, so a single worry never leaves the middle future with almost nothing', () => {
+    for (const persona of PERSONAS) {
+      const a = new Engine().analyse(persona.inputs, Object.fromEntries(WORRY_IDS.map((id) => [id, 'moderate'])), {}, NO_LEVERS, SEED);
+      for (const card of a.cards) {
+        // Lower pay or higher costs squeeze saving; they do not end it for life.
+        expect(card.middleAt65).toBeGreaterThan(0.4 * card.baseMiddleAt65);
+      }
+    }
+  }, 30000);
+
+  it('sizes the step up so good and bad luck at work cancel out on average, as the Assumptions panel says', () => {
+    const good = A.stepUpChance * A.stepUpRaise;
+    const bad = A.jobLossYoung * A.returnPayCut;
+    expect(Math.abs(good - bad)).toBeLessThan(0.0005);
+    // Three years of adjusting covers about half the gap, five about three quarters.
+    expect(1 - (1 - A.adaptSpeed) ** 3).toBeGreaterThan(0.5);
+    expect(1 - (1 - A.adaptSpeed) ** 5).toBeGreaterThan(0.75);
+  });
+
+  it('gives careers good luck as well as bad, with the same luck under every habit', () => {
+    const maya = PERSONAS[0].inputs;
+    const big = (paths: PathResult[]) => paths.map((p) => p.events.filter((e) => e.type === 'raise' && (e.value ?? 0) >= 8 && e.age < A.stepUpUntilAge + 1).map((e) => e.age).join(','));
+    const plain = simulate(maya, {}, NO_LEVERS, SEED);
+    const lucky = big(plain).filter((x) => x !== '').length;
+    // About 6 in 10 lives get at least one step up in 22 working years at 4% a year;
+    // a few more show a raise this size from ordinary growth and noise.
+    expect(lucky).toBeGreaterThan(400);
+    expect(lucky).toBeLessThan(850);
+    for (const id of LEVER_IDS) expect(big(simulate(maya, {}, leverOnly(id), SEED))).toEqual(big(plain));
+  });
 });
 
 describe('levers', () => {
@@ -333,6 +371,57 @@ describe('make it more you', () => {
       const yearsToPensions = A.retireAge - r.workOptionalAge;
       expect(r.balances![r.workOptionalAge - sam.age]).toBeGreaterThan(0.5 * yearsToPensions * A.oasMonthly * 12);
     }
+  });
+
+  it('never claims work is optional on money spent on a goal', () => {
+    const jordan = { ...persona('jordan').inputs, income: 150000, monthly: 6000, saved: 60000 };
+    const plain = simulate(jordan, {}, NO_LEVERS, SEED, { detail: false });
+    const goal = { id: 'g', label: 'A business', kind: 'business' as const, cost: 100000, byAge: jordan.age + 3 };
+    const spent = simulate({ ...jordan, goals: [goal] }, {}, NO_LEVERS, SEED, { detail: false });
+    const later = (x: number | null) => x ?? Infinity;
+    let paid = 0;
+    spent.forEach((p, i) => {
+      if (!p.milestones.goals[0]) return;
+      paid++;
+      // Spending $100k can only delay the age work becomes optional.
+      expect(later(p.workOptionalAge)).toBeGreaterThanOrEqual(later(plain[i].workOptionalAge));
+    });
+    expect(paid).toBeGreaterThan(0);
+    expect(spent.some((p, i) => p.milestones.goals[0] && later(p.workOptionalAge) > later(plain[i].workOptionalAge))).toBe(true);
+  });
+
+  it('ticks "work optional by 65" only when the story says so, even with a home', () => {
+    const jordan = persona('jordan').inputs;
+    const house = simulate({ ...jordan, home: { price: 0, byAge: 40, type: 'house' } }, {}, NO_LEVERS, SEED, { detail: false });
+    for (const p of house) {
+      expect(p.milestones.workOptional65).toBe(p.workOptionalAge !== null && p.workOptionalAge <= A.retireAge);
+    }
+    // The status still counts the home on its own.
+    expect(summarise(house).counts[0]).toBe(inControl(jordan));
+  });
+
+  it('carries AI pressure during school into the first full-time pay', () => {
+    // The AI years end before this student finishes, so a smaller yearly
+    // saving after graduation can only come from pay pulled down in school.
+    const student: Inputs = { ...inputsForStage('student', 18), field: 'business', finishAge: 18 + WORRY.ai.years + 1 };
+    const opts = { detail: true, calm: true } as const;
+    const at = student.finishAge - student.age;
+    const plain = simulate(student, {}, NO_LEVERS, SEED, opts)[0].balances!;
+    const ai = simulate(student, { ai: 'severe' }, NO_LEVERS, SEED, opts)[0].balances!;
+    const added = (b: Float32Array) => b[at + 4] - b[at + 3];
+    // About $3,800 with the carry-over; below zero if pay resets at graduation.
+    expect(added(plain) - added(ai)).toBeGreaterThan(2000);
+  });
+
+  it('lifts lifestyle when school ends this year, just as it does next year', () => {
+    const maya = persona('maya').inputs;
+    const now = inControl({ ...maya, age: 22, finishAge: 22 });
+    const next = inControl({ ...maya, age: 22, finishAge: 23 });
+    // Finishing a year sooner helps a little; it never puts every future in control.
+    expect(now).toBeLessThan(900);
+    expect(Math.abs(now - next)).toBeLessThan(150);
+    const story = simulate({ ...maya, age: 22, finishAge: 22 }, {}, NO_LEVERS, SEED)[0].events;
+    expect(story.some((e) => e.type === 'fulltime' && e.age === 22)).toBe(true);
   });
 
   it('uses the Canadian minimum down payment', () => {
