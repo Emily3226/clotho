@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Engine, rescueOf } from './analyse';
 import { PERSONAS } from './personas';
-import { simulate } from './simulate';
+import { simulate, summarise } from './simulate';
 import { NO_LEVERS, leverOnly, type Scenario } from './types';
 
 const SEED = 2026;
@@ -53,5 +53,27 @@ describe('does the best step still hold', () => {
     const cautious = e.analyse(maya, {}, {}, NO_LEVERS, SEED, 'cautious', false, true).summary.counts[0];
     expect(cautious).toBe(new Engine().analyse(maya, {}, {}, NO_LEVERS, SEED, 'cautious').summary.counts[0]);
     expect(e.analyse(maya, {}, {}, NO_LEVERS, SEED, 'middle').summary.counts[0]).toBe(middle);
+  });
+});
+
+describe('the headline count as a range', () => {
+  it('gives the count under each return setting, for what is on screen', () => {
+    for (const p of PERSONAS) {
+      for (const [scenario, levers] of [[{}, NO_LEVERS], [{ ai: 'moderate' }, leverOnly('auto50')]] as const) {
+        const a = new Engine().analyse(p.inputs, { ai: 'moderate' }, scenario, levers, SEED);
+        for (const set of ['cautious', 'middle', 'hopeful'] as const) {
+          expect(a.range.bySet[set]).toBe(summarise(simulate(p.inputs, scenario, levers, SEED, { detail: false, set })).counts[0]);
+        }
+        expect(a.range.bySet.middle).toBe(a.summary.counts[0]);
+        expect(a.range.low).toBeLessThanOrEqual(a.summary.counts[0]);
+        expect(a.range.high).toBeGreaterThanOrEqual(a.summary.counts[0]);
+      }
+    }
+  }, 30000);
+
+  it('follows the setting that is switched on', () => {
+    const a = new Engine().analyse(PERSONAS[0].inputs, {}, {}, NO_LEVERS, SEED, 'cautious');
+    expect(a.range.bySet.cautious).toBe(a.summary.counts[0]);
+    expect(a.range.low).toBeLessThan(a.range.high);
   });
 });

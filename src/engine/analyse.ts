@@ -107,6 +107,9 @@ export interface Analysis {
   yearlyMatch: number;
   // Only worked out when asked for (it takes extra runs).
   holds: Holds | null;
+  // Futures in control for what is on screen, under each return setting.
+  // The count is one point in this range, not a forecast.
+  range: { low: number; high: number; bySet: Record<AssumptionSetId, number> };
 }
 
 export function leverAvailable(id: LeverId, inputs: Inputs): boolean {
@@ -254,6 +257,10 @@ export class Engine {
     const summary = summarise(view);
     const n = view.length;
     const years = A.endAge - inputs.age;
+    const bySet = Object.fromEntries(
+      MARKET_ORDER.map((m) => [m, m === set ? summary.counts[0] : summarise(this.run(inputs, scenario, levers, seed, false, m)).counts[0]]),
+    ) as Record<AssumptionSetId, number>;
+    const range = { low: Math.min(...Object.values(bySet)), high: Math.max(...Object.values(bySet)), bySet };
 
     // Worry cards: each selected worry alone, then all together.
     const ids = Object.keys(selected) as WorryId[];
@@ -406,6 +413,7 @@ export class Engine {
       waiting,
       yearlyMatch,
       holds,
+      range,
     };
   }
 }

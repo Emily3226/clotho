@@ -24,6 +24,26 @@ function onLevers(): LeverId[] {
   return LEVER_IDS.filter((id) => leverIsOn(l, id));
 }
 
+// The count is one point in a range: the same futures under cautious,
+// middle and hopeful returns. Shown with the headline so the number is never
+// read as a forecast.
+function RangeLine({ a, inControl = false }: { a: Analysis; inControl?: boolean }) {
+  const { low, high, bySet } = a.range;
+  if (low === high) {
+    return <p className="range">The same under cautious, middle and hopeful markets.</p>;
+  }
+  return (
+    <p className="range">
+      <Term
+        explain={`Cautious markets: ${num(bySet.cautious)}. Middle: ${num(bySet.middle)}. Hopeful: ${num(bySet.hopeful)}. Same lives, same luck, different long-run returns. You are seeing ${MARKET_SETS[a.set].label.toLowerCase()}; change it under Assumptions.`}
+      >
+        {num(low)} to {num(high)}
+        {inControl ? ' in control,' : ''} depending on how markets do
+      </Term>
+    </p>
+  );
+}
+
 function Headline({ a }: { a: Analysis | null }) {
   const levers = useStore((s) => s.levers);
   const activeWorry = useStore((s) => s.activeWorry);
@@ -50,6 +70,7 @@ function Headline({ a }: { a: Analysis | null }) {
           </b>{' '}
           in control
         </p>
+        <RangeLine a={a} inControl />
       </div>
     );
   }
@@ -72,6 +93,7 @@ function Headline({ a }: { a: Analysis | null }) {
         of 1,000 futures in control{activeWorry ? '' : ' today'}
       </p>
       {activeWorry && <p className="context">{activeWorry === 'all' ? 'If all of it happens at once' : worryInfo(activeWorry).ifClause}</p>}
+      {a && <RangeLine a={a} />}
       {best && best.inControl > now && (
         <p className="reach">
           <strong>

@@ -1576,3 +1576,10 @@ details.why summary {
 .holds-list .no .holds-mark {
   color: var(--muted);
 }
+
+/* The headline count as a range across return settings. */
+.range {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
