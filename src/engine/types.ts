@@ -125,6 +125,8 @@ export interface PathResult {
   final: number;
   // Total savings at 65.
   at65: number;
+  // At opts.cutAge: what is yours to use after tax, and spending so far.
+  atCut?: { yours: number; lived: number };
   balances: Float32Array | null;
   events: PathEvent[];
   // diagnostics used by tests
@@ -149,4 +151,6 @@ export interface SimOptions {
   calm?: boolean;
   trace?: boolean;
   set?: AssumptionSetId;
+  // Also record what is yours to use at this age (see noSixtyFive.ts).
+  cutAge?: number;
 }

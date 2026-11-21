@@ -74,7 +74,13 @@ export function Return() {
           </p>
           <p className="context">
             {copy.title} ·{' '}
-            {started ? `kept ${streak} ${streak === 1 ? 'month' : 'months'} in a row` : commitment.streak > 0 ? 'starting a new run this month' : 'not started yet'}
+            {started
+              ? `kept ${streak} ${streak === 1 ? 'month' : 'months'} in a row`
+              : commitment.streak > 0
+                ? 'starting a new run this month'
+                : commitment.outcome === 'done'
+                  ? 'kept 0 months · set up, first month counting'
+                  : 'not started yet'}
           </p>
         </div>
         <River analysis={a} mask={null} selected={null} onSelect={() => {}} />

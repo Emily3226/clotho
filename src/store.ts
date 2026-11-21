@@ -5,6 +5,7 @@ import type { Analysis } from './engine/analyse';
 import { MAX_CONCERNS, newConcern, selectedWorries, type Concern } from './engine/concerns';
 import { DEFAULT_INPUTS } from './engine/personas';
 import { NO_LEVERS, type AssumptionSetId, type Inputs, type LeverId, type Levers, type Scenario, type WorryId } from './engine/types';
+import type { Outcome } from './lib/doNow';
 
 export type Theme = 'auto' | 'light' | 'dark';
 export const STEPS = ['Start', 'About you', 'Your futures', 'What helps most', 'Pick one'] as const;
@@ -27,6 +28,8 @@ export interface Commitment {
   startInputs: Inputs;
   streak: number;
   lastCheckISO: string | null;
+  // What they said on Pick one: set it up, sent the HR message, or not yet.
+  outcome?: Outcome | null;
 }
 
 // One anonymous record per finished session, only in user-test mode.
@@ -39,6 +42,7 @@ export interface TestRecord {
   lever: string;
   reminder: boolean;
   hrCopied: boolean;
+  outcome?: Outcome | null;
 }
 
 interface Note {
@@ -84,6 +88,7 @@ interface Store {
   testLog: TestRecord[];
   reminderAdded: boolean;
   hrCopied: boolean;
+  outcome: Outcome | null;
 
   setStep: (step: number) => void;
   setInputs: (patch: Partial<Inputs>) => void;
@@ -141,6 +146,7 @@ const fresh = {
   playing: null,
   reminderAdded: false,
   hrCopied: false,
+  outcome: null,
 };
 
 export const useStore = create<Store>()(
