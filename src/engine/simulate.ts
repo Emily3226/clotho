@@ -152,6 +152,11 @@ export function simulate(
     // Money spent on a home or a goal, grown as if it had stayed invested.
     // Counted back when judging the other milestones (see below).
     let parked = 0;
+    // For "what if there's no 65": homes and goals at what they cost, and
+    // what was actually spent on living so far.
+    let paidFor = 0;
+    let lived = 0;
+    let atCut: PathResult['atCut'];
     const goalsReached = goals.map(() => false);
     let cushionFullSeen = cushion >= cushionShare * spendStart - 1 && cushionShare > 0 && inputs.saved > 0;
 
@@ -180,6 +185,7 @@ export function simulate(
       }
 
       if (a === A.retireAge) at65 = total;
+      if (a === opts.cutAge) atCut = { yours: cushion + flex + paidFor + (1 - A.raidTax) * workplace, lived };
       if (a === 35) {
         room35 = cushion + judged >= (A.roomMonths35 / 12) * lastSpend - 1;
         if (detail && room35) events.push({ age: a, type: 'room', value: A.roomMonths35 });
@@ -400,6 +406,7 @@ export function simulate(
       }
 
       let free = th - spend;
+      let notSpent = 0;
       // Living with family: the same lifestyle as renting, plus the rent not
       // paid, saved until moving out.
       if (a < moveOutAge) free += Math.min(city.moveOutCost, FAMILY_RENT_SHARE * th);
@@ -408,6 +415,7 @@ export function simulate(
         const fromSaving = Math.min(debtDue, Math.max(0, free));
         const trimmed = Math.min(debtDue - fromSaving, A.debtTrimShare * spend);
         free -= debtDue - trimmed;
+        notSpent += trimmed;
       }
       if (worldChance > 0 && !calm && draws[o + S_COST_U] < worldChance) {
         free -= (WORRY.world.months / 12) * spend;
@@ -471,6 +479,7 @@ export function simulate(
         }
         if (need > 0.5) {
           shockProof = false;
+          notSpent += need;
           if (detail) events.push({ age: a, type: 'short' });
         }
       }
@@ -495,6 +504,7 @@ export function simulate(
           tfsa -= need;
           tfsaRoom += need;
           parked += down;
+          paidFor += down;
           bought = true;
           if (detail) events.push({ age: a + 1, type: 'home' });
         }
@@ -511,11 +521,13 @@ export function simulate(
           tfsa -= g.cost - y;
           tfsaRoom += g.cost - y;
           parked += g.cost;
+          paidFor += g.cost;
           goalsReached[k] = true;
           if (detail) events.push({ age: a + 1, type: 'goal', value: k });
         }
       }
 
+      lived += spend - notSpent;
       if (tfsaRoom < minTfsaRoom) minTfsaRoom = tfsaRoom;
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
       if (lowest < minBalance) minBalance = lowest;
@@ -560,6 +572,7 @@ export function simulate(
       ratio65,
       final,
       at65,
+      atCut,
       balances,
       events,
       peakTfsaOver: Math.max(0, -minTfsaRoom),

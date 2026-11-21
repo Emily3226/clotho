@@ -3,6 +3,7 @@ import { A } from '../engine/assumptions';
 import { goalKind } from '../engine/goals';
 import { STATUS_LABELS, type Goal, type Inputs, type LeverId, type PathEvent } from '../engine/types';
 import { worryInfo } from '../engine/worries';
+import type { CutShort } from '../engine/noSixtyFive';
 import { money, moneyRound, num } from './format';
 
 export interface LeverCopy {
@@ -219,6 +220,28 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
     },
   };
 }
+
+// The "what if there's no 65?" answer, from the engine's numbers only.
+export function noSixtyFiveAnswer(r: CutShort, noun: string | null): WorryAnswer {
+  const parts: WorryAnswer['parts'] = [];
+  if (!noun) {
+    parts.push(`If everything changed at ${r.cutAge}, you would have about `, { strong: moneyRound(r.without) }, ' you could use.');
+  } else {
+    parts.push(`If everything changed at ${r.cutAge}, ${lowerStart(noun)} leaves you about `, { strong: moneyRound(r.withHabit) }, ' you can use, instead of ', { strong: moneyRound(r.without) }, '.');
+    if (r.gaveUp > 0) {
+      parts.push(' It costs about ', { strong: moneyRound(r.gaveUp) }, ' of spending along the way. In ', { strong: num(r.ahead) }, ` of your ${num(r.total)} futures, you get back at least that.`);
+    } else {
+      parts.push(' It costs you nothing along the way.');
+    }
+  }
+  return {
+    parts,
+    plain: parts.map((p) => (typeof p === 'string' ? p : p.strong)).join(''),
+    facts: { ...r, habit: noun },
+  };
+}
+
+const lowerStart = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1);
 
 export function planLines(id: LeverId, inputs: Inputs, yearlyMatch: number): [string, string] {
   switch (id) {
