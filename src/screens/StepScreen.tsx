@@ -309,7 +309,7 @@ export function StepScreen() {
       )}
 
       <div className="nav">
-        <button type="button" className="ghost" onClick={() => setStep(STEP.whatIf)}>
+        <button type="button" className="ghost" onClick={() => setStep(STEP.habits)}>
           Back
         </button>
         <button type="button" className="ghost" onClick={restart}>

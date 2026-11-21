@@ -36,8 +36,9 @@ export function useEngine(): void {
                 : `${st.pendingNote.label}: your river shifts down a little (${n} fewer in control). That’s what the habits are for.`
               : `${st.pendingNote.label}: no change to how many futures are in control.`;
       }
-      const noExtras = !st.levers.match && !st.levers.raises && !st.levers.cushion && st.levers.auto === 0 && !st.activeWorry;
-      const first = st.first ?? (noExtras ? { monthly: st.inputs.monthly, inControl: analysis.summary.counts[0] } : null);
+      const noLevers = !st.levers.match && !st.levers.raises && !st.levers.cushion && st.levers.auto === 0;
+      const kept = st.first && st.first.worry === st.activeWorry ? st.first : null;
+      const first = kept ?? (noLevers ? { monthly: st.inputs.monthly, inControl: analysis.summary.counts[0], worry: st.activeWorry } : null);
       st.setState({ analysis, computing: false, note, pendingNote: null, first });
     };
     worker.current = w;

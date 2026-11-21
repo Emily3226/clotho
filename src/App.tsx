@@ -69,7 +69,7 @@ export function App() {
           <Landing />
         ) : step === STEP.about ? (
           <About />
-        ) : step <= STEP.whatIf ? (
+        ) : step <= STEP.habits ? (
           <Explore />
         ) : step === STEP.pick ? (
           <StepScreen />

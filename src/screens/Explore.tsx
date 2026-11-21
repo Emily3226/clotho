@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DEFAULT_SEED } from '../config';
-import { AnimatedNumber, Switch, Term } from '../components/bits';
+import { AnimatedNumber, Explain, Switch, Term } from '../components/bits';
 import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
@@ -9,11 +9,13 @@ import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
 import { LEVER_IDS, STATUS_LABELS, type LeverId } from '../engine/types';
-import { WORRIES } from '../engine/worries';
+import { WORRIES, worryInfo } from '../engine/worries';
 import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
 import { useNarration } from '../narrate/client';
 import { STEP, anyLever, leverIsOn, useStore } from '../store';
+
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 function onLevers(): LeverId[] {
   const l = useStore.getState().levers;
@@ -50,6 +52,8 @@ function Headline({ a }: { a: Analysis | null }) {
     );
   }
   const before = a && activeWorry ? a.baseSummary.counts[0] : null;
+  // The single habit that leaves the most futures in control, same luck.
+  const best = a?.ranking.reduce<(typeof a.ranking)[number] | null>((b, r) => (!b || r.inControl > b.inControl ? r : b), null) ?? null;
   return (
     <div className="headline">
       <p className="count" aria-live="polite">
@@ -63,9 +67,17 @@ function Headline({ a }: { a: Analysis | null }) {
           )}
           <AnimatedNumber value={now} />
         </strong>{' '}
-        of 1,000 futures in control
+        of 1,000 futures in control{activeWorry ? '' : ' today'}
       </p>
-      {activeWorry && <p className="context">What if: {worryTitle(activeWorry)}</p>}
+      {activeWorry && <p className="context">{activeWorry === 'all' ? 'If all of it happens at once' : worryInfo(activeWorry).ifClause}</p>}
+      {best && best.inControl > now && (
+        <p className="reach">
+          <strong>
+            <AnimatedNumber value={best.inControl} />
+          </strong>{' '}
+          within reach with one habit: {lowerFirst(leverCopy(best.id, inputs).noun)}
+        </p>
+      )}
     </div>
   );
 }
@@ -173,6 +185,7 @@ function FuturesPanel({ a }: { a: Analysis }) {
   const setState = useStore((s) => s.setState);
   return (
     <>
+      <WhatIfPanel a={a} />
       <Milestones a={a} />
       <CompareCard />
       <details className="drawer live-answers">
@@ -228,7 +241,8 @@ function WhatIfPanel({ a }: { a: Analysis }) {
   const active = useStore((s) => s.activeWorry);
   const count = Object.keys(worries).length;
   return (
-    <>
+    <section className="worries" aria-label="Worries">
+      <h2 className="small-head">What if…</h2>
       <div className="chips">
         {WORRIES.map((w) => (
           <button type="button" key={w.id} className="chip" aria-pressed={!!worries[w.id]} onClick={() => toggle(w.id)}>
@@ -251,7 +265,7 @@ function WhatIfPanel({ a }: { a: Analysis }) {
           {showAll ? 'Hide the toughest case' : 'All at once'}
         </button>
       )}
-    </>
+    </section>
   );
 }
 
@@ -305,6 +319,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
                   {row.noExtraCost && <span className="tag">No extra cost</span>}
                 </h3>
                 <p className="cost">{leverCostLine(row)}</p>
+                <Explain label={copy.title} text={copy.explain} />
                 {row.id === 'match' && (
                   <p className="hint">
                     {row.askHR ? 'If matched: ' : 'Employer adds '}
@@ -332,7 +347,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
 }
 
 
-const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'What helps most?', [STEP.habits]: 'What if…', [STEP.whatIf]: 'Pick one to try' };
+const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'What helps most?', [STEP.habits]: 'Pick one to try' };
 
 export function Explore() {
   const step = useStore((s) => s.step);
@@ -344,11 +359,13 @@ export function Explore() {
   const seed = useStore((s) => s.seed);
   const setState = useStore((s) => s.setState);
   const [another, setAnother] = useState(0);
+  // A switched-on habit lights up what it rescues; otherwise a worry lights up
+  // the futures it makes harder.
   const mask =
-    a && step === STEP.whatIf && activeWorry
-      ? (a.cards.find((c) => c.id === activeWorry)?.mask ?? null)
-      : a && step === STEP.habits && a.rescue
-        ? a.rescue.mask
+    a && step === STEP.habits && a.rescue
+      ? a.rescue.mask
+      : a && activeWorry
+        ? (a.cards.find((c) => c.id === activeWorry)?.mask ?? null)
         : null;
   const path = a && selected !== null ? a.paths[selected] : null;
   const plain = a && selected !== null && a.plainPaths ? a.plainPaths[selected] : null;
@@ -401,7 +418,6 @@ export function Explore() {
         )}
         {a && step === STEP.futures && <FuturesPanel a={a} />}
         {a && step === STEP.habits && <HabitsPanel a={a} />}
-        {a && step === STEP.whatIf && <WhatIfPanel a={a} />}
         <div className="nav">
           <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.about : step - 1)}>
             Back

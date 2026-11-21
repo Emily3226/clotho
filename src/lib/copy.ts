@@ -21,13 +21,13 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
             title: 'Ask HR one question',
             doing: 'Finding and taking your employer match',
             noun: 'Asking HR one question',
-            explain: 'Many workplace plans come with matching: money your employer adds when you put some in.',
+            explain: 'Many workplace savings plans have matching: when you put some of your pay in, your employer adds money too. One question to HR finds out if yours does.',
           }
         : {
             title: 'Take the full employer match',
             doing: 'Taking your full employer match',
             noun: 'Taking the full employer match',
-            explain: 'Money your employer adds when you put some in. Unclaimed, it stays with them.',
+            explain: 'When you put part of your pay into your workplace plan, your employer adds money too. Put in less than the match and you leave that money with them.',
           };
     case 'auto25':
     case 'auto50':
@@ -37,7 +37,7 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
         title: `Automate $${n} a month`,
         doing: `Automating $${n} a month`,
         noun: `Automating $${n} a month`,
-        explain: 'An automatic transfer to long-term savings, such as a TFSA, on payday. You set it once and it keeps going.',
+        explain: 'Money moves to long-term savings by itself on payday, so you never have to decide. A TFSA works well: a savings account where growth isn’t taxed.',
       };
     }
     case 'raises':
@@ -45,14 +45,14 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
         title: 'Save part of every raise',
         doing: 'Saving part of every raise',
         noun: 'Saving part of every raise',
-        explain: 'Each time your pay grows 3% or more, one more point of it goes to savings, up to 5 points. Your take-home pay still goes up.',
+        explain: 'Each raise of 3% or more sends 1% more of your pay to savings, up to 5%. You still take home more than before, so it never feels like a cut.',
       };
     case 'cushion':
       return {
         title: 'Build the cushion first',
         doing: 'Building your cushion first',
         noun: 'Building the cushion first',
-        explain: `An extra $${A.cushionTopUp} a month, only until your cushion is full. It stops by itself.`,
+        explain: `An extra $${A.cushionTopUp} a month into an emergency fund until it covers a few months of costs, then it stops. It keeps a layoff from turning into debt.`,
       };
   }
 }

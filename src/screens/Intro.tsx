@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { TAGLINE } from '../config';
 import { AboutYou } from '../components/AboutYou';
+import { ChipGroup } from '../components/bits';
+import { WORRIES } from '../engine/worries';
+import type { WorryId } from '../engine/types';
 import { LandingRiver } from '../components/LandingRiver';
 import { PERSONAS } from '../engine/personas';
 import { STEP, useStore } from '../store';
@@ -91,6 +94,8 @@ export function About() {
   const setStep = useStore((s) => s.setStep);
   const setState = useStore((s) => s.setState);
   const before = useStore((s) => s.confBefore);
+  const worries = useStore((s) => s.worries);
+  const toggleWorry = useStore((s) => s.toggleWorry);
   const [conf, setConf] = useState(before ?? 5);
   return (
     <section className="narrow about-screen">
@@ -102,6 +107,12 @@ export function About() {
           </label>
           <ConfidenceSlider id="conf-before" value={conf} onChange={setConf} />
         </div>
+        <ChipGroup<WorryId>
+          legend="What worries you most?"
+          options={WORRIES.map((w) => ({ value: w.id, label: w.label }))}
+          selected={(v) => !!worries[v]}
+          onPick={(v) => toggleWorry(v)}
+        />
         <AboutYou />
       </div>
       <div className="nav">
@@ -112,7 +123,9 @@ export function About() {
           type="button"
           className="primary"
           onClick={() => {
-            setState({ confBefore: conf, first: null });
+            // Picked worries open as cards on the first result. The river starts
+            // without them, so the first number is today, not the worst case.
+            setState({ confBefore: conf, first: null, activeWorry: null, selectedPath: null });
             setStep(STEP.futures);
           }}
         >
