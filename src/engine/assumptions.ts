@@ -76,6 +76,9 @@ export const A = {
   stepUpUntilAge: 45,
   // Share of a lasting gap between plan and life that lifestyle closes each year.
   adaptSpeed: 0.25,
+  // Regular saving, as a share of take-home pay, at which someone keeps the
+  // usual share of each raise. Below it, they keep proportionally less.
+  raiseHabitRate: 0.02,
   jobLossAgeSplit: 30,
   spellMedianMonths: 4,
   spellSigma: 0.6,
@@ -203,6 +206,7 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('jobless', 'Income while out of work', '45% of previous pay', EI_URL, 'Illustrative; EI replaces up to 55% of insured earnings'),
   illustrative('tax', 'Income tax', 'about 12% at $30k, 18% at $50k, 23% at $75k, 27% at $100k, 32% at $150k, 36% at $200k', TAX_URL, 'Approximate effective rates, single Ontario earner', 'Interpolated between points. Workplace-plan contributions lower taxable income at the approximate marginal rate.'),
   illustrative('spending', 'Spending', 'Take-home pay minus saving; rises by 85% of each raise in Toronto or Vancouver, 80% in another big city, 75% in a smaller city or town', FP_URL, 'Illustrative behaviour rule', 'Lifestyle follows the expected career: a layoff or slower career squeezes saving, not spending. Living with family saves the rent not paid ($9,000, $7,000 or $5,000 a year by city, at most a quarter of take-home pay) until moving out (default age 25). The results are sensitive to this rule.'),
+  illustrative('raiseHabit', 'Keeping part of a raise', 'Takes a saving habit: none kept at $0, the usual 15% to 25% once regular saving reaches 2% of take-home pay', FP_URL, 'Our assumption; no published figure', 'Someone who sets nothing aside spends every raise. Saving 1% of take-home keeps half the usual share, and 2% keeps all of it. The results are very sensitive to this: for a low saver, it is much of the difference between few futures in control and most of them.'),
   illustrative('adapt', 'Lifestyle adjusts', 'A quarter of a lasting gap is closed each year', FP_URL, 'Our assumption; no published figure', 'When pay stays below the career you planned, or costs run higher, people cut back, but not overnight: rent and bills are slow to change. At a quarter a year, about half the adjustment is made within 3 years and three quarters within 5. In the end spending moves by the same share of the gap that a raise adds to it (75% to 85%, by city), so a lasting pay cut squeezes saving but does not end it. After a step up, spending rises the same way. Trimming never lowers the work-optional and room-to-move targets, which stay set by the lifestyle you planned; spending more after a step up raises them.'),
   illustrative('withdrawal', 'Sustainable income from savings', '4% a year of long-term savings', FP_URL, 'A common rule of thumb', 'Workplace-plan income is taxed at 15%.'),
   illustrative('noSixtyFive', 'What if there’s no 65?', 'What is yours to use at 35, 40 or 50, with a habit and without it', FP_URL, 'Our own comparison on the same 1,000 lives', 'Counts the cushion, long-term savings, what was paid toward a home or goals, and the workplace plan after the 30% lost on an early withdrawal. Some workplace plans limit withdrawals. Compared with the spending the habit cost up to that age.'),

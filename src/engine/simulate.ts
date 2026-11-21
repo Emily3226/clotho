@@ -52,7 +52,6 @@ export function simulate(
   const fullIncome = student ? fieldSalaryFor('first', inputs.field) : income;
   const field = fieldInfo(inputs.field);
   const city = cityInfo(inputs.city);
-  const raiseSpent = city.raiseSpent;
   const moveOutAge = inputs.living === 'family' ? Math.max(age + 1, inputs.moveOutAge) : -1;
   const wageNoise = gig ? GIG.wageNoise : A.wageNoise;
   const aiK = field.aiStrength;
@@ -86,6 +85,12 @@ export function simulate(
     0.6 * nth0,
   );
   const spend0 = nth0 - saving0;
+  // Keeping part of a raise takes a saving habit. Someone who sets nothing
+  // aside spends all of it; the city's usual share is reached once regular
+  // saving (with any habit switched on) is 2% of take-home pay.
+  const habitSaving = saving0 + levers.auto * 12 + matchExtra * income * (1 - marginalRate(income));
+  const raiseKept = (1 - city.raiseSpent) * Math.min(1, habitSaving / Math.max(1, nth0) / A.raiseHabitRate);
+  const raiseSpent = 1 - raiseKept;
   // The cushion is sized to the spending of the first year. For a student who
   // finishes school this year, that is already the full-time lifestyle.
   const spendStart = student && finishAge <= age ? spend0 + raiseSpent * Math.max(0, takeHome(fullIncome) - nth0) : spend0;
