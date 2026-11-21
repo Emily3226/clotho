@@ -118,6 +118,8 @@ export interface PathResult {
   workOptionalAge: number | null;
   ratio65: number;
   final: number;
+  // Total savings at 65.
+  at65: number;
   balances: Float32Array | null;
   events: PathEvent[];
   // diagnostics used by tests

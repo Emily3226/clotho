@@ -182,12 +182,23 @@ export interface WorryAnswer {
 export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
   const clause = card.id === 'all' ? 'If all of it happens at once' : worryInfo(card.id).ifClause;
   const parts: WorryAnswer['parts'] = [];
-  if (card.affected === 0) {
+  const drop = card.baseInControl - card.inControl;
+  const less = card.baseMiddleAt65 - card.middleAt65;
+  if (card.affected === 0 || (drop <= 0 && less <= 0)) {
     parts.push(`${clause}, none of your 1,000 futures change. Your plan already covers this one.`);
   } else {
-    parts.push(`${clause}, `, { strong: num(card.affected) }, ` of your 1,000 futures get harder.`);
-    if (card.recovered > 0) parts.push(' In ', { strong: num(card.recovered) }, ' of those, work still becomes optional by 70.');
-    if (card.best) parts.push(` ${leverCopy(card.best.lever, inputs).noun} protects `, { strong: num(card.best.protects) }, ' of them.');
+    // Sized by how far it moves things, not by a pass or fail.
+    if (drop > 0) parts.push(`${clause}, you stay in control in `, { strong: num(card.inControl) }, ' of your 1,000 futures instead of ', { strong: num(card.baseInControl) }, '.');
+    else parts.push(`${clause}, you stay in control in just as many futures, `, { strong: num(card.inControl) }, ' of 1,000.');
+    if (less > 0) parts.push(' The middle one has about ', { strong: money(card.middleAt65) }, ' saved at 65 instead of ', { strong: money(card.baseMiddleAt65) }, '.');
+    if (card.best && card.best.inControl > card.inControl) {
+      const noun = leverCopy(card.best.lever, inputs).noun;
+      parts.push(
+        card.best.inControl >= card.baseInControl ? ` ${noun} takes it to ` : ` ${noun} brings it back up to `,
+        { strong: num(card.best.inControl) },
+        card.best.inControl > card.baseInControl ? ', more than before the worry.' : '.',
+      );
+    }
   }
   return {
     parts,
@@ -195,11 +206,13 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
     facts: {
       worry: worryTitle(card.id),
       totalFutures: 1000,
-      futuresThatGetHarder: card.affected,
-      ofThoseWorkStillOptionalBy70: card.recovered,
-      workOptionalByAge: 70,
+      futuresInControlWithoutTheWorry: card.baseInControl,
+      futuresInControlWithTheWorry: card.inControl,
+      middleFutureSavedAtAge: 65,
+      middleFutureSavedWithoutTheWorry: card.baseMiddleAt65,
+      middleFutureSavedWithTheWorry: card.middleAt65,
       bestHabit: card.best ? leverCopy(card.best.lever, inputs).noun : null,
-      futuresLiftedByBestHabit: card.best?.protects ?? 0,
+      futuresInControlWithTheWorryAndBestHabit: card.best?.inControl ?? card.inControl,
     },
   };
 }

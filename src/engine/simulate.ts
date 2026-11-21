@@ -99,6 +99,11 @@ export function simulate(
     let trend = 1;
     let plainTrend = 1;
     let level = 1;
+    // Steps up at work (a promotion, a better job).
+    let boost = 1;
+    // How far lifestyle has adjusted to pay or costs that differ from the plan.
+    let trim = 0;
+    let at65 = 0;
     let tfsaRoom = A.tfsaAnnual * Math.max(0, age - 18);
     let fhsaLife = 0;
     let spendBase = spend0;
@@ -168,6 +173,7 @@ export function simulate(
         trace.target.push(cushionShare * lastSpend);
       }
 
+      if (a === A.retireAge) at65 = total;
       if (a === 35) {
         room35 = cushion + judged >= (A.roomMonths35 / 12) * lastSpend - 1;
         if (detail && room35) events.push({ age: a, type: 'room', value: A.roomMonths35 });
@@ -261,7 +267,7 @@ export function simulate(
         plainAtFinish = plainTrend;
         debtStarted = true;
       }
-      const payBase = inSchool ? income * trend : student ? (fullIncome * trend) / trendAtFinish : income * trend;
+      const payBase = boost * (inSchool ? income * trend : student ? (fullIncome * trend) / trendAtFinish : income * trend);
       const gross = payBase * level * (1 + (calm ? 0 : wageNoise * draws[o + S_WAGE]));
       const nth = takeHome(gross);
       // Lifestyle follows the expected career, not each year's luck: a layoff,
@@ -280,7 +286,14 @@ export function simulate(
       if (sCost >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + WORRY.costs.extra[sCost] * WORRY.costs.essentialsShare;
       // Rents follow home prices: housing, about 30% of spending, rises with them.
       if (sHome >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + homeFaster * WORRY.home.housingShare;
-      const want = spendBase * costFactor;
+      // Lifestyle adjusts, slowly, when life differs from the plan. If pay
+      // stays lower (a layoff's lasting cut, a slower career) or costs run
+      // higher, people trim; after a step up they spend more. It closes the
+      // same share of the gap that a raise adds to spending, a bit each year.
+      const planned = Math.max(0, expectedNth - spendBase);
+      const room = takeHome(payBase * level) - spendBase * costFactor;
+      trim += A.adaptSpeed * (raiseSpent * (planned - room) - trim);
+      const want = Math.max(0, spendBase * costFactor - trim);
       // What income could not cover this year. The work-optional and room
       // targets are set by the lifestyle wanted, not by a squeezed year.
       const squeezed = Math.max(0, want - nth);
@@ -484,8 +497,10 @@ export function simulate(
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
       if (lowest < minBalance) minBalance = lowest;
 
-      lastSpend = spend + squeezed;
-      ring[ringN % 5] = spend + squeezed;
+      // The yardstick stays the lifestyle that was planned: trimming to get
+      // through, or spending more after good luck, does not move the target.
+      lastSpend = spend + squeezed + trim;
+      ring[ringN % 5] = lastSpend;
       ringN++;
       if (!inSchool) {
         earnedSum += yearIncome;
@@ -493,6 +508,11 @@ export function simulate(
       }
       prevYearIncome = yearIncome;
       if (scar) level *= 1 - A.returnPayCut;
+      // Good luck uses the far end of the same draw as job loss, so a path
+      // keeps its luck in every scenario and with every habit.
+      if (!calm && !inSchool && months === 0 && a < A.stepUpUntilAge && draws[o + S_JOB_U] > 1 - A.stepUpChance) {
+        boost *= 1 + A.stepUpRaise;
+      }
     }
 
     const wo65 = woAge !== null && woAge <= A.retireAge;
@@ -511,6 +531,7 @@ export function simulate(
       workOptionalAge: woAge,
       ratio65,
       final,
+      at65,
       balances,
       events,
       peakTfsaOver: Math.max(0, -minTfsaRoom),
