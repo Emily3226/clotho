@@ -6,6 +6,17 @@ export type City = 'major' | 'big' | 'small';
 export type Living = 'family' | 'renting' | 'own';
 export type AssumptionSetId = 'cautious' | 'middle' | 'hopeful';
 export type HomeType = 'condo' | 'townhouse' | 'house';
+export type GoalKind = 'car' | 'travel' | 'school' | 'wedding' | 'family' | 'business' | 'move' | 'pet' | 'gear' | 'other';
+
+// Something the person wants room for, in their own words, with an amount
+// and an age they chose. Paid from long-term savings if there is enough.
+export interface Goal {
+  id: string;
+  label: string;
+  kind: GoalKind;
+  cost: number;
+  byAge: number;
+}
 
 export interface Inputs {
   age: number;
@@ -30,6 +41,7 @@ export interface Inputs {
   moveOutAge: number;
   // Students only: the age full-time pay starts.
   finishAge: number;
+  goals?: Goal[];
 }
 
 export type WorryId = 'ai' | 'recession' | 'costs' | 'home' | 'world' | 'pensions';
@@ -74,6 +86,7 @@ export type EventType =
   | 'raise'
   | 'cushionFull'
   | 'home'
+  | 'goal'
   | 'debtFree'
   | 'room'
   | 'optional';
@@ -93,6 +106,8 @@ export interface Milestones {
   room35: boolean;
   room45: boolean;
   home: boolean | null;
+  // One per goal, in order: reached at the age chosen.
+  goals: boolean[];
   workOptional65: boolean;
 }
 
@@ -118,7 +133,7 @@ export interface PathResult {
 export interface Summary {
   counts: [number, number, number, number];
   medianWorkOptionalAge: number | null;
-  milestoneCounts: { shockProof: number; room35: number; room45: number; home: number | null; workOptional65: number };
+  milestoneCounts: { shockProof: number; room35: number; room45: number; home: number | null; workOptional65: number; goals: number[] };
 }
 
 export interface SimOptions {

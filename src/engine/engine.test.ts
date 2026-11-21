@@ -3,6 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { Engine, rescueOf } from './analyse';
 import { A, stockShareAt } from './assumptions';
 import { PERSONAS, persona } from './personas';
+import { matchGoal } from './goals';
 import { inputsForStage, minDownPayment } from './profile';
 import { simulate, summarise } from './simulate';
 import { LEVER_IDS, NO_LEVERS, WORRY_IDS, leverOnly, type Inputs, type Levers, type PathResult, type Scenario } from './types';
@@ -242,6 +243,32 @@ describe('make it more you', () => {
       const moved = PERSONAS.some((p) => inControl(change(p.inputs)) !== inControl(p.inputs));
       expect(moved, name).toBe(true);
     }
+  });
+
+  it('matches goals typed in your own words to a kind, offline', () => {
+    expect(matchGoal('a trip to Japan')).toBe('travel');
+    expect(matchGoal('Buy a car')).toBe('car');
+    expect(matchGoal('grad school in Montreal')).toBe('school');
+    expect(matchGoal('my wedding')).toBe('wedding');
+    expect(matchGoal('learn to fly')).toBe('other');
+  });
+
+  it('pays a goal at the age chosen, counts it on its own, and never from the cushion', () => {
+    const maya = persona('maya').inputs;
+    const base = simulate(maya, {}, NO_LEVERS, SEED, { detail: false });
+    const goal = (cost: number, byAge: number) => ({ ...maya, goals: [{ id: 'g', label: 'Japan', kind: 'travel' as const, cost, byAge }] });
+    const small = summarise(simulate(goal(3000, 30), {}, NO_LEVERS, SEED, { detail: false })).milestoneCounts.goals[0];
+    const big = summarise(simulate(goal(60000, 30), {}, NO_LEVERS, SEED, { detail: false })).milestoneCounts.goals[0];
+    const later = summarise(simulate(goal(60000, 45), {}, NO_LEVERS, SEED, { detail: false })).milestoneCounts.goals[0];
+    expect(small).toBeGreaterThan(big);
+    expect(later).toBeGreaterThan(big);
+    // A goal that is never paid leaves the future exactly as it was.
+    const huge = simulate(goal(10_000_000, 30), {}, NO_LEVERS, SEED, { detail: false });
+    huge.forEach((p, i) => {
+      expect(p.milestones.goals[0]).toBe(false);
+      expect(p.status).toBe(base[i].status);
+      expect(p.final).toBeCloseTo(base[i].final, 6);
+    });
   });
 
   it('uses the Canadian minimum down payment', () => {

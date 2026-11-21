@@ -66,6 +66,7 @@ export function simulate(
   const worldDrag = sWorld >= 0 ? WORRY.world.returns[sWorld] : 0;
   const worldChance = sWorld >= 0 ? WORRY.world.chance[sWorld] : 0;
   const homeGoal = homeGoalFor(inputs, scenario);
+  const goals = (inputs.goals ?? []).map((g) => ({ ...g, byAge: Math.max(g.byAge, age + 1) }));
   const homeFaster = sHome >= 0 ? WORRY.home.faster[sHome] : 0;
 
   const planPct = inputs.plan === 'yes' ? inputs.employeePct / 100 : 0;
@@ -137,6 +138,7 @@ export function simulate(
     let room35 = false;
     let room45 = false;
     let bought = false;
+    const goalsReached = goals.map(() => false);
     let cushionFullSeen = cushion >= cushionShare * spend0 - 1 && cushionShare > 0 && inputs.saved > 0;
 
     const trace = opts.trace ? { cushion: [] as number[], plan: [] as number[], flex: [] as number[], target: [] as number[] } : undefined;
@@ -441,6 +443,21 @@ export function simulate(
         }
       }
 
+      // Goals: at the age chosen, paid from long-term savings you can reach
+      // (not the cushion, which is for bad years), if there is enough.
+      for (let k = 0; k < goals.length; k++) {
+        const g = goals[k];
+        if (goalsReached[k] || a + 1 !== g.byAge) continue;
+        if (taxable + tfsa >= g.cost) {
+          const y = Math.min(taxable, g.cost);
+          taxable -= y;
+          tfsa -= g.cost - y;
+          tfsaRoom += g.cost - y;
+          goalsReached[k] = true;
+          if (detail) events.push({ age: a + 1, type: 'goal', value: k });
+        }
+      }
+
       if (tfsaRoom < minTfsaRoom) minTfsaRoom = tfsaRoom;
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
       if (lowest < minBalance) minBalance = lowest;
@@ -468,7 +485,7 @@ export function simulate(
     out[i] = {
       index: i,
       status,
-      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: wo65 },
+      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: wo65, goals: goalsReached },
       workOptionalAge: woAge,
       ratio65,
       final,
@@ -493,6 +510,7 @@ export function summarise(paths: PathResult[]): Summary {
   const counts: [number, number, number, number] = [0, 0, 0, 0];
   const ms = { shockProof: 0, room35: 0, room45: 0, home: 0, workOptional65: 0 };
   let hasHome = false;
+  const goals = (paths[0]?.milestones.goals ?? []).map(() => 0);
   const ages: number[] = [];
   for (const p of paths) {
     counts[p.status]++;
@@ -504,6 +522,9 @@ export function summarise(paths: PathResult[]): Summary {
       if (p.milestones.home) ms.home++;
     }
     if (p.milestones.workOptional65) ms.workOptional65++;
+    p.milestones.goals.forEach((ok, k) => {
+      if (ok) goals[k]++;
+    });
     ages.push(p.workOptionalAge ?? Infinity);
   }
   ages.sort((x, y) => x - y);
@@ -511,6 +532,6 @@ export function summarise(paths: PathResult[]): Summary {
   return {
     counts,
     medianWorkOptionalAge: Number.isFinite(med) ? med : null,
-    milestoneCounts: { ...ms, home: hasHome ? ms.home : null },
+    milestoneCounts: { ...ms, home: hasHome ? ms.home : null, goals },
   };
 }

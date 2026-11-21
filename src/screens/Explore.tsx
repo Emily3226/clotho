@@ -91,12 +91,18 @@ function Legend({ a }: { a: Analysis | null }) {
 
 function Milestones({ a }: { a: Analysis }) {
   const m = a.summary.milestoneCounts;
+  const goals = useStore((s) => s.inputs.goals ?? []);
   const items: [string, number | null, string][] = [
     ['Shock-proof', m.shockProof, 'Never had to dip into the workplace plan, and never ended a year short.'],
     ['Room to move at 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
     ['Room to move at 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
     ['Home', m.home, 'The down payment is reached by your target age.'],
     ['Work-optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of the spending you’re used to, so working is a choice.'],
+    ...goals.map((g, k): [string, number | null, string] => [
+      `${g.label} by ${g.byAge}`,
+      m.goals[k] ?? null,
+      `Paid from savings you can reach, without touching the cushion. Counted on its own: it doesn’t change whether a future is in control.`,
+    ]),
   ];
   return (
     <ul className="milestones">

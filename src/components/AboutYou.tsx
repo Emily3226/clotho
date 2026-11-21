@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChipGroup, Field, Segmented } from './bits';
 import { persona } from '../engine/personas';
 import {
@@ -14,7 +15,9 @@ import {
   inputsForStage,
   minDownPayment,
 } from '../engine/profile';
-import type { HomeType, Inputs, Stage } from '../engine/types';
+import { GOAL_WHEN, MAX_GOALS, goalKind, matchGoal, newGoal } from '../engine/goals';
+import type { Goal, HomeType, Inputs, Stage } from '../engine/types';
+import { classifyGoal } from '../narrate/client';
 import { money } from '../lib/format';
 import { ROOM_FOR, useStore } from '../store';
 
@@ -115,6 +118,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           )}
         </div>
       )}
+      <GoalsEditor answer={answer} />
 
       <details className="drawer">
         <summary>Exact numbers (optional)</summary>
@@ -165,6 +169,93 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           )}
         </div>
       </details>
+    </div>
+  );
+}
+
+// Anything else, in the person's own words. Typing a goal asks two follow-up
+// questions: about how much, and when. A typical amount is suggested from the
+// app's own table; a language model may only help pick which kind it is.
+function GoalsEditor({ answer }: { answer: (label: string, patch: Partial<Inputs>) => void }) {
+  const inputs = useStore((s) => s.inputs);
+  const aiOn = useStore((s) => s.aiOn);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const goals = inputs.goals ?? [];
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const t = text.trim();
+    if (!t || goals.length >= MAX_GOALS) return;
+    setBusy(true);
+    let kind = matchGoal(t);
+    if (kind === 'other' && aiOn) kind = (await classifyGoal(t)) ?? 'other';
+    setBusy(false);
+    setText('');
+    answer(`Room for ${t}`, { goals: [...goals, newGoal(t, kind, inputs.age)] });
+  };
+  const update = (id: string, patch: Partial<Goal>, label: string) =>
+    answer(label, { goals: goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
+  const remove = (id: string) => answer('Goal removed', { goals: goals.filter((g) => g.id !== id) });
+
+  return (
+    <div className="goals">
+      {goals.map((g) => {
+        const kind = goalKind(g.kind);
+        const years = g.byAge - inputs.age;
+        return (
+          <div className="home-q goal" key={g.id}>
+            <div className="goal-head">
+              <b>{g.label}</b>
+              <button type="button" className="link" onClick={() => remove(g.id)} aria-label={`Remove ${g.label}`}>
+                Remove
+              </button>
+            </div>
+            <Field
+              id={`cost-${g.id}`}
+              label="About how much will it cost?"
+              value={g.cost}
+              min={500}
+              max={100000}
+              step={500}
+              prefix="$"
+              hint={kind.typical ? `Typical for ${kind.name}: about ${money(kind.typical)}. Change it if you know better.` : 'Your best guess is fine.'}
+              onChange={(v) => update(g.id, { cost: Math.max(0, Math.round(v)) }, `${g.label} at ${money(v)}`)}
+            />
+            <ChipGroup
+              legend="When?"
+              selected={(v) => v === years}
+              options={GOAL_WHEN.map((w) => ({ value: w.years, label: w.label }))}
+              onPick={(v, l) => update(g.id, { byAge: inputs.age + v }, `${g.label} ${l.toLowerCase()}`)}
+            />
+            <p className="hint">
+              That’s about <b>{money(Math.ceil(g.cost / Math.max(1, years * 12) / 5) * 5)} a month</b> for {years === 1 ? '1 year' : `${years} years`}, after
+              your cushion is full. You set aside {money(inputs.monthly)}.
+            </p>
+          </div>
+        );
+      })}
+      {goals.length < MAX_GOALS && (
+        <form className="goal-add" onSubmit={add}>
+          <label className="q-label" htmlFor="goal-text">
+            {goals.length ? 'Anything else?' : 'Anything else you want room for?'}
+          </label>
+          <div className="goal-row">
+            <input
+              id="goal-text"
+              value={text}
+              maxLength={60}
+              autoComplete="off"
+              placeholder="A trip to Japan, a car, grad school…"
+              onChange={(e) => setText(e.target.value)}
+            />
+            <button type="submit" className="secondary" disabled={!text.trim() || busy}>
+              {busy ? 'Adding…' : 'Add'}
+            </button>
+          </div>
+          {aiOn && <p className="hint">With AI wording on, what you type is sent to sort it. Amounts never come from AI.</p>}
+        </form>
+      )}
     </div>
   );
 }

@@ -160,6 +160,7 @@ export function inputsForStage(stage: Stage, age: number, prev?: Inputs): Inputs
     living: prev?.living ?? null,
     moveOutAge: Math.max(prev?.moveOutAge ?? DEFAULT_MOVE_OUT_AGE, age + 1),
     finishAge: defaultFinishAge(age),
+    goals: prev?.goals ?? [],
   };
 }
 

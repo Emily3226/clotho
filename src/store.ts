@@ -15,7 +15,6 @@ export const ROOM_FOR = [
   { id: 'home', label: 'A home' },
   { id: 'time', label: 'Time off' },
   { id: 'family', label: 'Helping family' },
-  { id: 'other', label: 'Something else' },
 ] as const;
 
 // The habit someone picked, kept on this device for the monthly check-in.

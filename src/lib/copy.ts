@@ -1,6 +1,7 @@
 import type { LeverRow, PathLite, WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
-import { STATUS_LABELS, type Inputs, type LeverId, type PathEvent } from '../engine/types';
+import { goalKind } from '../engine/goals';
+import { STATUS_LABELS, type Goal, type Inputs, type LeverId, type PathEvent } from '../engine/types';
 import { worryInfo } from '../engine/worries';
 import { money, moneyRound, num } from './format';
 
@@ -84,6 +85,7 @@ const EVENT_TEXT: Record<PathEvent['type'], (v?: number) => string> = {
   raise: (v) => `pay rose ${v}%`,
   cushionFull: () => 'the cushion was full',
   home: () => 'bought a home',
+  goal: () => 'reached a goal',
   debtFree: () => 'student debt paid off',
   room: (v) => `${v} months of room to move saved`,
   optional: () => 'work became optional',
@@ -95,23 +97,31 @@ export interface TimelineRow {
   kind: 'good' | 'hard' | 'plain';
 }
 
-const GOOD: PathEvent['type'][] = ['fulltime', 'raise', 'cushionFull', 'home', 'debtFree', 'room', 'optional'];
+const GOOD: PathEvent['type'][] = ['fulltime', 'raise', 'cushionFull', 'home', 'goal', 'debtFree', 'room', 'optional'];
 const HARD: PathEvent['type'][] = ['job', 'dip', 'raid', 'short', 'crash', 'cost'];
 
-export function timeline(events: PathEvent[]): TimelineRow[] {
+// Goals are shown in the person's own words on screen. Narration gets only
+// the kind of goal ("a big trip"), never what they typed.
+const goalText = (e: PathEvent, goals: Goal[], own: boolean): string => {
+  const g = goals[e.value ?? -1];
+  if (!g) return EVENT_TEXT.goal();
+  return own ? `${g.label}: done` : `paid for ${goalKind(g.kind).name}`;
+};
+
+export function timeline(events: PathEvent[], goals: Goal[] = []): TimelineRow[] {
   const byAge = new Map<number, PathEvent[]>();
   for (const e of events) byAge.set(e.age, [...(byAge.get(e.age) ?? []), e]);
   return [...byAge.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([age, list]) => {
-      const text = list.map((e) => EVENT_TEXT[e.type](e.value)).join(', ');
+      const text = list.map((e) => (e.type === 'goal' ? goalText(e, goals, true) : EVENT_TEXT[e.type](e.value))).join(', ');
       const kind = list.some((e) => HARD.includes(e.type)) ? 'hard' : list.some((e) => GOOD.includes(e.type)) ? 'good' : 'plain';
       return { age, text: text.charAt(0).toUpperCase() + text.slice(1) + '.', kind };
     });
 }
 
 // Facts sent for narration, and the numbers a narrated story may use.
-export function pathFacts(p: PathLite) {
+export function pathFacts(p: PathLite, goals: Goal[] = []) {
   return {
     status: STATUS_LABELS[p.status],
     savedAt70: Math.round(p.final / 1000) * 1000,
@@ -119,7 +129,7 @@ export function pathFacts(p: PathLite) {
     workOptionalAge: p.workOptionalAge,
     timesOutOfWork: p.events.filter((e) => e.type === 'job').length,
     laterTimesOutOfWork: Math.max(0, p.events.filter((e) => e.type === 'job').length - 1),
-    events: p.events.map((e) => ({ age: e.age, what: EVENT_TEXT[e.type](e.value) })),
+    events: p.events.map((e) => ({ age: e.age, what: e.type === 'goal' ? goalText(e, goals, false) : EVENT_TEXT[e.type](e.value) })),
   };
 }
 

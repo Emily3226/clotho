@@ -65,6 +65,45 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
+// Sorts a goal typed in the person's own words into one of a fixed set of
+// kinds. It never returns an amount: costs come from the app's own table.
+const GOAL_KINDS = ['car', 'travel', 'school', 'wedding', 'family', 'business', 'move', 'pet', 'gear', 'other'];
+app.post('/api/classify', async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.slice(0, 80) : '';
+  if (!key) return void res.status(503).json({ error: 'not configured' });
+  if (!text.trim()) return void res.status(400).json({ error: 'bad request' });
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            {
+              text:
+                "Sort a young person's savings goal into exactly one kind. car: any vehicle. travel: trips and time away. " +
+                'school: degrees, courses, lessons, licences, training. wedding: weddings and engagements. ' +
+                'family: children, or helping or caring for family. business: starting or growing a business. ' +
+                'move: moving, deposits, first and last rent. pet: getting a pet. gear: things to buy such as tech, ' +
+                'furniture, instruments. other: anything else. Reply with the single kind only, lower case, nothing else.',
+            },
+          ],
+        },
+        contents: [{ role: 'user', parts: [{ text }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 5 },
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!r.ok) return void res.status(502).json({ error: 'failed' });
+    const data = (await r.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    const word = (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim().toLowerCase().replace(/[^a-z]/g, '');
+    if (!GOAL_KINDS.includes(word)) return void res.status(422).json({ error: 'rejected' });
+    res.json({ kind: word });
+  } catch {
+    res.status(504).json({ error: 'timed out' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`[api] narration ${key ? `on (${model})` : 'off: no GEMINI_API_KEY, the app uses built-in wording'} · http://localhost:${port}`);
 });

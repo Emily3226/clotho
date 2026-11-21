@@ -3,6 +3,7 @@ import type { PathLite } from '../engine/analyse';
 import { STATUS_LABELS } from '../engine/types';
 import { pathFacts, story, timeline } from '../lib/copy';
 import { useNarration } from '../narrate/client';
+import { useStore } from '../store';
 
 // One life out of the thousand, told as a short story and a timeline. With a
 // habit switched on, the same life (same luck) can be shown without it.
@@ -20,9 +21,10 @@ export function Inspector({
   onClose: () => void;
 }) {
   const [without, setWithout] = useState(false);
+  const goals = useStore((s) => s.inputs.goals ?? []);
   const shown = without && plain ? plain : path;
-  const rows = timeline(shown.events);
-  const { text, narrated } = useNarration('story', pathFacts(shown), story(shown));
+  const rows = timeline(shown.events, goals);
+  const { text, narrated } = useNarration('story', pathFacts(shown, goals), story(shown));
   const m = shown.milestones;
   const marks: [string, boolean | null][] = [
     ['Shock-proof', m.shockProof],
@@ -30,6 +32,7 @@ export function Inspector({
     ['Room to move at 45', m.room45],
     ['Home', m.home],
     ['Work-optional by 65', m.workOptional65],
+    ...goals.map((g, k): [string, boolean | null] => [`${g.label} by ${g.byAge}`, m.goals[k] ?? null]),
   ];
   const changed = plain && plain.status !== path.status;
   return (
