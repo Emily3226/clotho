@@ -1547,3 +1547,32 @@ details.why summary {
 .concerns {
   margin: 4px 0 8px;
 }
+
+/* Does the best step still hold? */
+.holds {
+  display: grid;
+  gap: 10px;
+  border-color: var(--accent);
+}
+.holds-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.94rem;
+}
+.holds-list li {
+  display: grid;
+  grid-template-columns: 1.4em 1fr;
+  gap: 6px;
+  align-items: start;
+}
+.holds-mark {
+  font-weight: 700;
+  color: var(--accent);
+}
+.holds-list .no,
+.holds-list .no .holds-mark {
+  color: var(--muted);
+}

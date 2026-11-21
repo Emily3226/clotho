@@ -4,11 +4,12 @@ import { AnimatedNumber, ChipGroup, Explain, Switch, Term } from '../components/
 import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
-import { whyNot, type Analysis, type WhyKey, type WorryCard } from '../engine/analyse';
+import { whyNot, type Analysis, type HoldTest, type WhyKey, type WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
-import { LEVER_IDS, STATUS_LABELS, type LeverId } from '../engine/types';
+import { MARKET_SETS } from '../engine/profile';
+import { LEVER_IDS, STATUS_LABELS, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
 import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
 import { WORRIES, worryInfo } from '../engine/worries';
 import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
@@ -422,6 +423,50 @@ function Together() {
   );
 }
 
+// Is the best step still the best step when the return assumptions or the
+// person's own worries change? The answer a calculator cannot give.
+function HoldsCard({ a }: { a: Analysis }) {
+  const inputs = useStore((s) => s.inputs);
+  const h = a.holds;
+  if (!h) return null;
+  const n = h.tests.length;
+  const worries = h.tests.some((t) => t.kind === 'worry');
+  const where = (t: HoldTest) => (t.kind === 'market' ? `${MARKET_SETS[t.id as AssumptionSetId].label} markets` : worryInfo(t.id as WorryId).ifClause);
+  return (
+    <section className="card holds" aria-labelledby="holds-title">
+      <h3 id="holds-title">Does it still hold?</h3>
+      <p className="answer">
+        {leverCopy(h.lever, inputs).noun} is ranked first below: it rescues <strong>{num(h.rescued)}</strong> of your futures.{' '}
+        {h.held === n ? (
+          <>It stays first in <strong>all {num(n)}</strong> tests.</>
+        ) : (
+          <>
+            It stays first in <strong>{num(h.held)} of {num(n)}</strong> tests.
+          </>
+        )}
+      </p>
+      <ul className="holds-list">
+        {h.tests.map((t) => (
+          <li key={`${t.kind}-${t.id}`} className={t.same ? 'yes' : 'no'}>
+            <span className="holds-mark" aria-hidden="true">
+              {t.same ? '✓' : '–'}
+            </span>
+            <span>
+              <b>{where(t)}:</b>{' '}
+              {t.same
+                ? `still first, rescues ${num(t.rescued)}.`
+                : t.top
+                  ? `${leverCopy(t.top, inputs).noun.toLowerCase()} ranks first there. This one rescues ${num(t.rescued)}.`
+                  : 'no single habit changes much there.'}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {!worries && <p className="hint">Pick a worry on the previous screen and it is tested here too.</p>}
+    </section>
+  );
+}
+
 function HabitsPanel({ a }: { a: Analysis }) {
   const inputs = useStore((s) => s.inputs);
   const levers = useStore((s) => s.levers);
@@ -429,6 +474,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
   const now = a.summary.counts[0];
   return (
     <>
+      <HoldsCard a={a} />
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);
