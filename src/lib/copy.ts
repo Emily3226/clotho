@@ -239,7 +239,7 @@ export function noSixtyFiveAnswer(r: CutShort, noun: string | null): WorryAnswer
   if (!noun) {
     parts.push(`If everything changed at ${r.cutAge}, you would have about `, { strong: moneyRound(r.without) }, ' you could use.');
   } else {
-    parts.push(`If everything changed at ${r.cutAge}, ${lowerStart(noun)} leaves you about `, { strong: moneyRound(r.withHabit) }, ' you can use, instead of ', { strong: moneyRound(r.without) }, '.');
+    parts.push(`If everything changed at ${r.cutAge}, ${lowerStart(noun)} ${/^these /i.test(noun) ? 'leave' : 'leaves'} you about `, { strong: moneyRound(r.withHabit) }, ' you can use, instead of ', { strong: moneyRound(r.without) }, '.');
     if (r.gaveUp > 0) {
       parts.push(' It costs about ', { strong: moneyRound(r.gaveUp) }, ' of spending along the way. In ', { strong: num(r.ahead) }, ` of your ${num(r.total)} futures, you get back at least that.`);
     } else {
