@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { APP_NAME } from '../config';
+import { APP_NAME, LIVE_URL } from '../config';
 import { AnimatedNumber } from '../components/bits';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
@@ -62,7 +62,7 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData): void {
     ctx.font = '500 34px system-ui, sans-serif';
     ctx.fillText(text, X, at);
   };
-  y += 110;
+  y += 70;
   if (d.room.length) {
     label('I want room for', y);
     ctx.fillStyle = '#ecefe9';
@@ -77,11 +77,14 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData): void {
   ctx.fillStyle = '#5fd0bf';
   ctx.font = '600 200px Georgia, serif';
   ctx.fillText(num(d.rescued), X, y + 210);
-  y += 330;
+  y += 300;
   label('Confidence, out of 10', y);
   ctx.fillStyle = '#ecefe9';
   ctx.font = '600 120px Georgia, serif';
   ctx.fillText(d.confBefore === null ? String(d.confAfter) : `${d.confBefore} → ${d.confAfter}`, X, y + 140);
+  ctx.fillStyle = '#5fd0bf';
+  ctx.font = '600 34px system-ui, sans-serif';
+  ctx.fillText(LIVE_URL.replace(/^https:\/\//, '').replace(/\/$/, ''), X, H - 200);
   ctx.fillStyle = '#6f7b76';
   ctx.font = '400 28px system-ui, sans-serif';
   wrap(ctx, 'A thousand simulated futures in today’s dollars. Educational, not financial advice.', X, H - 140, MAX, 40);
@@ -147,6 +150,7 @@ export function StepScreen() {
       `${lines[0]} ${lines[1]} Then open ${APP_NAME} for your 30-second check-in.`,
       new Date(),
       !raise,
+      LIVE_URL,
     );
     download(raise ? 'my-next-raise.ics' : 'my-monthly-step.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
     setState({ reminderAdded: true });

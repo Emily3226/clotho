@@ -1,33 +1,34 @@
 # Clotho: pitch notes
 
-## Two-minute demo script
+## Three-minute demo script
 
 Numbers below are what the app shows with the default seed and the Middle return setting. Open the app at `/?demo=1`. If you change a model setting, read the new numbers off the screen.
 
-**0:00 The problem (15 s)**
-"Canada Life found that dread about the future leads to doomscrolling, and every extra hour of scrolling goes with fewer people setting up automatic savings. We didn't build another feed. It's two minutes once, then thirty seconds a month."
+**0:00 The problem (25 s)**
+"Canada Life found that Gen Z spends over an hour a day doomscrolling, and every extra hour goes with fewer people setting up automatic savings. Fear-based messages don't land with them. We didn't build another feed. It's two minutes once, then thirty seconds a month."
 
-**0:15 Maya, and her worry (15 s)**
+**0:25 Maya, and her worry (20 s)**
 Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. We ask what worries her before anything else." Tap **AI changes my job**, then **Show my thousand futures**.
 
-**0:30 Today, and what's within reach (20 s)**
+**0:45 Today, and what's within reach (30 s)**
 "Every line is one version of her life: same choices, different luck. **599 of 1,000** are in control today, and **921 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, she stays in control in **83** of her futures instead of **599**, and saving part of every raise brings that back up to **409**." Drag the dial from $40 to $150 a month: "**599 → 907**. Same luck, her choice." Tap **Back to $40**.
 
-Tapping **Show** on the AI card puts that worry on the river and the headline at **83**; leave it for questions. **Why 599?** under the play button shows the working if a judge asks.
-
-**0:50 Play one life (10 s)**
+**1:15 Play one life (15 s)**
 Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
 
-**1:00 One habit, the rescue (20 s)**
-"What helps most?". Tap the **?** on **Save part of every raise**: "Each raise sends 1% more to savings, so it never feels like a cut." Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **114**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+363** futures rescued, **599 → 921**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
+**1:30 One habit, the rescue (30 s)**
+"What helps most?". Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **114**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+363** futures rescued, **599 → 921**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
-**1:20 Pick one, and come back (15 s)**
-"Pick one to try". Pick **Save part of every raise**, show the **Do it now** steps, tap **I added the reminder**, move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **599**. Keeping it up points to **924**, and she's kept it 3 months in a row."
+**2:00 Pick one (20 s)**
+"Pick one to try". Pick **Save part of every raise**, show the **Do it now** steps, tap **I added the reminder**, move confidence up, "See my summary". "One step, done before she leaves."
 
-**1:35 Proof and what's next (15 s)**
-"We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** took the step before leaving." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan."
+**2:20 She comes back (15 s)**
+Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **599**. Keeping it up points to **924**, and she's kept it 4 months in a row."
 
-**Optional, if there's time (10 s):** on Your futures, **Switch to Priya**: same age, health student in Halifax, living with family: **938**.
+**2:35 Proof and what's next (25 s)**
+"We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** took the step before leaving." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan. Scan the code and try it with your own numbers."
+
+**Keep for questions, not the demo:** **Why 599?** (where the number comes from), **Does the top habit still hold?**, **What if there's no 65?**, **Keep yours reachable?** (open **Jordan**, it needs a workplace plan), and **Assumptions**.
 
 **Backup:** if anything misbehaves, reload; inputs are kept. Have the recorded demo video ready.
 

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ChipGroup, Field, Segmented } from './bits';
-import { persona } from '../engine/personas';
 import {
   CITIES,
   DEBT_CHIPS,
@@ -21,7 +20,7 @@ import { matchField } from '../engine/concerns';
 import type { FieldId, Goal, HomeType, Inputs, Stage } from '../engine/types';
 import { classifyField, classifyGoal } from '../narrate/client';
 import { money } from '../lib/format';
-import { useStore } from '../store';
+import { STEP, useStore } from '../store';
 import { LifeChoices } from './LifeChoices';
 
 // Every question, mostly as taps. Used on its own screen before the results,
@@ -32,6 +31,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
   const incomeEdited = useStore((s) => s.incomeEdited);
   const setState = useStore((s) => s.setState);
   const answerLive = useStore((s) => s.answer);
+  const setStep = useStore((s) => s.setStep);
 
   // Before the results, just change the inputs. Beside the river, say what changed.
   const answer = (label: string, patch: Partial<Inputs>, whyDown?: string) =>
@@ -108,6 +108,16 @@ export function AboutYou({ live = false }: { live?: boolean }) {
       {fieldOther !== null && <FieldOther initial={fieldOther} current={inputs.field} onUse={(text, field) => { setState({ fieldOther: text }); pickField(field, text); }} />}
       <ChipGroup legend="Where" selected={(v) => v === inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(l, { city: v })} />
 
+      {live ? (
+        <p className="hint">
+          <button type="button" className="link" onClick={() => setStep(STEP.about)}>
+            Kids, home, debt and more
+          </button>
+        </p>
+      ) : (
+      <details className="drawer">
+        <summary>Kids, home, debt and more (optional)</summary>
+        <div className="fields">
       <LifeChoices answer={answer} homeOn={!!home} onHome={() => toggleRoom('home')} />
           {home && (
             <div className="home-q">
@@ -125,10 +135,6 @@ export function AboutYou({ live = false }: { live?: boolean }) {
             </div>
           )}
       <GoalsEditor answer={answer} />
-
-      <details className="drawer">
-        <summary>More (optional)</summary>
-        <div className="fields">
           {isStudent(inputs.stage) && (
             <ChipGroup legend="Finishing school" selected={(v) => v === finishValue} options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))} onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })} />
           )}
@@ -212,6 +218,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           )}
         </div>
       </details>
+      )}
     </div>
   );
 }
@@ -341,33 +348,6 @@ function GoalsEditor({ answer }: { answer: (label: string, patch: Partial<Inputs
           </div>
         </form>
       )}
-    </div>
-  );
-}
-
-// On stage: the same age and savings, a different life.
-export function CompareCard() {
-  const personaId = useStore((s) => s.personaId);
-  const answer = useStore((s) => s.answer);
-  const setState = useStore((s) => s.setState);
-  const other = personaId === 'maya' ? persona('priya') : personaId === 'priya' ? persona('maya') : null;
-  if (!other) return null;
-  const first = other.name.split(',')[0];
-  return (
-    <div className="card compare">
-      <p>
-        <b>Same age, different life.</b>
-      </p>
-      <button
-        type="button"
-        className="secondary"
-        onClick={() => {
-          answer(`Switched to ${first}`, other.inputs);
-          setState({ personaId: other.id, room: other.room });
-        }}
-      >
-        Switch to {first}
-      </button>
     </div>
   );
 }
