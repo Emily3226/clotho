@@ -193,6 +193,15 @@ describe('worries', () => {
     }
   }, 30000);
 
+  it('sizes the step up so good and bad luck at work cancel out on average, as the Assumptions panel says', () => {
+    const good = A.stepUpChance * A.stepUpRaise;
+    const bad = A.jobLossYoung * A.returnPayCut;
+    expect(Math.abs(good - bad)).toBeLessThan(0.0005);
+    // Three years of adjusting covers about half the gap, five about three quarters.
+    expect(1 - (1 - A.adaptSpeed) ** 3).toBeGreaterThan(0.5);
+    expect(1 - (1 - A.adaptSpeed) ** 5).toBeGreaterThan(0.75);
+  });
+
   it('gives careers good luck as well as bad, with the same luck under every habit', () => {
     const maya = PERSONAS[0].inputs;
     const big = (paths: PathResult[]) => paths.map((p) => p.events.filter((e) => e.type === 'raise' && (e.value ?? 0) >= 10 && e.age < A.stepUpUntilAge + 1).map((e) => e.age).join(','));
