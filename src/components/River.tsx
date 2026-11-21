@@ -467,14 +467,39 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     return best < 0 ? null : { index: best, x: px, y: py };
   };
 
+  const moveAt = useRef<{ x: number; y: number } | null>(null);
+  const moveRaf = useRef(0);
+  const scrolledAt = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      scrolledAt.current = performance.now();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(moveRaf.current);
+    };
+  }, []);
   const onMove = (e: React.PointerEvent) => {
     if (e.pointerType === 'touch') return;
-    const hit = nearest(e.clientX, e.clientY);
-    hoverRef.current = hit?.index ?? null;
-    setHover(hit);
-    drawOverlay();
+    // Finding the nearest of 1,000 lines is real work: at most once a frame,
+    // and not while the page is scrolling under a still pointer.
+    if (performance.now() - scrolledAt.current < 150) return;
+    moveAt.current = { x: e.clientX, y: e.clientY };
+    if (moveRaf.current) return;
+    moveRaf.current = requestAnimationFrame(() => {
+      moveRaf.current = 0;
+      const at = moveAt.current;
+      if (!at) return;
+      const hit = nearest(at.x, at.y);
+      const changed = (hit?.index ?? null) !== hoverRef.current;
+      hoverRef.current = hit?.index ?? null;
+      setHover(hit);
+      if (changed) drawOverlay();
+    });
   };
   const onLeave = () => {
+    moveAt.current = null;
     hoverRef.current = null;
     setHover(null);
     drawOverlay();

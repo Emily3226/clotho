@@ -18,7 +18,7 @@ function roomFor(p: LifePlan, room: string[]): string[] {
 
 // Ages still ahead, always including the one currently chosen.
 const agesFrom = (list: number[], age: number, current: number): { value: number; label: string }[] =>
-  [...new Set([...list.filter((a) => a > age), current])].sort((a, b) => a - b).map((a) => ({ value: a, label: `At ${a}` }));
+  [...new Set([...list.filter((a) => a > age), current])].sort((a, b) => a - b).map((a) => ({ value: a, label: `Age ${a}` }));
 
 interface Props {
   answer: (label: string, patch: Partial<Inputs>) => void;
@@ -64,21 +64,21 @@ export function LifeChoices({ answer, homeOn, onHome }: Props) {
       {plan.kids > 0 && (
         <div className="home-q">
           <ChipGroup legend="How many kids?" selected={(v) => v === plan.kids} options={[0, 1, 2, 3, 4].map((n) => ({ value: n, label: String(n) }))} onPick={(v) => update(v === 0 ? 'No kids' : `${v} ${v === 1 ? 'child' : 'kids'}`, { kids: v })} />
-          <ChipGroup legend="First one around" selected={(v) => v === plan.firstKidAge} options={agesFrom([25, 28, 30, 32, 35, 38, 40], inputs.age, plan.firstKidAge)} onPick={(v, l) => update(`First child ${l.toLowerCase()}`, { firstKidAge: v })} />
+          <ChipGroup legend="When would you have your first?" selected={(v) => v === plan.firstKidAge} options={agesFrom([25, 28, 30, 32, 35, 38, 40], inputs.age, plan.firstKidAge)} onPick={(v) => update(`First child at ${v}`, { firstKidAge: v })} />
           <ChipGroup<Raising> legend="Raising them" selected={(v) => v === plan.raising} options={[{ value: 'partner', label: 'With a partner' }, { value: 'solo', label: 'On my own' }]} onPick={(v, l) => update(l, { raising: v })} />
-          <ChipGroup legend="Time you’d take off for each" selected={(v) => v === plan.leaveMonths} options={[0, 6, 12].map((m) => ({ value: m, label: m ? `${m} months` : 'None' }))} onPick={(v, l) => update(`Leave: ${l.toLowerCase()}`, { leaveMonths: v })} />
+          <ChipGroup legend="Time off for each child" selected={(v) => v === plan.leaveMonths} options={[0, 6, 12].map((m) => ({ value: m, label: m ? `${m} months` : 'None' }))} onPick={(v, l) => update(`Leave: ${l.toLowerCase()}`, { leaveMonths: v })} />
           <p className="hint">About {money(Math.round(kidYear / 100) * 100)} a year to you for the first child, after the Canada Child Benefit.</p>
         </div>
       )}
       {plan.familyMonthly > 0 && (
         <div className="home-q">
           <Field id="life-family" label="Helping family" value={plan.familyMonthly} min={0} max={1500} step={25} prefix="$" suffix="a month" onChange={(v) => update('Helping family', { familyMonthly: Math.round(v) })} />
-          <ChipGroup legend="Starting" selected={(v) => v === plan.familyFromAge} options={agesFrom([25, 30, 35, 40, 50], inputs.age, plan.familyFromAge)} onPick={(v, l) => update(`Helping family ${l.toLowerCase()}`, { familyFromAge: v })} />
+          <ChipGroup legend="When would you start helping?" selected={(v) => v === plan.familyFromAge} options={agesFrom([25, 30, 35, 40, 50], inputs.age, plan.familyFromAge)} onPick={(v) => update(`Helping family from ${v}`, { familyFromAge: v })} />
         </div>
       )}
       {plan.care && (
         <div className="home-q">
-          <ChipGroup legend="Caring for a parent from" selected={(v) => v === plan.careAge} options={agesFrom([40, 45, 50, 55], inputs.age, plan.careAge)} onPick={(v, l) => update(`Caring for a parent ${l.toLowerCase()}`, { careAge: v })} />
+          <ChipGroup legend="When might that start?" selected={(v) => v === plan.careAge} options={agesFrom([40, 45, 50, 55], inputs.age, plan.careAge)} onPick={(v) => update(`Caring for a parent from ${v}`, { careAge: v })} />
           <p className="hint">Five years, working about four days a week.</p>
         </div>
       )}
@@ -90,18 +90,18 @@ export function LifeChoices({ answer, homeOn, onHome }: Props) {
       {plan.breakMonths > 0 && (
         <div className="home-q">
           <ChipGroup legend="How long off?" selected={(v) => v === plan.breakMonths} options={[3, 6, 12].map((m) => ({ value: m, label: `${m} months` }))} onPick={(v, l) => update(`Time off: ${l}`, { breakMonths: v })} />
-          <ChipGroup legend="Taking time off" selected={(v) => v === plan.breakAge} options={agesFrom([25, 30, 35, 40, 50], inputs.age, plan.breakAge)} onPick={(v, l) => update(`Time off ${l.toLowerCase()}`, { breakAge: v })} />
+          <ChipGroup legend="When would you take it?" selected={(v) => v === plan.breakAge} options={agesFrom([25, 30, 35, 40, 50], inputs.age, plan.breakAge)} onPick={(v) => update(`Time off at ${v}`, { breakAge: v })} />
         </div>
       )}
       {plan.schoolYears > 0 && (
         <div className="home-q">
           <ChipGroup legend="How long in school?" selected={(v) => v === plan.schoolYears} options={[1, 2, 4].map((y) => ({ value: y, label: y === 1 ? '1 year' : `${y} years` }))} onPick={(v, l) => update(`School: ${l}`, { schoolYears: v })} />
-          <ChipGroup legend="Going back" selected={(v) => v === plan.schoolAge} options={agesFrom([25, 28, 30, 35, 40], inputs.age, plan.schoolAge)} onPick={(v, l) => update(`School ${l.toLowerCase()}`, { schoolAge: v })} />
+          <ChipGroup legend="When would you go back?" selected={(v) => v === plan.schoolAge} options={agesFrom([25, 28, 30, 35, 40], inputs.age, plan.schoolAge)} onPick={(v) => update(`School at ${v}`, { schoolAge: v })} />
         </div>
       )}
       {plan.fourDay && (
         <div className="home-q">
-          <ChipGroup legend="Four-day week from" selected={(v) => v === plan.fourDayAge} options={agesFrom([30, 35, 40, 50], inputs.age, plan.fourDayAge)} onPick={(v, l) => update(`Four-day week ${l.toLowerCase()}`, { fourDayAge: v })} />
+          <ChipGroup legend="When would you switch?" selected={(v) => v === plan.fourDayAge} options={agesFrom([30, 35, 40, 50], inputs.age, plan.fourDayAge)} onPick={(v) => update(`Four-day week from ${v}`, { fourDayAge: v })} />
           <p className="hint">Four-fifths of the pay, with a lifestyle that shifts part of the way to match.</p>
         </div>
       )}

@@ -2,7 +2,7 @@
 // matched offline to something the simulation already knows how to test,
 // and the person can always change what it was matched to. Nothing here
 // invents a number: a typed worry runs one of the six what-ifs as they are.
-import type { FieldId, Scenario, WorryId } from './types';
+import type { City, FieldId, Living, Scenario, Stage, WorryId } from './types';
 
 export interface Concern {
   id: string;
@@ -72,6 +72,28 @@ export function selectedWorries(worries: Scenario, concerns: Concern[]): Scenari
   for (const c of concerns) if (c.kind && !all[c.kind]) all[c.kind] = 'moderate';
   return all;
 }
+
+const STAGE_WORDS: Record<Stage, string[]> = {
+  student: ['student', 'school', 'university', 'college', 'undergrad', 'grad', 'masters', 'phd'],
+  coop: ['coop', 'co-op', 'intern', 'internship', 'placement', 'practicum'],
+  part: ['part', 'parttime', 'casual', 'seasonal', 'barista', 'retail', 'server'],
+  first: ['first', 'entry', 'junior', 'new', 'grad job', 'apprentice', 'apprenticeship', 'trainee'],
+  gig: ['gig', 'contract', 'contractor', 'freelance', 'freelancer', 'self', 'selfemployed', 'uber', 'doordash', 'creator', 'consultant'],
+  full: ['full', 'fulltime', 'permanent', 'salaried', 'manager', 'senior'],
+};
+const CITY_WORDS: Record<City, string[]> = {
+  major: ['toronto', 'vancouver', 'gta', 'mississauga', 'brampton', 'markham', 'vaughan', 'burnaby', 'surrey', 'richmond', 'oakville'],
+  big: ['montreal', 'calgary', 'edmonton', 'ottawa', 'winnipeg', 'quebec', 'hamilton', 'kitchener', 'waterloo', 'london', 'halifax', 'victoria', 'saskatoon', 'regina', 'windsor', 'gatineau'],
+  small: ['town', 'rural', 'village', 'farm', 'north', 'northern', 'kingston', 'guelph', 'barrie', 'sudbury', 'moncton', 'fredericton', 'kelowna', 'lethbridge', 'charlottetown', 'whitehorse', 'yellowknife'],
+};
+const LIVING_WORDS: Record<Living, string[]> = {
+  family: ['parents', 'parent', 'family', 'mom', 'dad', 'home', 'grandparents', 'relatives', 'basement'],
+  renting: ['rent', 'renting', 'roommate', 'roommates', 'residence', 'dorm', 'sublet', 'apartment', 'lease', 'partner', 'friends'],
+  own: ['own', 'owner', 'mortgage', 'bought', 'condo'],
+};
+export const matchStage = (text: string): Stage | null => bestMatch(text.replace(/[- ]time/gi, 'time'), STAGE_WORDS);
+export const matchCity = (text: string): City | null => bestMatch(text, CITY_WORDS);
+export const matchLiving = (text: string): Living | null => bestMatch(text, LIVING_WORDS);
 
 type RealField = Exclude<FieldId, 'unsure'>;
 const FIELD_WORDS: Record<RealField, string[]> = {

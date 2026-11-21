@@ -35,7 +35,7 @@ const NUMBER_WORDS =
 export function validateNarration(text: string, facts: unknown, question = ''): boolean {
   if (!text || text.length > 700) return false;
   if (BANNED.test(text)) return false;
-  if (NUMBER_WORDS.test(text)) return false;
+  if (NUMBER_WORDS.test(text.replace(/\d\s+million\b/gi, ''))) return false;
   const allowed = factNumbers(facts);
   for (const n of numbersIn(question)) allowed.add(n);
   return numbersIn(text).every((n) => allowed.has(n));

@@ -1,5 +1,7 @@
 import type { LifeEventType, LifePlan } from './lifePlan';
 
+export type WayId = 'refund' | 'fhsa' | 'fees' | 'earn';
+
 export type PlanAnswer = 'yes' | 'no' | 'unsure';
 
 export type Stage = 'student' | 'coop' | 'part' | 'first' | 'gig' | 'full';
@@ -94,6 +96,7 @@ export type EventType =
   | 'debtFree'
   | 'room'
   | 'optional'
+  | 'move'
   | LifeEventType;
 
 export interface PathEvent {
@@ -161,6 +164,8 @@ export interface SimOptions {
   set?: AssumptionSetId;
   // Also record what is yours to use at this age (see noSixtyFive.ts).
   cutAge?: number;
+  // Test one of the "more ways to get ahead" (see ways.ts).
+  ways?: WayId[];
   // Your own plan contributions go to a TFSA; the employer match stays in
   // the retirement plan (see keepReachable.ts).
   keepReachable?: boolean;

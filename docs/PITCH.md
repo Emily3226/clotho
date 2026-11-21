@@ -8,27 +8,27 @@ Numbers below are what the app shows with the default seed and the Middle return
 "Canada Life found that Gen Z spends over an hour a day doomscrolling, and every extra hour goes with fewer people setting up automatic savings. Fear-based messages don't land with them. We didn't build another feed. It's two minutes once, then thirty seconds a month."
 
 **0:25 Maya, and her worry (20 s)**
-Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. We ask what worries her before anything else." Tap **AI changes my job**, then **Show my thousand futures**.
+Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. We ask what worries her before anything else." Tap **AI changes my job**, then **See my 1,000 futures**.
 
 **0:45 Today, and what's within reach (30 s)**
-"Every line is one version of her life: same choices, different luck. **599 of 1,000** are in control today, and **921 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, she stays in control in **83** of her futures instead of **599**, and saving part of every raise brings that back up to **409**." Drag the dial from $40 to $150 a month: "**599 → 907**. Same luck, her choice." Tap **Back to $40**.
+"Every line is one version of her life: same choices, different luck. **518 of 1,000** are in control today, and **878 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, she stays in control in **88** of her futures instead of **518**, and saving part of every raise brings that back up to **352**." Drag the dial from $40 to $150 a month: "**518 → 876**. Same luck, her choice." Tap **Back to $40**.
 
 **1:15 Play one life (15 s)**
 Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
 
 **1:30 One habit, the rescue (30 s)**
-"What helps most?". Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **114**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+363** futures rescued, **599 → 921**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
+"What helps most?". Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **146**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+409** futures rescued, **518 → 878**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
 **2:00 Pick one (20 s)**
 "Pick one to try". Pick **Save part of every raise**, show the **Do it now** steps, tap **I added the reminder**, move confidence up, "See my summary". "One step, done before she leaves."
 
 **2:20 She comes back (15 s)**
-Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **599**. Keeping it up points to **924**, and she's kept it 4 months in a row."
+Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **518**. Keeping it up points to **881**, and she's kept it 4 months in a row."
 
 **2:35 Proof and what's next (25 s)**
 "We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** took the step before leaving." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan. Scan the code and try it with your own numbers."
 
-**Keep for questions, not the demo:** **Why 599?** (where the number comes from), **Does the top habit still hold?**, **What if there's no 65?**, **Keep yours reachable?** (open **Jordan**, it needs a workplace plan), and **Assumptions**.
+**Keep for questions, not the demo:** **Why 518?** (where the number comes from), **Does the top habit still hold?**, **What if there's no 65?**, **Keep yours reachable?** (open **Jordan**, it needs a workplace plan), and **Assumptions**.
 
 **Backup:** if anything misbehaves, reload; inputs are kept. Have the recorded demo video ready.
 
@@ -47,12 +47,12 @@ Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **
 |---|---|
 | "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The first question after confidence is "What worries you most?". The first result answers it: each worry is sized on a card, next to the habit that protects the most. |
 | "helps Gen Z take meaningful action" | One step, a monthly reminder, a message ready for HR, and a monthly check-in that shows progress. |
-| "motivation" | The first headline: "599 in control today, 921 within reach with one habit". Then "+363 futures rescued", and at the check-in "You started at 599. Keeping it up points to 924", with a streak. |
+| "motivation" | The first headline: "518 in control today, 878 within reach with one habit". Then "+409 futures rescued", and at the check-in "You started at 518. Keeping it up points to 881", with a streak. |
 | "visualization" | The river: 1,000 lives, a middle line, milestones at 35, 45 and 65. |
 | "behavioral nudges" | The three behaviours the research measured: joining the plan, taking the match, automatic contributions. One step only, with its exact steps under **Do it now** and "Did you do it?". |
 | "education" | A "?" on every habit (what a TFSA is, how matching works), a plain sentence under every result number, the short-term and long-term explainer, the Assumptions panel. |
 | "turns uncertainty into confidence" | Confidence is asked before and after, and shown side by side. |
-| "the future is still worth planning for" | A worry is never the end of the story: with AI changing her job, Maya stays in control in 83 futures, and one habit brings that back to 409. The all-at-once case stays hard for low savers, and we show it rather than hide it. |
+| "the future is still worth planning for" | A worry is never the end of the story: with AI changing her job, Maya stays in control in 88 futures, and one habit brings that back to 352. The all-at-once case stays hard for low savers, and we show it rather than hide it. |
 | Research: fear-based messaging backfires | No red, no alarms, no shaming words. The worst case is offered, never forced. |
 | Research: flexibility and control beat a distant retirement date | Milestones are "got through bad years", room to move at 35 and 45, and "work becomes optional". |
 | Research: short-term and long-term saving together | Cushion and workplace plan fill side by side; raiding retirement savings in a bad year is modelled and the cushion habit addresses it. **Keep yours reachable?** tests Canada Life's own design: your contributions within reach, the match kept for retirement. |
@@ -64,12 +64,12 @@ Canada Life's *Gen Z workplace savings communications guide* (Gen Z Workplace Sa
 | Their checklist item | Where Clotho does it |
 |---|---|
 | Acknowledge uncertainty in a realistic, authentic way. | The first question is "What worries you most?", and that worry is tested on the same 1,000 lives, not waved away. |
-| Avoid fear-based, apocalyptic or manipulative language. | A count ("599 of 1,000"), never a warning. No red, no alarms. The worst case is there if you ask, never forced. |
+| Avoid fear-based, apocalyptic or manipulative language. | A count ("518 of 1,000"), never a warning. No red, no alarms. The worst case is there if you ask, never forced. |
 | Frame saving as control, flexibility or resilience. | Checks at 35 and 45, not only 65, and "What if there's no 65?" shows what is yours to use at 35, 40 or 50. |
 | Connect to an immediate moment or decision. | **Yes.** The student who finishes this year, the first full-time job, a home or goal they named, and the monthly check-in, which asks "Got a raise or bonus since last time?". A raise offers to save part of it (and of every raise after), with the futures it rescues; a bonus asks how much to put aside and adds it once. |
 | Give one clear next step. | "Pick one to try" ends on a single "Do it now" step. |
 | Make the action feel small enough to start now. | Automate $25 a month; saving part of every raise costs nothing today. |
-| Explain the benefit in plain language. | "+363 futures rescued", with a plain sentence under every number and a "?" on every habit. |
+| Explain the benefit in plain language. | "+409 futures rescued", with a plain sentence under every number and a "?" on every habit. |
 | Avoid judgment about choices or priorities. | "Not yet" at the check-in gets "No problem. Life gets busy." and a smaller version, not guilt. |
 | Use trusted channels; make reliable information easy to find. | **Partly.** Every assumption in one panel with its source. The trusted channel is the workplace plan itself, which is the pilot we want. |
 | Support action, not just awareness. | A monthly reminder, a ready message for HR, and a check-in that tracks whether they did it. |
@@ -79,7 +79,7 @@ Why it matters: Canada Life's 2024 claims data shows Gen Z withdrawing from RRSP
 ## Hard questions
 
 **Where does the headline number come from?**
-Tap **Why 599?** under the play button. Each future gets four checks (bad years, 6 months saved by 35, a year by 45, work optional by 65); in control means all four. For Maya, 401 miss at least one: 334 because work isn't optional by 65, 102 on the 35 check, 91 on a bad year, 19 on the 45 check. It is counted from the same 1,000 lives on screen, not a score.
+Tap **Why 518?** under the play button. Each future gets four checks (bad years, 6 months saved by 35, a year by 45, work optional by 65); in control means all four. For Maya, 482 miss at least one: 397 because work isn't optional by 65, 210 on the 35 check, 106 on a bad year, 64 on the 45 check. It is counted from the same 1,000 lives on screen, not a score.
 
 **What if someone saves nothing?**
 Drag the dial to $0: Maya is in control in **0** of 1,000. Keeping part of a raise takes a saving habit, so someone setting nothing aside spends every raise. Automating $25 a month takes her to about **500**. That jump is an assumption and we say so: the usual share of a raise (15% to 25% by city) is reached once regular saving is 2% of take-home pay, and it is listed in the Assumptions panel as one the results are very sensitive to.

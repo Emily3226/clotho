@@ -68,6 +68,8 @@ interface Store {
   concerns: Concern[];
   // A field of work typed in the person's own words (the "Other" chip).
   fieldOther: string | null;
+  // "Other" answers in the person's own words: situation, place, living.
+  others: Partial<Record<'stage' | 'city' | 'living', string>>;
   activeWorry: WorryId | 'all' | null;
   showAll: boolean;
   levers: Levers;
@@ -141,6 +143,7 @@ const fresh = {
   worries: {} as Scenario,
   concerns: [] as Concern[],
   fieldOther: null as string | null,
+  others: {} as Partial<Record<'stage' | 'city' | 'living', string>>,
   activeWorry: null,
   showAll: false,
   levers: NO_LEVERS,
@@ -244,6 +247,7 @@ export const useStore = create<Store>()(
         inputs: s.inputs,
         room: s.room,
         fieldOther: s.fieldOther,
+        others: s.others,
         confBefore: s.confBefore,
         theme: s.theme,
         set: s.set,

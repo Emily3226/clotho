@@ -16,12 +16,13 @@ import {
   minDownPayment,
 } from '../engine/profile';
 import { GOAL_WHEN, MAX_GOALS, goalKind, matchGoal, newGoal } from '../engine/goals';
-import { matchField } from '../engine/concerns';
-import type { FieldId, Goal, HomeType, Inputs, Stage } from '../engine/types';
-import { classifyField, classifyGoal } from '../narrate/client';
+import { matchCity, matchField, matchLiving, matchStage } from '../engine/concerns';
+import type { City, FieldId, Goal, HomeType, Inputs, Living, Stage } from '../engine/types';
+import { classifyGoal } from '../narrate/client';
 import { money } from '../lib/format';
 import { STEP, useStore } from '../store';
 import { LifeChoices } from './LifeChoices';
+import { OtherAnswer } from './OtherAnswer';
 
 // Every question, mostly as taps. Used on its own screen before the results,
 // and again beside the river so answers can be changed and the river moves.
@@ -58,6 +59,15 @@ export function AboutYou({ live = false }: { live?: boolean }) {
     setState({ room: on ? [...room, id] : room.filter((r) => r !== id) });
     if (id === 'home') answer(on ? 'Room for a home' : 'No home goal', { home: on ? { price: 0, byAge: Math.max(35, inputs.age + 3), type: 'condo' } : null });
   };
+  const others = useStore((s) => s.others);
+  const setOther = (key: 'stage' | 'city' | 'living', text: string | undefined) => {
+    const next = { ...useStore.getState().others };
+    if (text === undefined) delete next[key];
+    else next[key] = text;
+    setState({ others: next });
+  };
+  const pickLiving = (v: Living, label: string) =>
+    answer(label, { living: v, ...(v === 'family' ? { moveOutAge: Math.max(inputs.age + 1, inputs.moveOutAge) } : {}) });
   const home = inputs.home;
   const homeType = home?.type ?? null;
   const price = home ? (home.type ? homePriceFor(inputs.city, home.type) : home.price) : 0;
@@ -89,7 +99,32 @@ export function AboutYou({ live = false }: { live?: boolean }) {
         <Field id="monthly" label="You could set aside" value={inputs.monthly} min={0} max={1000} step={5} prefix="$" suffix="a month" hint={inputs.debt ? 'Include what goes to student loans.' : undefined} onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, monthly: v } })} />
       </div>
 
-      <ChipGroup legend="Right now" selected={(v) => v === inputs.stage} options={STAGES.map((s) => ({ value: s.id, label: s.label }))} onPick={setStage} />
+      <ChipGroup<Stage | 'other'>
+        legend="Right now"
+        selected={(v) => (v === 'other' ? others.stage !== undefined : others.stage === undefined && v === inputs.stage)}
+        options={[...STAGES.map((s) => ({ value: s.id as Stage | 'other', label: s.label })), { value: 'other', label: 'Other' }]}
+        onPick={(v, l) => {
+          if (v === 'other') return setOther('stage', others.stage ?? '');
+          setOther('stage', undefined);
+          setStage(v, l);
+        }}
+      />
+      {others.stage !== undefined && (
+        <OtherAnswer<Stage>
+          id="other-stage"
+          label="What’s your situation?"
+          placeholder="Apprentice, between jobs, on leave…"
+          type="stage"
+          text={others.stage}
+          current={others.stage ? inputs.stage : null}
+          options={STAGES.map((s) => ({ value: s.id, label: s.label }))}
+          match={matchStage}
+          onUse={(text, v) => {
+            setOther('stage', text);
+            if (v) setStage(v, text);
+          }}
+        />
+      )}
       <ChipGroup<FieldId | 'other'>
         legend={isStudent(inputs.stage) ? 'Studying' : 'Field'}
         selected={(v) => (v === 'other' ? fieldOther !== null : fieldOther === null && v === inputs.field)}
@@ -105,8 +140,53 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           pickField(v, l);
         }}
       />
-      {fieldOther !== null && <FieldOther initial={fieldOther} current={inputs.field} onUse={(text, field) => { setState({ fieldOther: text }); pickField(field, text); }} />}
-      <ChipGroup legend="Where" selected={(v) => v === inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(l, { city: v })} />
+      {fieldOther !== null && (
+        <OtherAnswer<FieldId>
+          id="field-text"
+          label="What field?"
+          placeholder="Nursing, film, plumbing…"
+          type="field"
+          text={fieldOther}
+          current={fieldOther && inputs.field !== 'unsure' ? inputs.field : null}
+          options={FIELDS.filter((f) => f.id !== 'unsure').map((f) => ({ value: f.id, label: f.label }))}
+          match={matchField}
+          describe={(v) => {
+            const f = FIELDS.find((x) => x.id === v)!;
+            return `Closest we have pay figures for: ${f.label}, about ${money(f.salary)} to start.`;
+          }}
+          onUse={(text, field) => {
+            setState({ fieldOther: text });
+            pickField(field ?? 'unsure', text);
+          }}
+        />
+      )}
+      <ChipGroup<City | 'other'>
+        legend="Where"
+        selected={(v) => (v === 'other' ? others.city !== undefined : others.city === undefined && v === inputs.city)}
+        options={[...CITIES.map((c) => ({ value: c.id as City | 'other', label: c.label })), { value: 'other', label: 'Other' }]}
+        onPick={(v, l) => {
+          if (v === 'other') return setOther('city', others.city ?? '');
+          setOther('city', undefined);
+          answer(l, { city: v });
+        }}
+      />
+      {others.city !== undefined && (
+        <OtherAnswer<City>
+          id="other-city"
+          label="Where do you live?"
+          placeholder="Your city or town"
+          type="city"
+          text={others.city}
+          current={others.city && inputs.city ? inputs.city : null}
+          options={CITIES.map((c) => ({ value: c.id, label: c.label }))}
+          match={matchCity}
+          describe={(v) => `We’ll use costs for: ${CITIES.find((c) => c.id === v)!.label}.`}
+          onUse={(text, v) => {
+            setOther('city', text);
+            answer(text, v ? { city: v } : { city: null });
+          }}
+        />
+      )}
 
       {live ? (
         <p className="hint">
@@ -138,12 +218,33 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           {isStudent(inputs.stage) && (
             <ChipGroup legend="Finishing school" selected={(v) => v === finishValue} options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))} onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })} />
           )}
-          <ChipGroup
+          <ChipGroup<Living | 'other'>
             legend="Living"
-            selected={(v) => v === inputs.living}
-            options={LIVING.map((l) => ({ value: l.id, label: l.label }))}
-            onPick={(v, l) => answer(l, { living: v, ...(v === 'family' ? { moveOutAge: Math.max(inputs.age + 1, inputs.moveOutAge) } : {}) })}
+            selected={(v) => (v === 'other' ? others.living !== undefined : others.living === undefined && v === inputs.living)}
+            options={[...LIVING.map((l) => ({ value: l.id as Living | 'other', label: l.label })), { value: 'other', label: 'Other' }]}
+            onPick={(v, l) => {
+              if (v === 'other') return setOther('living', others.living ?? '');
+              setOther('living', undefined);
+              pickLiving(v, l);
+            }}
           />
+          {others.living !== undefined && (
+            <OtherAnswer<Living>
+              id="other-living"
+              label="What’s your living situation?"
+              placeholder="With roommates, in residence…"
+              type="living"
+              text={others.living}
+              current={others.living && inputs.living ? inputs.living : null}
+              options={LIVING.map((l) => ({ value: l.id, label: l.label }))}
+              match={matchLiving}
+              onUse={(text, v) => {
+                setOther('living', text);
+                if (v) pickLiving(v, text);
+                else answer(text, { living: null });
+              }}
+            />
+          )}
           <ChipGroup
             legend="Student debt"
             selected={(v) => v === debtValue}
@@ -220,50 +321,6 @@ export function AboutYou({ live = false }: { live?: boolean }) {
       </details>
       )}
     </div>
-  );
-}
-
-// A field of work in the person's own words. It is matched to the closest
-// field the app has pay figures for; when nothing fits, a middle figure is
-// used and said so.
-function FieldOther({ initial, current, onUse }: { initial: string; current: Inputs['field']; onUse: (text: string, field: FieldId) => void }) {
-  const aiOn = useStore((s) => s.aiOn);
-  const [text, setText] = useState(initial);
-  const used = initial.trim();
-  // Keywords first; with AI wording on, Gemini sorts what they miss.
-  const match = used && current && current !== 'unsure' ? current : null;
-  const info = FIELDS.find((f) => f.id === (match ?? 'unsure'))!;
-  const use = async () => {
-    const t = text.trim().slice(0, 40);
-    if (!t || t === used) return;
-    const found = matchField(t) ?? (aiOn ? await classifyField(t) : null);
-    onUse(t, found ?? 'unsure');
-  };
-  return (
-    <form
-      className="goal-add"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void use();
-      }}
-    >
-      <label className="q-label" htmlFor="field-text">
-        What field?
-      </label>
-      <div className="goal-row">
-        <input id="field-text" value={text} maxLength={40} autoComplete="off" placeholder="Nursing, film, plumbing…" onChange={(e) => setText(e.target.value)} onBlur={() => void use()} />
-        <button type="submit" className="secondary" disabled={!text.trim() || text.trim() === used}>
-          Use
-        </button>
-      </div>
-      {used && (
-        <p className="hint" aria-live="polite">
-          {match
-            ? `Closest we have pay figures for: ${info.label}, about ${money(info.salary)} to start.`
-            : `We don’t have pay figures for that, so we use a middle starting salary, about ${money(info.salary)}. Set your income below if you know it.`}
-        </p>
-      )}
-    </form>
   );
 }
 
