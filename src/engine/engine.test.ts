@@ -354,6 +354,16 @@ describe('make it more you', () => {
     expect(spent.some((p, i) => p.milestones.goals[0] && later(p.workOptionalAge) > later(plain[i].workOptionalAge))).toBe(true);
   });
 
+  it('ticks "work optional by 65" only when the story says so, even with a home', () => {
+    const jordan = persona('jordan').inputs;
+    const house = simulate({ ...jordan, home: { price: 0, byAge: 40, type: 'house' } }, {}, NO_LEVERS, SEED, { detail: false });
+    for (const p of house) {
+      expect(p.milestones.workOptional65).toBe(p.workOptionalAge !== null && p.workOptionalAge <= A.retireAge);
+    }
+    // The status still counts the home on its own.
+    expect(summarise(house).counts[0]).toBe(inControl(jordan));
+  });
+
   it('carries AI pressure during school into the first full-time pay', () => {
     // The AI years end before this student finishes, so a smaller yearly
     // saving after graduation can only come from pay pulled down in school.

@@ -80,7 +80,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
             setState({ inputs: { ...inputs, age, finishAge: Math.max(age, inputs.finishAge), moveOutAge: Math.max(age + 1, inputs.moveOutAge) } });
           }}
         />
-        <Field id="monthly" label="You could set aside" value={inputs.monthly} min={0} max={1000} step={5} prefix="$" suffix="a month" hint="Before any student loan payments." onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, monthly: v } })} />
+        <Field id="monthly" label="You could set aside" value={inputs.monthly} min={0} max={1000} step={5} prefix="$" suffix="a month" hint={inputs.debt ? 'Include what goes to student loans.' : undefined} onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, monthly: v } })} />
       </div>
 
       <ChipGroup legend="Right now" selected={(v) => v === inputs.stage} options={STAGES.map((s) => ({ value: s.id, label: s.label }))} onPick={setStage} />

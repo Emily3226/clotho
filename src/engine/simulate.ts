@@ -509,7 +509,11 @@ export function simulate(
       if (scar) level *= 1 - A.returnPayCut;
     }
 
+    // The status is judged as if the home or goals were not paid for
+    // (they are counted on their own). The "work optional by 65" tick says
+    // what really happened in this life, so it always agrees with the story.
     const wo65 = judgedAge !== null && judgedAge <= A.retireAge;
+    const reallyWo65 = woAge !== null && woAge <= A.retireAge;
     const homeMs = homeGoal ? bought : null;
     // The home goal is counted on its own, not in the status: missing a
     // date you picked should not hide everything else that went well.
@@ -521,7 +525,7 @@ export function simulate(
     out[i] = {
       index: i,
       status,
-      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: wo65, goals: goalsReached },
+      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: reallyWo65, goals: goalsReached },
       workOptionalAge: woAge,
       ratio65,
       final,
