@@ -13,7 +13,7 @@ for (const p of PERSONAS) {
   console.log(`\n${p.name}  [${ms.toFixed(0)} ms]`);
   console.log('  counts', a.summary.counts.join(' / '), ' median work-optional age', a.summary.medianWorkOptionalAge);
   console.log('  milestones', JSON.stringify(a.summary.milestoneCounts));
-  if (!quiet) for (const c of a.cards) console.log(`  worry ${c.id}: affected ${c.affected}, recovered ${c.recovered}, best ${c.best?.lever} ${c.best?.protects}`);
+  if (!quiet) for (const c of a.cards) console.log(`  worry ${c.id}: in control ${c.inControl} instead of ${c.baseInControl}, best ${c.best?.lever} ${c.best?.inControl}`);
   for (const r of a.ranking) console.log(`  lever ${r.id}: $${r.costPerMonth.toFixed(0)}/mo rescued ${r.rescued} in control ${r.inControl}, age ${r.ageDelta}`);
   console.log('  waiting', JSON.stringify(a.waiting));
   const tops = sets.map((s) => new Engine().analyse(p.inputs, {}, {}, NO_LEVERS, 2026, s).ranking[0].id);
