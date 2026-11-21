@@ -8,22 +8,22 @@ Numbers below are what the app shows with the default seed and the Middle return
 "Canada Life found that dread about the future leads to doomscrolling, and every extra hour of scrolling goes with fewer people setting up automatic savings. We didn't build another feed. It's two minutes once, then thirty seconds a month."
 
 **0:15 Maya, and the dial (20 s)**
-Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. Every line is one version of her life, same choices, different luck. She's in control in **378 of 1,000**." Drag the dial from $40 to $150 a month: "**378 → 679**. Same luck, her choice." Tap **Back to $40**.
+Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. Every line is one version of her life, same choices, different luck. She's in control in **599 of 1,000**." Drag the dial from $40 to $150 a month: "**599 → 907**. Same luck, her choice." Tap **Back to $40**.
 
 **0:35 Play one life (10 s)**
 Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
 
 **0:45 One habit, the rescue (20 s)**
-"What helps most?". Switch on **Automate $25 a month**. "Twenty-five dollars a month. Watch which of her futures it rescues: **73**, lit up, same luck." Then switch it off and switch on **Save part of every raise**: "**466** rescued, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
+"What helps most?". Switch on **Automate $25 a month**. "Twenty-five dollars a month. Watch which of her futures it rescues: **114**, lit up, same luck." Then switch it off and switch on **Save part of every raise**: "**363** rescued, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
 **1:05 Same age, different futures (optional, 10 s)**
-Back on the futures screen, **Switch to Priya**: same age, health student in Halifax, living with family: **869**.
+Back on the futures screen, **Switch to Priya**: same age, health student in Halifax, living with family: **938**.
 
 **1:15 A worry, with its protection (15 s)**
-"What if…", tap **AI changes my job**. "Her field gets a stronger what-if. It's sized, and the protection is on the same card: saving part of every raise protects most of the futures it touches."
+"What if…", tap **AI changes my job**. "Her field gets a stronger what-if. It's sized, and the protection is on the same card: she stays in control in **127** instead of **599**, and saving part of every raise brings that back up to **462**."
 
 **1:30 Pick one, and come back (15 s)**
-"Pick one to try". Pick the habit, "Add a monthly reminder", move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **378**. Keeping it up points to **809**, and she's kept it 3 months in a row."
+"Pick one to try". Pick the habit, "Add a monthly reminder", move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **599**. Keeping it up points to **924**, and she's kept it 3 months in a row."
 
 **1:45 Proof and what's next (15 s)**
 Read the user-test result (n and the share who set a reminder). "Next: a pilot inside a group plan."
@@ -45,7 +45,7 @@ Read the user-test result (n and the share who set a reminder). "Next: a pilot i
 |---|---|
 | "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The check-in asks what you want room for; the "What if" screen tests the worries, each next to what protects against it. |
 | "helps Gen Z take meaningful action" | One step, a monthly reminder, a message ready for HR, and a monthly check-in that shows progress. |
-| "motivation" | "Rescues 466 of your futures", and at the check-in "You started at 378. Keeping it up points to 809", with a streak. |
+| "motivation" | "Rescues 363 of your futures", and at the check-in "You started at 599. Keeping it up points to 924", with a streak. |
 | "visualization" | The river: 1,000 lives, a middle line, milestones at 35, 45 and 65. |
 | "behavioral nudges" | The three behaviours the research measured: joining the plan, taking the match, automatic contributions. One step only; "make it automatic" checklist. |
 | "education" | Tap-to-explain terms, the short-term and long-term explainer, the Assumptions panel. |
