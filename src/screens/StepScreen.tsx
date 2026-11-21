@@ -197,7 +197,7 @@ export function StepScreen() {
     <section className="narrow step">
       <p className="eyebrow">Pick one to try</p>
       <h1 className="h-question">Pick one. Just one.</h1>
-      <p className="hint">Each shows what it costs and what it does. You decide. One step you keep does more than five you don’t.</p>
+      <p className="hint">One you’ll keep beats five you won’t.</p>
 
       <div className="choices" role="radiogroup" aria-label="Pick one to try">
         {ranking.map((r) => {
@@ -225,7 +225,6 @@ export function StepScreen() {
               {reminderAdded ? 'Reminder downloaded' : 'Add a monthly reminder'}
             </button>
           </div>
-          <p className="hint">A calendar file that repeats each month, with a link back here for a 30-second check-in.</p>
           {showHR && (
             <div className="hr">
               <p className="hint">A message you can send as it is:</p>
@@ -253,7 +252,7 @@ export function StepScreen() {
       {pick && (
         <>
           <h2 className="h-sub">
-            <label htmlFor="conf-after">One last thing. How do you feel about your financial future now?</label>
+            <label htmlFor="conf-after">How do you feel about your future now?</label>
           </h2>
           <ConfidenceSlider id="conf-after" value={conf} onChange={setConf} />
           {confAfter === null || confAfter !== conf ? (
@@ -290,7 +289,7 @@ export function StepScreen() {
           <p>
             <b>My one step:</b> {copy.title.charAt(0).toLowerCase() + copy.title.slice(1)}.
           </p>
-          <p className="hint">You can’t predict which future you get. You just moved the odds. See you at next month’s check-in.</p>
+          <p className="hint">You just moved the odds. See you next month.</p>
           <div className="row">
             <button type="button" className="secondary" onClick={share}>
               Share

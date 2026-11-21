@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "project": {
+    "name": "clotho",
+    "productType": "consumer web app: personal finance simulation for young Canadians",
+    "stack": [
+      "react",
+      "vite",
+      "plain css (src/styles.css), no Tailwind"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "src/styles.css :root custom properties"
+    ],
+    "components": [
+      "src/components/bits.tsx",
+      "src/components/AboutYou.tsx",
+      "src/components/River.tsx"
+    ],
+    "assets": [],
+    "instructions": [
+      "thousand-futures-v2.md"
+    ]
+  },
+  "design": {
+    "colorMode": "light and dark (prefers-color-scheme plus data-theme override)",
+    "colors": {
+      "bg": "#f6f2e9 / dark #0d1412",
+      "surface": "#fffdf8 / dark #151e1b",
+      "ink": "#16201d / dark #ecefe9",
+      "muted": "#4f5b57 / dark #a6b1ac",
+      "line": "#d8d1c1 / dark #2b3733",
+      "accent": "#0b6b63 / dark #5fd0bf",
+      "accentSoft": "#dcebe6 / dark #17302b",
+      "statusInControl": "--s0 deep teal",
+      "statusMostlyThere": "--s1 soft green",
+      "statusTight": "--s2 warm sand",
+      "statusOffTrack": "--s3 slate grey"
+    },
+    "typography": {
+      "headings": "--serif (Iowan Old Style, Palatino, Georgia)",
+      "body": "--sans (system-ui)"
+    },
+    "spacing": {},
+    "radius": {
+      "card": "--radius 14px",
+      "chip": "999px"
+    },
+    "shadows": {},
+    "motion": {
+      "rule": "motion only to show cause and effect (river morph, number changes); respect prefers-reduced-motion"
+    },
+    "density": "calm, generous spacing, typography-led"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [
+      "Field (slider with typed entry)",
+      "Segmented",
+      "Switch",
+      "chip buttons with aria-pressed",
+      "card"
+    ],
+    "patterns": [
+      "questions as rows of tappable chips",
+      "one short line of copy per section"
+    ]
+  },
+  "constraints": {
+    "must": [
+      "No red anywhere; status is never shown by colour alone",
+      "Counts, not percentages, in headlines (for example 612 of 1,000)",
+      "Little text: one short line per section, details behind taps",
+      "WCAG AA contrast, full keyboard use, visible focus",
+      "Usable at 375 px and on a 1080p projector",
+      "Canadian spelling, calm and warm voice"
+    ],
+    "avoid": [
+      "Words: behind, should have, too late, at risk, danger, doom, recommended",
+      "Bank-calculator or dashboard look",
+      "Decorative gradients, glass effects, external fonts or CDNs (must work offline)"
+    ]
+  },
+  "decisions": [
+    {
+      "date": "2026-11-21",
+      "decision": "All intake questions on one 'About you' screen, mostly as chip groups (pattern from 21st 'Chip Group': pressed buttons, roving focus, check grows in), rebuilt in plain CSS without a motion library. The same component sits beside the river as 'Change your answers' so answers still move the river.",
+      "source": "user request: ask everything at once, less text"
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    },
+    {
+      "fact": "tokens in :root",
+      "source": "src/styles.css"
+    }
+  ],
+  "generatedAt": "2026-11-21T17:00:16.552Z"
+}

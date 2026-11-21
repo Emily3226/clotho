@@ -6,8 +6,8 @@ import { DEFAULT_INPUTS } from './engine/personas';
 import { NO_LEVERS, type AssumptionSetId, type Inputs, type LeverId, type Levers, type Scenario, type WorryId } from './engine/types';
 
 export type Theme = 'auto' | 'light' | 'dark';
-export const STEPS = ['Start', 'Check-in', 'Basics', 'Your futures', 'Make it more you', 'Smallest step', 'What if', 'Pick one'] as const;
-export const STEP = { start: 0, checkin: 1, basics: 2, futures: 3, more: 4, habits: 5, whatIf: 6, pick: 7, back: 8 } as const;
+export const STEPS = ['Start', 'About you', 'Your futures', 'Smallest step', 'What if', 'Pick one'] as const;
+export const STEP = { start: 0, about: 1, futures: 2, habits: 3, whatIf: 4, pick: 5, back: 6 } as const;
 
 export const ROOM_FOR = [
   { id: 'travel', label: 'Travel' },

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Analysis } from './engine/analyse';
 import type { EngineRequest } from './engine/worker';
-import { currentScenario, useStore } from './store';
+import { STEP, currentScenario, useStore } from './store';
 
 // Keeps the analysis in the store in step with the inputs, worries and levers.
 export function useEngine(): void {
@@ -14,7 +14,7 @@ export function useEngine(): void {
   const levers = useStore((s) => s.levers);
   const seed = useStore((s) => s.seed);
   const set = useStore((s) => s.set);
-  const active = useStore((s) => s.step >= 3);
+  const active = useStore((s) => s.step >= STEP.futures);
 
   useEffect(() => {
     const w = new Worker(new URL('./engine/worker.ts', import.meta.url), { type: 'module' });

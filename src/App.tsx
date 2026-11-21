@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { APP_NAME, DISCLAIMER } from './config';
 import { Explore } from './screens/Explore';
-import { Basics, CheckIn, Landing } from './screens/Intro';
+import { About, Landing } from './screens/Intro';
 import { Return } from './screens/Return';
 import { StepScreen } from './screens/StepScreen';
 import { STEP, STEPS, useStore, type Theme } from './store';
@@ -67,10 +67,8 @@ export function App() {
       <main id="main">
         {step === STEP.start ? (
           <Landing />
-        ) : step === STEP.checkin ? (
-          <CheckIn />
-        ) : step === STEP.basics ? (
-          <Basics />
+        ) : step === STEP.about ? (
+          <About />
         ) : step <= STEP.whatIf ? (
           <Explore />
         ) : step === STEP.pick ? (

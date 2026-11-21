@@ -130,6 +130,67 @@ export function Term({ children, explain }: { children: ReactNode; explain: stri
   );
 }
 
+// A question answered by tapping chips. Pattern adapted from the 21st "Chip
+// Group": each chip is a pressed or unpressed button, one tab stop for the
+// group, arrow keys and Home/End move between chips, and a check grows in on
+// the selected chip (plain CSS, reduced motion respected).
+export function ChipGroup<T extends string | number>({
+  legend,
+  options,
+  selected,
+  onPick,
+}: {
+  legend: string;
+  options: { value: T; label: string }[];
+  selected: (value: T) => boolean;
+  onPick: (value: T, label: string) => void;
+}) {
+  const first = Math.max(0, options.findIndex((o) => selected(o.value)));
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('button[data-chip]'));
+    const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (i < 0) return;
+    const last = buttons.length - 1;
+    const moves: Record<string, number> = {
+      ArrowRight: i === last ? 0 : i + 1,
+      ArrowDown: i === last ? 0 : i + 1,
+      ArrowLeft: i === 0 ? last : i - 1,
+      ArrowUp: i === 0 ? last : i - 1,
+      Home: 0,
+      End: last,
+    };
+    if (!(e.key in moves)) return;
+    e.preventDefault();
+    buttons[moves[e.key]].focus();
+  };
+  return (
+    <div className="q">
+      <span className="q-label" id={`q-${legend}`}>
+        {legend}
+      </span>
+      <div className="chips" role="group" aria-labelledby={`q-${legend}`} onKeyDown={onKeyDown}>
+        {options.map((o, i) => {
+          const on = selected(o.value);
+          return (
+            <button
+              type="button"
+              key={String(o.value)}
+              data-chip=""
+              className="chip"
+              aria-pressed={on}
+              tabIndex={i === first ? 0 : -1}
+              onClick={() => onPick(o.value, o.label)}
+            >
+              <span className="chip-check" aria-hidden="true" />
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} className="switch" onClick={() => onChange(!checked)}>

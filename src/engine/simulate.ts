@@ -1,5 +1,5 @@
 import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
-import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor } from './profile';
+import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor, homePriceFor, minDownPayment } from './profile';
 import { drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
 import type { Inputs, Levers, PathEvent, PathResult, Scenario, SimOptions, Status, Summary } from './types';
 import { SEV_INDEX, WORRY } from './worries';
@@ -12,7 +12,10 @@ function amortise(balance: number, rate: number, years: number): number {
 }
 
 export function homeGoalFor(inputs: Inputs, scenario: Scenario): { price: number; byAge: number } | null {
-  if (inputs.home) return inputs.home;
+  if (inputs.home) {
+    const price = inputs.home.type ? homePriceFor(inputs.city, inputs.home.type) : inputs.home.price;
+    return { price, byAge: Math.max(inputs.home.byAge, inputs.age + 1) };
+  }
   if (scenario.home) {
     return {
       price: inputs.city ? cityInfo(inputs.city).homePrice : WORRY.home.defaultPrice,
@@ -422,7 +425,7 @@ export function simulate(
       if (homeGoal && !bought && a + 1 <= homeGoal.byAge) {
         const price =
           homeGoal.price * (sHome >= 0 ? plainTrend * wageGrowthFactor(a) * Math.pow(1 + homeFaster, t + 1) : 1);
-        const down = A.downPaymentShare * price;
+        const down = minDownPayment(price);
         if (fhsa + taxable + tfsa >= down) {
           let need = down;
           const x = Math.min(fhsa, need);
@@ -455,7 +458,9 @@ export function simulate(
 
     const wo65 = woAge !== null && woAge <= A.retireAge;
     const homeMs = homeGoal ? bought : null;
-    const misses = (shockProof ? 0 : 1) + (room35 ? 0 : 1) + (room45 ? 0 : 1) + (homeMs === false ? 1 : 0);
+    // The home goal is counted on its own, not in the status: missing a
+    // date you picked should not hide everything else that went well.
+    const misses = (shockProof ? 0 : 1) + (room35 ? 0 : 1) + (room45 ? 0 : 1);
     let status: Status;
     if (wo65) status = misses === 0 ? 0 : misses === 1 ? 1 : 2;
     else status = ratio65 >= A.workOptionalShare - A.tightGap ? 2 : 3;

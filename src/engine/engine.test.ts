@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { Engine, rescueOf } from './analyse';
 import { A, stockShareAt } from './assumptions';
 import { PERSONAS, persona } from './personas';
-import { inputsForStage } from './profile';
+import { inputsForStage, minDownPayment } from './profile';
 import { simulate, summarise } from './simulate';
 import { LEVER_IDS, NO_LEVERS, WORRY_IDS, leverOnly, type Inputs, type Levers, type PathResult, type Scenario } from './types';
 
@@ -242,6 +242,25 @@ describe('make it more you', () => {
       const moved = PERSONAS.some((p) => inControl(change(p.inputs)) !== inControl(p.inputs));
       expect(moved, name).toBe(true);
     }
+  });
+
+  it('uses the Canadian minimum down payment', () => {
+    expect(minDownPayment(400000)).toBe(20000);
+    expect(minDownPayment(550000)).toBe(30000);
+    expect(minDownPayment(1400000)).toBe(115000);
+    expect(minDownPayment(1500000)).toBe(300000);
+  });
+
+  it('counts a home goal on its own, without changing whether a future is in control', () => {
+    const maya = persona('maya').inputs;
+    const plain = simulate(maya, {}, NO_LEVERS, SEED, { detail: false });
+    const withHome = simulate({ ...maya, home: { price: 0, byAge: 35, type: 'condo' } }, {}, NO_LEVERS, SEED, { detail: false });
+    const reached = withHome.filter((p) => p.milestones.home).length;
+    expect(reached).toBeGreaterThan(0);
+    // Buying uses savings, so a future can change, but never because the home was missed.
+    withHome.forEach((p, i) => {
+      if (!p.milestones.home) expect(p.status).toBe(plain[i].status);
+    });
   });
 
   it('debt never helps, and living with family never hurts', () => {

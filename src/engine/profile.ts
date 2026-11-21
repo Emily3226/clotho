@@ -1,7 +1,7 @@
 // Life stage and "Make it more you" tables. Every value here is an
 // illustrative default unless its basis says otherwise, and every one is
 // shown in the Assumptions panel.
-import type { AssumptionSetId, City, FieldId, Inputs, Living, Stage } from './types';
+import type { AssumptionSetId, City, FieldId, HomeType, Inputs, Living, Stage } from './types';
 
 export const STATCAN_GRAD_URL = 'https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3710028401';
 
@@ -73,6 +73,37 @@ export const CITIES: CityInfo[] = [
 ];
 
 export const cityInfo = (id: City | null): CityInfo => CITIES.find((c) => c.id === (id ?? 'big'))!;
+
+// Typical prices by city and home type, in today's dollars. Illustrative,
+// rounded, in the range of CREA average prices; check before quoting.
+export const CREA_URL = 'https://stats.crea.ca/en-CA/';
+export const HOME_TYPES: { id: HomeType; label: string }[] = [
+  { id: 'condo', label: 'Condo' },
+  { id: 'townhouse', label: 'Townhouse' },
+  { id: 'house', label: 'House' },
+];
+export const HOME_PRICES: Record<City, Record<HomeType, number>> = {
+  major: { condo: 650000, townhouse: 950000, house: 1400000 },
+  big: { condo: 400000, townhouse: 550000, house: 750000 },
+  small: { condo: 300000, townhouse: 400000, house: 500000 },
+};
+export const homePriceFor = (city: City | null, type: HomeType): number => HOME_PRICES[city ?? 'big'][type];
+
+export const HOME_WHEN = [
+  { label: 'By 30', age: 30 },
+  { label: 'By 35', age: 35 },
+  { label: 'By 40', age: 40 },
+  { label: 'Someday', age: 45 },
+] as const;
+
+// Canada's minimum down payment: 5% of the first $500,000, 10% of the part
+// above it, and 20% of the whole price at $1.5 million or more.
+export const DOWN_PAYMENT_URL = 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html';
+export function minDownPayment(price: number): number {
+  if (price >= 1500000) return 0.2 * price;
+  if (price <= 500000) return 0.05 * price;
+  return 25000 + 0.1 * (price - 500000);
+}
 
 export const LIVING: { id: Living; label: string }[] = [
   { id: 'family', label: 'With family' },

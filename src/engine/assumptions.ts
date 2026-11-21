@@ -79,7 +79,6 @@ export const A = {
   tightGap: 0.2,
   roomMonths35: 6,
   roomMonths45: 12,
-  downPaymentShare: 0.1,
   debtYears: 10,
   inflationForDebt: 0.02,
   defaultMatchPct: 4,
@@ -188,7 +187,8 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('raid', 'Emergency withdrawal from the workplace plan', '30% lost to tax; the room is gone', 'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/making-withdrawals/tax-rates-on-withdrawals.html', 'Based on RRSP withholding rates'),
   illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of the spending you’re used to', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 50. Before 65, savings must also bridge the years until public pensions start.'),
   illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
-  illustrative('home', 'Home down payment', '10% of the price', 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html', 'Illustrative; minimums vary by price'),
+  official('downPayment', 'Minimum down payment', '5% of the first $500,000, 10% of the rest; 20% at $1.5 million or more', 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html', 'Financial Consumer Agency of Canada'),
+  illustrative('homePrices', 'Home prices', 'Toronto or Vancouver: condo $650k, townhouse $950k, house $1.4M. Another big city: $400k, $550k, $750k. Smaller city or town: $300k, $400k, $500k.', 'https://stats.crea.ca/en-CA/', 'Illustrative, in the range of CREA average prices', 'Counted on its own: a home goal does not change whether a future is in control.'),
   illustrative('debt', 'Student debt', 'Paid over 10 years, starting when school ends; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative', 'The chips use 5% before inflation. The federal part of Canada Student Loans is interest-free; provincial parts vary.'),
   illustrative('levers', 'Habits', 'Save part of every raise: +1 point of pay at each raise of 3% or more, up to 5 points. Cushion first: $90 a month while the cushion is filling. Automate: $25, $50 or $100 a month. Cost of waiting: 5 years.', FP_URL, 'Illustrative'),
 ];

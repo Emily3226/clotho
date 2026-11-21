@@ -5,6 +5,7 @@ export type FieldId = 'health' | 'trades' | 'engcs' | 'business' | 'science' | '
 export type City = 'major' | 'big' | 'small';
 export type Living = 'family' | 'renting' | 'own';
 export type AssumptionSetId = 'cautious' | 'middle' | 'hopeful';
+export type HomeType = 'condo' | 'townhouse' | 'house';
 
 export interface Inputs {
   age: number;
@@ -18,7 +19,9 @@ export interface Inputs {
   employeePct: number;
   matchPct: number;
   cushionMonths: number;
-  home: { price: number; byAge: number } | null;
+  // With a type, the price comes from the city and the type; without one,
+  // the typed price is used.
+  home: { price: number; byAge: number; type?: HomeType } | null;
   debt: { balance: number; rate: number } | null;
   // "Make it more you". null means not answered: the default is used.
   field: FieldId | null;

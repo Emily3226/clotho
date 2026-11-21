@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
 import { DEFAULT_SEED } from '../config';
 import { AnimatedNumber, Switch, Term } from '../components/bits';
+import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
 import type { Analysis, WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
-import { persona } from '../engine/personas';
-import { CITIES, DEBT_CHIPS, FIELDS, FINISH_CHIPS, LIVING, fieldSalaryFor } from '../engine/profile';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
-import { LEVER_IDS, STATUS_LABELS, type Inputs, type LeverId, type WorryId } from '../engine/types';
+import { LEVER_IDS, STATUS_LABELS, type LeverId, type WorryId } from '../engine/types';
 import { WORRIES, worryInfo } from '../engine/worries';
 import { ageShift, leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
@@ -117,130 +116,27 @@ function Milestones({ a }: { a: Analysis }) {
 
 function FuturesPanel({ a }: { a: Analysis }) {
   const seed = useStore((s) => s.seed);
-  const setState = useStore((s) => s.setState);
-  return (
-    <>
-      <p className="lede">
-        Each line is one version of your life, from now to 70: same choices, different luck with jobs and markets. The
-        dark line is the middle future, and the shaded band holds half of them.
-      </p>
-      <Milestones a={a} />
-      <p className="hint">
-        Tap any line to read that life. Amounts are in today’s dollars.{' '}
-        <button type="button" className="link" onClick={() => setState({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
-          {seed === DEFAULT_SEED ? 'Try a new run of luck' : 'Back to the first run of luck'}
-        </button>
-      </p>
-    </>
-  );
-}
-
-function ChipRow<T extends string | number>({
-  legend,
-  value,
-  options,
-  onPick,
-}: {
-  legend: string;
-  value: T | null;
-  options: { value: T; label: string }[];
-  onPick: (v: T, label: string) => void;
-}) {
-  return (
-    <fieldset className="more-q">
-      <legend>{legend}</legend>
-      <div className="chips">
-        {options.map((o) => (
-          <button type="button" key={String(o.value)} className="chip" aria-pressed={value === o.value} onClick={() => onPick(o.value, o.label)}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
-function MorePanel() {
-  const inputs = useStore((s) => s.inputs);
-  const answer = useStore((s) => s.answer);
   const note = useStore((s) => s.note);
   const computing = useStore((s) => s.computing);
-  const incomeEdited = useStore((s) => s.incomeEdited);
-  const personaId = useStore((s) => s.personaId);
   const setState = useStore((s) => s.setState);
-
-
-  const pickField = (field: Inputs['field'], label: string) => {
-    const patch: Partial<Inputs> = { field };
-    if ((inputs.stage === 'first' || inputs.stage === 'full') && !incomeEdited) {
-      // Typical pay for the field, saving the same share of it as before.
-      const income = fieldSalaryFor(inputs.stage, field);
-      patch.income = income;
-      patch.monthly = Math.round((inputs.monthly * income) / Math.max(1, inputs.income) / 5) * 5;
-    }
-    const before = inputs.stage === 'student' ? fieldSalaryFor('first', inputs.field) : inputs.income;
-    const after = inputs.stage === 'student' ? fieldSalaryFor('first', field) : (patch.income ?? inputs.income);
-    const why =
-      after > before
-        ? 'Higher pay, but CPP and OAS cover less of it, so keeping that lifestyle takes more saving. Saving part of every raise is built for this.'
-        : undefined;
-    answer(`Working toward ${label.toLowerCase()}`, patch, why);
-  };
-  const pickLiving = (living: Inputs['living'], label: string) => {
-    const patch: Partial<Inputs> = { living };
-    if (living === 'family') patch.moveOutAge = Math.max(inputs.age + 1, inputs.moveOutAge);
-    answer(label, patch);
-  };
-  const debtValue = !inputs.debt ? 'none' : inputs.debt.balance >= 25000 ? 'lots' : 'some';
-  const finishValue = Math.min(4, Math.max(0, inputs.finishAge - inputs.age));
-  const compare = personaId === 'maya' ? persona('priya') : personaId === 'priya' ? persona('maya') : null;
-
   return (
     <>
-      <p className="lede">Five quick taps. Each one re-runs your thousand futures, so you can watch what makes your river yours.</p>
-      <p className={`note-line${computing ? ' busy' : ''}`} aria-live="polite">
-        {note ?? 'Skip any question: the default stays.'}
-      </p>
-      <ChipRow legend="What are you studying or working toward?" value={inputs.field} options={FIELDS.map((f) => ({ value: f.id, label: f.label }))} onPick={(v, l) => pickField(v, l)} />
-      <ChipRow legend="Where do you live?" value={inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(`Living in ${l === 'Toronto or Vancouver' ? 'Toronto or Vancouver' : l.toLowerCase()}`, { city: v })} />
-      <ChipRow legend="Living situation?" value={inputs.living} options={LIVING.map((l) => ({ value: l.id, label: l.label }))} onPick={(v, l) => pickLiving(v, l)} />
-      <ChipRow
-        legend="Student debt?"
-        value={debtValue}
-        options={DEBT_CHIPS.map((d) => ({ value: d.id, label: d.label }))}
-        onPick={(v, l) => {
-          const chip = DEBT_CHIPS.find((d) => d.id === v)!;
-          answer(`Student debt: ${l.toLowerCase()}`, { debt: chip.balance ? { balance: chip.balance, rate: 5 } : null });
-        }}
-      />
-      {inputs.stage === 'student' && (
-        <ChipRow
-          legend="When do you finish school?"
-          value={finishValue}
-          options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))}
-          onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })}
-        />
-      )}
+      <p className="lede">Each line is one life to 70. Tap one to read it.</p>
+      <Milestones a={a} />
+      <CompareCard />
+      <details className="drawer live-answers">
+        <summary>Change your answers</summary>
+        <p className={`note-line${computing ? ' busy' : ''}`} aria-live="polite">
+          {note ?? 'Tap an answer and watch the river move.'}
+        </p>
+        <AboutYou live />
+      </details>
       <p className="hint">
-        Starting pay by field is based on Statistics Canada graduate earnings. Everything is listed under Assumptions.
+        In today’s dollars.{' '}
+        <button type="button" className="link" onClick={() => setState({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
+          {seed === DEFAULT_SEED ? 'New run of luck' : 'First run of luck'}
+        </button>
       </p>
-      {compare && (
-        <div className="card compare">
-          <p>
-            <b>Same age, same savings, different futures.</b> See {compare.name.split(',')[0]}: {compare.line.charAt(0).toLowerCase() + compare.line.slice(1)}.
-          </p>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => {
-              answer(`Switched to ${compare.name.split(',')[0]}`, compare.inputs);
-              setState({ personaId: compare.id, room: compare.room });
-            }}
-          >
-            Switch to {compare.name.split(',')[0]}
-          </button>
-        </div>
-      )}
     </>
   );
 }
@@ -267,10 +163,12 @@ function WorryCardView({ card }: { card: WorryCard }) {
           answer.parts.map((p, i) => (typeof p === 'string' ? <span key={i}>{p}</span> : <strong key={i}>{p.strong}</strong>))
         )}
       </p>
-      {card.id !== 'all' && <p className="hint">What if, not a forecast: {worryInfo(card.id as WorryId).changes[1].toLowerCase()}.</p>}
-      {card.id === 'all' && <p className="hint">The toughest case: every worry you picked, in the same life.</p>}
+      <details className="why">
+        <summary>What changes</summary>
+        <p className="hint">{card.id === 'all' ? 'Every worry you picked, in the same life.' : `A what-if, not a forecast: ${worryInfo(card.id as WorryId).changes[1].toLowerCase()}.`}</p>
+      </details>
       <button type="button" className="secondary" aria-pressed={on} onClick={() => setActive(on ? null : card.id)}>
-        {on ? 'Showing in the river · tap to clear' : 'Show in the river'}
+        {on ? 'Shown in the river' : 'Show in the river'}
       </button>
     </article>
   );
@@ -285,7 +183,7 @@ function WhatIfPanel({ a }: { a: Analysis }) {
   const count = Object.keys(worries).length;
   return (
     <>
-      <p className="lede">Name a worry, see it sized, and see what protects you. Each one runs against the same thousand futures.</p>
+      <p className="lede">Pick a worry. See its size, and what protects you.</p>
       <div className="chips">
         {WORRIES.map((w) => (
           <button type="button" key={w.id} className="chip" aria-pressed={!!worries[w.id]} onClick={() => toggle(w.id)}>
@@ -294,7 +192,7 @@ function WhatIfPanel({ a }: { a: Analysis }) {
           </button>
         ))}
       </div>
-      {a.cards.length === 0 && <p className="hint">Pick any that are on your mind, or skip this step.</p>}
+      {a.cards.length === 0 && <p className="hint">Or skip this.</p>}
       <div className="stack">
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
@@ -306,7 +204,7 @@ function WhatIfPanel({ a }: { a: Analysis }) {
           className="link"
           onClick={() => setState({ showAll: !showAll, activeWorry: showAll && active === 'all' ? null : active })}
         >
-          {showAll ? 'Hide the toughest case' : 'See the toughest case (all of them at once)'}
+          {showAll ? 'Hide the toughest case' : 'All at once'}
         </button>
       )}
     </>
@@ -324,11 +222,7 @@ function Together() {
   const max = Math.max(1, ...rows.map((r) => Math.max(r.cushion, r.long, r.target)));
   return (
     <section className="card together">
-      <h3>Short-term and long-term, together</h3>
-      <p className="hint">
-        You don’t have to choose. In a steady five years with your plan, the cushion fills while long-term savings
-        {inputs.plan === 'yes' ? ' and the workplace plan grow' : ' grow'} beside it.
-      </p>
+      <p className="hint">You don’t have to choose. Five steady years, side by side.</p>
       <div className="bars" role="img" aria-label={`After 5 steady years: cushion ${money(rows[4].cushion)}, long-term savings ${money(rows[4].long)}.`}>
         {rows.map((r) => (
           <div key={r.year} className="bar-col">
@@ -355,7 +249,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
   const now = a.summary.counts[0];
   return (
     <>
-      <p className="lede">Smallest step, biggest shift. Each habit is tested alone against your thousand futures. Switch one on and watch which futures it rescues.</p>
+      <p className="lede">Switch one on. The futures it rescues light up.</p>
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);
@@ -379,23 +273,23 @@ function HabitsPanel({ a }: { a: Analysis }) {
                   Rescues <b>{num(row.rescued)}</b> futures
                   {row.ageDelta !== null && row.ageDelta !== 0 && <span> · {ageShift(row.ageDelta)}</span>}
                 </p>
-                <p className="hint">{copy.explain}</p>
+                <details className="why">
+                  <summary>How it works</summary>
+                  <p className="hint">{copy.explain}</p>
+                </details>
               </div>
               <Switch checked={on} onChange={() => toggle(row.id)} label={copy.title} />
             </li>
           );
         })}
       </ol>
-      <section className="card waiting">
-        <h3>What waiting costs</h3>
-        <p>
-          The same plan, started {A.waitingYears} years later, keeps you in control in <b>{num(a.waiting.inControl)}</b> of
-          1,000 futures instead of <b>{num(now)}</b>
-          {a.waiting.ageDelta !== null && a.waiting.ageDelta > 0 ? `, and work becomes optional about ${a.waiting.ageDelta === 1 ? '1 year' : `${a.waiting.ageDelta} years`} later.` : '.'}
-        </p>
-        <p className="hint">Not a choice to make, just what time is worth. Starting small now does more than starting bigger later.</p>
-      </section>
-      <Together />
+      <p className="hint waiting-line">
+        Starting {A.waitingYears} years later: <b>{num(a.waiting.inControl)}</b> in control instead of <b>{num(now)}</b>.
+      </p>
+      <details className="drawer">
+        <summary>Short-term and long-term, together</summary>
+        <Together />
+      </details>
     </>
   );
 }
@@ -414,15 +308,14 @@ function AiToggle() {
     <div className="ai-toggle">
       <Switch checked={aiOn} onChange={change} label="AI narration" />
       <p className="hint" aria-live="polite">
-        <b>AI narration {aiOn ? 'on' : 'off'}.</b>{' '}
-        {note || 'When on, anonymous simulation facts (counts, ages, events) are sent to be put into warmer words. Every number still comes from the simulation.'}
+        <b>AI wording {aiOn ? 'on' : 'off'}.</b> {note || 'Sends only anonymous counts. Numbers never change.'}
       </p>
     </div>
   );
 }
 
-const NEXT_LABEL: Record<number, string> = { 3: 'Make it more me', 4: 'That’s me', 5: 'What if…', 6: 'Pick one to try' };
-const TITLES: Record<number, string> = { 3: 'Your thousand futures', 4: 'Make it more you', 5: 'Smallest step, biggest shift', 6: 'What if…' };
+const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'Smallest step', [STEP.habits]: 'What if…', [STEP.whatIf]: 'Pick one to try' };
+const TITLES: Record<number, string> = { [STEP.futures]: 'Your thousand futures', [STEP.habits]: 'Smallest step, biggest shift', [STEP.whatIf]: 'What if…' };
 
 export function Explore() {
   const step = useStore((s) => s.step);
@@ -474,12 +367,11 @@ export function Explore() {
           </button>
         )}
         {a && step === STEP.futures && <FuturesPanel a={a} />}
-        {step === STEP.more && <MorePanel />}
         {a && step === STEP.habits && <HabitsPanel a={a} />}
         {a && step === STEP.whatIf && <WhatIfPanel a={a} />}
         <AiToggle />
         <div className="nav">
-          <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.basics : step - 1)}>
+          <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.about : step - 1)}>
             Back
           </button>
           <button type="button" className="primary" onClick={() => setStep(step + 1)}>

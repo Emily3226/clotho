@@ -25,7 +25,7 @@ export function Return() {
     return (
       <section className="narrow">
         <p className="lede">No step picked yet.</p>
-        <button type="button" className="primary" onClick={() => setStep(STEP.checkin)}>
+        <button type="button" className="primary" onClick={() => setStep(STEP.about)}>
           Start
         </button>
       </section>

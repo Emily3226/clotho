@@ -1243,3 +1243,70 @@ fieldset.more-q legend {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* One-screen intake. Chip pattern adapted from the 21st "Chip Group". */
+.intake {
+  display: grid;
+  gap: 22px;
+  padding: 22px;
+}
+.about {
+  display: grid;
+  gap: 20px;
+}
+.q {
+  display: grid;
+  gap: 10px;
+}
+.q-label {
+  font-weight: 600;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  transition: gap 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+.chip-check {
+  display: inline-block;
+  width: 0;
+  height: 0.7em;
+  overflow: hidden;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+  transition: width 0.18s ease, transform 0.18s ease;
+}
+.chip[aria-pressed='true'] {
+  gap: 8px;
+}
+.chip[aria-pressed='true'] .chip-check {
+  width: 0.38em;
+  transform: rotate(45deg) scale(1) translate(-1px, -2px);
+}
+.chip:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.home-q {
+  display: grid;
+  gap: 16px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.home-q .chip {
+  background: var(--surface);
+}
+.live-answers .about {
+  margin-top: 14px;
+}
+details.why summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.waiting-line {
+  margin: 14px 0;
+}
