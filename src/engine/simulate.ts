@@ -1,5 +1,5 @@
 import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
-import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor, homePriceFor, minDownPayment } from './profile';
+import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor, homePriceFor, isStudent, minDownPayment } from './profile';
 import { drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
 import type { Inputs, Levers, PathEvent, PathResult, Scenario, SimOptions, Status, Summary } from './types';
 import { SEV_INDEX, WORRY } from './worries';
@@ -43,7 +43,7 @@ export function simulate(
   // Ordinary-year stock mean, re-centred so the long-run average stays at the
   // set's mean once the crash regime is included.
   const stockNormalMean = (mk.stockMean - mk.crashChance * A.crashMean) / (1 - mk.crashChance);
-  const student = inputs.stage === 'student';
+  const student = isStudent(inputs.stage);
   const gig = inputs.stage === 'gig';
   const finishAge = student ? Math.max(age, inputs.finishAge) : age;
   const fullIncome = student ? fieldSalaryFor('first', inputs.field) : income;

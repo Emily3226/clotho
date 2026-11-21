@@ -137,7 +137,7 @@ export const useStore = create<Store>()(
       ...fresh,
       set: 'middle',
       aiOn: false,
-      theme: 'auto',
+      theme: 'dark',
       computing: false,
       showAssumptions: false,
       commitment: null,
@@ -187,6 +187,12 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'clotho:v2',
+      // v1: dark became the default, so a saved 'auto' from before moves to dark.
+      version: 1,
+      migrate: (old, from) => {
+        const s = (old ?? {}) as Partial<Store>;
+        return (from < 1 && (!s.theme || s.theme === 'auto') ? { ...s, theme: 'dark' } : s) as Store;
+      },
       partialize: (s) => ({
         inputs: s.inputs,
         room: s.room,

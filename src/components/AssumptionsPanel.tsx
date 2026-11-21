@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DISCLAIMER } from '../config';
 import { ASSUMPTIONS, LIMITATIONS, type Assumption } from '../engine/assumptions';
 import { CITIES, FIELDS, MARKET_SETS, STAGES, STATCAN_GRAD_URL } from '../engine/profile';
@@ -7,8 +7,31 @@ import type { AssumptionSetId } from '../engine/types';
 import { WORRIES } from '../engine/worries';
 import { leverCopy } from '../lib/copy';
 import { money } from '../lib/format';
+import { narrationAvailable } from '../narrate/client';
 import { useStore } from '../store';
-import { Segmented } from './bits';
+import { Segmented, Switch } from './bits';
+
+export function AiToggle() {
+  const aiOn = useStore((s) => s.aiOn);
+  const setState = useStore((s) => s.setState);
+  const [note, setNote] = useState('');
+  const change = async (on: boolean) => {
+    setNote('');
+    if (!on) return setState({ aiOn: false });
+    if (await narrationAvailable()) setState({ aiOn: true });
+    else setNote('Not set up here. Nothing was sent.');
+  };
+  return (
+    <div className="ai-toggle">
+      <Switch checked={aiOn} onChange={change} label="AI narration" />
+      <p className="hint" aria-live="polite">
+        <b>AI wording</b>{' '}
+        {note || 'Sends anonymous counts and typed goals. Numbers never change.'}
+      </p>
+    </div>
+  );
+}
+
 
 function Rows({ items }: { items: Assumption[] }) {
   return (
@@ -67,6 +90,7 @@ export function AssumptionsPanel() {
           </button>
         </header>
         <p className="lede">{DISCLAIMER}</p>
+        <AiToggle />
         <p>
           Every amount is in today’s dollars, so inflation is already taken out. The same inputs and the same seed always
           give the same thousand futures.

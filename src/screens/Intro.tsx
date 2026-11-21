@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { APP_NAME, TAGLINE } from '../config';
+import { TAGLINE } from '../config';
 import { AboutYou } from '../components/AboutYou';
 import { LandingRiver } from '../components/LandingRiver';
 import { PERSONAS } from '../engine/personas';
@@ -20,12 +20,11 @@ export function Landing() {
   };
   return (
     <section className="landing">
-      <p className="eyebrow">{APP_NAME}</p>
       <h1>
         {first}.<br />
         <em>{second}</em>
       </h1>
-      <p className="lede">A thousand runs of luck. See which small habit rescues the most of your futures.</p>
+      <p className="lede">1,000 runs of luck. One habit that helps most.</p>
       <LandingRiver />
       {commitment && (
         <div className="card welcome">
@@ -95,12 +94,11 @@ export function About() {
   const [conf, setConf] = useState(before ?? 5);
   return (
     <section className="narrow about-screen">
-      <p className="eyebrow">About you</p>
-      <h1 className="h-question">Tap what fits. Rough is fine.</h1>
+      <h1 className="h-question">Tap what fits.</h1>
       <div className="card intake">
         <div className="q">
           <label className="q-label" htmlFor="conf-before">
-            How do you feel about your financial future?
+            How do you feel about money?
           </label>
           <ConfidenceSlider id="conf-before" value={conf} onChange={setConf} />
         </div>

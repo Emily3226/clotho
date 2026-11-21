@@ -1,6 +1,6 @@
 export type PlanAnswer = 'yes' | 'no' | 'unsure';
 
-export type Stage = 'student' | 'first' | 'gig' | 'full';
+export type Stage = 'student' | 'coop' | 'part' | 'first' | 'gig' | 'full';
 export type FieldId = 'health' | 'trades' | 'engcs' | 'business' | 'science' | 'social' | 'arts' | 'unsure';
 export type City = 'major' | 'big' | 'small';
 export type Living = 'family' | 'renting' | 'own';
