@@ -127,10 +127,10 @@ export function simulate(
     let debtBal = inputs.debt ? inputs.debt.balance : 0;
     // A student's loan payments start when school ends.
     let debtStarted = !student;
-    let trendAtFinish = 1;
     let plainAtFinish = 1;
 
     let woAge: number | null = null;
+    let judgedAge: number | null = null;
     let ratio65 = 0;
     let retired = false;
     let withdraw = 0;
@@ -160,7 +160,7 @@ export function simulate(
       const a = age + t;
       const flex = tfsa + fhsa + taxable;
       const total = cushion + flex + workplace;
-      // Room to move and work-optional are judged as if the home or goal had
+      // Room to move and the status are judged as if the home or goal had
       // not been paid for: those are counted on their own, so reaching one
       // never makes the rest of a future look worse.
       const judged = flex + parked;
@@ -198,12 +198,19 @@ export function simulate(
         const bridge = a < A.retireAge ? pens * (A.retireAge - a) : 0;
         // Before 65, savings first have to stand in for the public pensions
         // until they start. Pensions only count as far as that gap is funded.
-        const assets = judged + (1 - A.workplaceRetirementTax) * workplace;
-        const funded = bridge > 0 ? Math.min(1, assets / bridge) : 1;
-        const usable = Math.max(0, assets - bridge);
-        const ratio = (A.withdrawalRate * usable + pens * funded) / Math.max(1, avgSpend);
+        const ratioOf = (assets: number): number => {
+          const funded = bridge > 0 ? Math.min(1, assets / bridge) : 1;
+          const usable = Math.max(0, assets - bridge);
+          return (A.withdrawalRate * usable + pens * funded) / Math.max(1, avgSpend);
+        };
+        const reachable = flex + (1 - A.workplaceRetirementTax) * workplace;
+        // The status is judged as if the home or goals had not been paid for
+        // (they are counted on their own). The age work becomes optional is
+        // only ever claimed on money this future actually still has.
+        const ratio = ratioOf(reachable + parked);
         if (a === A.retireAge) ratio65 = ratio;
-        if (ratio >= A.workOptionalShare && woAge === null) {
+        if (ratio >= A.workOptionalShare && judgedAge === null) judgedAge = a;
+        if (ratioOf(reachable) >= A.workOptionalShare && woAge === null) {
           woAge = a;
           if (detail) events.push({ age: a, type: 'optional' });
         }
@@ -263,20 +270,26 @@ export function simulate(
       }
       const inSchool = student && a < finishAge;
       if (student && a === finishAge) {
-        trendAtFinish = trend;
         plainAtFinish = plainTrend;
         debtStarted = true;
       }
-      const payBase = boost * (inSchool ? income * trend : student ? (fullIncome * trend) / trendAtFinish : income * trend);
+      // Full-time pay starts at the field salary in today's dollars. Dividing
+      // by the plain trend removes ordinary growth during school but keeps any
+      // worry (such as AI) that has already pulled pay down by graduation.
+      const payBase = boost * (inSchool ? income * trend : student ? (fullIncome * trend) / plainAtFinish : income * trend);
       const gross = payBase * level * (1 + (calm ? 0 : wageNoise * draws[o + S_WAGE]));
       const nth = takeHome(gross);
       // Lifestyle follows the expected career, not each year's luck: a layoff,
       // a pay cut or a slower career squeezes saving, not spending.
       const expectedPay = inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend;
       const expectedNth = takeHome(expectedPay);
-      if (t > 0) spendBase += raiseSpent * (expectedNth - prevNth);
+      // Starting full-time work lifts lifestyle like a raise, even when it
+      // happens this year (t = 0): otherwise spending stays at part-time level
+      // for life and nearly all of the new pay is saved.
+      const startsFullTime = student && a === finishAge;
+      if (t > 0 || startsFullTime) spendBase += raiseSpent * (expectedNth - prevNth);
       prevNth = expectedNth;
-      if (detail && student && t > 0 && a === finishAge) {
+      if (detail && startsFullTime) {
         events.push({ age: a, type: 'fulltime' });
       } else if (detail && t > 0 && gross / prevGross > 1.055) {
         events.push({ age: a, type: 'raise', value: Math.round((gross / prevGross - 1) * 100) });
@@ -381,6 +394,7 @@ export function simulate(
       // Living with family: the same lifestyle as renting, plus the rent not
       // paid, saved until moving out.
       if (a < moveOutAge) free += Math.min(city.moveOutCost, FAMILY_RENT_SHARE * th);
+      // The saving entered is before loan payments, so the payment comes on top.
       if (debtDue > 0) {
         const fromSaving = Math.min(debtDue, Math.max(0, free));
         const trimmed = Math.min(debtDue - fromSaving, A.debtTrimShare * spend);
@@ -516,7 +530,11 @@ export function simulate(
       }
     }
 
-    const wo65 = woAge !== null && woAge <= A.retireAge;
+    // The status is judged as if the home or goals were not paid for
+    // (they are counted on their own). The "work optional by 65" tick says
+    // what really happened in this life, so it always agrees with the story.
+    const wo65 = judgedAge !== null && judgedAge <= A.retireAge;
+    const reallyWo65 = woAge !== null && woAge <= A.retireAge;
     const homeMs = homeGoal ? bought : null;
     // The home goal is counted on its own, not in the status: missing a
     // date you picked should not hide everything else that went well.
@@ -528,7 +546,7 @@ export function simulate(
     out[i] = {
       index: i,
       status,
-      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: wo65, goals: goalsReached },
+      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: reallyWo65, goals: goalsReached },
       workOptionalAge: woAge,
       ratio65,
       final,
