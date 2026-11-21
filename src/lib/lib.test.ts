@@ -22,6 +22,12 @@ describe('narration validator', () => {
     expect(validateNarration('', facts)).toBe(false);
   });
 
+  it('rejects numbers spelled out in words, which cannot be checked', () => {
+    expect(validateNarration('At twenty-seven you were out of work for 5 months.', facts)).toBe(false);
+    expect(validateNarration('You saved three hundred thousand dollars.', facts)).toBe(false);
+    expect(validateNarration('This is one version of you: at 27 you were out of work for 5 months.', facts)).toBe(true);
+  });
+
   it('rejects advice and shaming words', () => {
     expect(validateNarration('You should buy an index fund.', facts)).toBe(false);
     expect(validateNarration('You are behind in 621 futures.', facts)).toBe(false);

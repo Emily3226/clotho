@@ -27,9 +27,15 @@ export function factNumbers(facts: unknown, into = new Set<number>()): Set<numbe
 
 const BANNED = /\b(behind|should have|too late|at risk|danger|doom|invest in|buy|fund|etf|stock pick)\b/i;
 
+// Numbers written as words cannot be checked against the facts, so any reply
+// that spells one out is refused. ("one" alone is allowed: "one version of you".)
+const NUMBER_WORDS =
+  /\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|dozen|half|twice|double|triple|per ?cent|percent)\b/i;
+
 export function validateNarration(text: string, facts: unknown, question = ''): boolean {
   if (!text || text.length > 700) return false;
   if (BANNED.test(text)) return false;
+  if (NUMBER_WORDS.test(text)) return false;
   const allowed = factNumbers(facts);
   for (const n of numbersIn(question)) allowed.add(n);
   return numbersIn(text).every((n) => allowed.has(n));
