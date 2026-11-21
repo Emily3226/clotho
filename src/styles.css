@@ -1484,3 +1484,24 @@ details.why summary {
   border-radius: 3px;
   background: var(--accent);
 }
+
+/* Typed worries: what each one is tested as, with the choices tucked away. */
+.tested-as summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.92rem;
+  padding: 4px 0;
+}
+.tested-as summary::-webkit-details-marker {
+  display: none;
+}
+.tested-as summary .link {
+  margin-left: 6px;
+}
+.tested-as[open] summary .link {
+  display: none;
+}
+.concerns {
+  margin: 4px 0 8px;
+}

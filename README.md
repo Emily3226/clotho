@@ -32,10 +32,10 @@ The app needs no network and no API key. AI narration is optional: copy `.env.ex
 ## The flow (about 2 minutes, 30 seconds a month after that)
 
 1. **Landing.** The tagline, a small real river drawing in, a start button, and three one-tap personas (Maya, a student; Jordan, a first job; Sam, gig work). A fourth, Priya, is used on stage to compare with Maya.
-2. **About you.** One screen, mostly taps: confidence, age, monthly saving, life stage, school, field, city, living situation, debt, what you want room for (a home asks what kind and when), and any goal typed in your own words (it asks how much and when).
+2. **About you.** One screen, mostly taps (with "Other" for a field of work in your own words and for an exact debt amount): confidence, age, monthly saving, life stage, school, field, city, living situation, debt, what you want room for (a home asks what kind and when), and any goal typed in your own words (it asks how much and when).
 3. **Your futures.** A thousand lives from now to 70, with a headline count. A savings dial ("What if you set aside $150 a month?") moves every life live and shows "599 → 907". **Play one of your lives** draws a single life across the river with its events as it goes. **Why 599?** opens the working behind the headline: the four checks, how the 1,000 futures sort, and which checks the others miss. "Change your answers" re-runs the river from any answer.
 4. **What helps most.** Habits ranked by futures rescued per dollar a month. Switch one on and the futures it rescues light up: "Automating $25 a month rescues 114 of your futures." The inspector can show the same life, with the same luck, without the habit.
-5. **What if…** Optional worries, each sized and shown with the habit that protects the most, on the same card. The toughest case (all of them at once) is behind a link.
+5. **What if…** Optional worries, each sized and shown with the habit that protects the most, on the same card. A worry can also be typed in your own words: it is matched offline to the closest what-if, and you can change what it is tested as. The toughest case (all of them at once) is behind a link.
 6. **Pick one to try.** One habit, a two-line plan, a monthly calendar reminder, a message for HR when relevant, the confidence question again, and a 9:16 summary card to save or share.
 7. **Monthly check-in.** On a return visit: "Did you do it this month?", a streak, and "You started at 599. Keeping it up points to 924 of 1,000". One "Yes" per month. `?demo=1` adds a "jump ahead 3 months" button for the stage.
 
