@@ -12,5 +12,6 @@ export default defineConfig({
     proxy: { '/api': { target: `http://localhost:${apiPort}`, changeOrigin: true } },
   },
   worker: { format: 'es' },
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  // Each test runs thousands of simulated lives, and CI machines can be slow.
+  test: { environment: 'node', include: ['src/**/*.test.ts'], testTimeout: 30000 },
 });

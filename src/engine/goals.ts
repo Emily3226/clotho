@@ -43,7 +43,6 @@ export function matchGoal(text: string): GoalKind {
 
 export const isGoalKind = (x: unknown): x is GoalKind => typeof x === 'string' && GOAL_KINDS.some((k) => k.id === x);
 
-export const GOAL_AMOUNTS = [2000, 5000, 10000, 25000, 50000, 100000];
 export const GOAL_WHEN = [
   { label: 'In a year', years: 1 },
   { label: 'In 3 years', years: 3 },

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DEFAULT_SEED } from '../config';
 import { AnimatedNumber, ChipGroup, Explain, Switch, Term } from '../components/bits';
-import { AboutYou, CompareCard } from '../components/AboutYou';
+import { AboutYou } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { KeepReachableCard } from '../components/KeepReachable';
 import { TakeMoneyOut } from '../components/TakeMoneyOut';
@@ -9,7 +8,6 @@ import { River } from '../components/River';
 import { whyNot, type Analysis, type HoldTest, type WhyKey, type WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
-import { simulate } from '../engine/simulate';
 import { MARKET_SETS } from '../engine/profile';
 import { LEVER_IDS, NO_LEVERS, STATUS_LABELS, leverOnly, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
 import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
@@ -17,7 +15,7 @@ import { WORRIES, worryInfo } from '../engine/worries';
 import { cutAgesFor, defaultCutAge, type CutShort } from '../engine/noSixtyFive';
 import type { CutShortRequest } from '../engine/noSixtyFive.worker';
 import { leverCopy, leverCostLine, noSixtyFiveAnswer, worryAnswer, worryTitle } from '../lib/copy';
-import { money, moneyShort, num } from '../lib/format';
+import { money, num } from '../lib/format';
 import { classifyWorry, useNarration } from '../narrate/client';
 import { STEP, anyLever, currentScenario, leverIsOn, selectedWorries, useStore } from '../store';
 
@@ -29,9 +27,8 @@ function onLevers(): LeverId[] {
 }
 
 // The count is one point in a range: the same futures under cautious,
-// middle and hopeful returns. Shown with the headline so the number is never
-// read as a forecast.
-function RangeLine({ a, inControl = false }: { a: Analysis; inControl?: boolean }) {
+// middle and hopeful returns, so the number is never read as a forecast.
+function RangeLine({ a }: { a: Analysis }) {
   const { low, high, bySet } = a.range;
   if (high === 0) return null;
   if (low === high) {
@@ -42,8 +39,7 @@ function RangeLine({ a, inControl = false }: { a: Analysis; inControl?: boolean 
       <Term
         explain={`Cautious markets: ${num(bySet.cautious)}. Middle: ${num(bySet.middle)}. Hopeful: ${num(bySet.hopeful)}. Same lives, same luck, different long-run returns. You are seeing ${MARKET_SETS[a.set].label.toLowerCase()}; change it under Assumptions.`}
       >
-        {num(low)} to {num(high)}
-        {inControl ? ' in control,' : ''} depending on how markets do
+        {num(low)} to {num(high)} depending on how markets do
       </Term>
     </p>
   );
@@ -78,7 +74,6 @@ function Headline({ a }: { a: Analysis | null }) {
         <p className="range">
           {num(a.rescue.toControl)} now in control, {num(a.rescue.toMostly)} mostly there
         </p>
-        <RangeLine a={a} inControl />
       </div>
     );
   }
@@ -101,7 +96,6 @@ function Headline({ a }: { a: Analysis | null }) {
         of 1,000 futures in control{activeWorry ? '' : ' today'}
       </p>
       {activeWorry && <p className="context">{activeWorry === 'all' ? 'If all of it happens at once' : worryInfo(activeWorry).ifClause}</p>}
-      {a && <RangeLine a={a} />}
       {best && best.rescued > 0 && (best.inControl - now) * 2 >= best.rescued && (
         <p className="reach">
           <strong>
@@ -240,6 +234,7 @@ function WhyNumber({ a }: { a: Analysis }) {
         Each of your 1,000 futures gets four checks: getting through bad years, 6 months saved by 35, a year saved by 45, and work optional by 65. In
         control means all four.
       </p>
+      <RangeLine a={a} />
       <ul className="why-status">
         {STATUS_LABELS.map((label, i) => (
           <li key={label}>
@@ -271,21 +266,18 @@ function WhyNumber({ a }: { a: Analysis }) {
           What moves the most: <b>{leverCopy(top.id, inputs).noun}</b> rescues {num(top.rescued)} of them.
         </p>
       )}
+      <Milestones a={a} />
     </details>
   );
 }
 
 function FuturesPanel({ a }: { a: Analysis }) {
-  const seed = useStore((s) => s.seed);
   const note = useStore((s) => s.note);
   const computing = useStore((s) => s.computing);
-  const setState = useStore((s) => s.setState);
   return (
     <>
       <WhatIfPanel a={a} />
       <WhyNumber a={a} />
-      <Milestones a={a} />
-      <CompareCard />
       <details className="drawer live-answers">
         <summary>Change your answers</summary>
         <p className={`note-line${computing ? ' busy' : ''}${note ? '' : ' empty'}`} aria-live="polite">
@@ -293,11 +285,6 @@ function FuturesPanel({ a }: { a: Analysis }) {
         </p>
         <AboutYou live />
       </details>
-      <p className="hint">
-        <button type="button" className="link" onClick={() => setState({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
-          {seed === DEFAULT_SEED ? 'New run of luck' : 'First run of luck'}
-        </button>
-      </p>
     </>
   );
 }
@@ -345,7 +332,11 @@ function ConcernEditor() {
   const remove = useStore((s) => s.removeConcern);
   const aiOn = useStore((s) => s.aiOn);
   const [text, setText] = useState('');
+  // Tucked away until asked for, unless they already typed one.
+  const [startOpen] = useState(concerns.length > 0);
   return (
+    <details className="drawer concerns-drawer" open={startOpen}>
+      <summary>Something else on your mind?</summary>
     <div className="goals concerns">
       {concerns.map((c) => (
         <div className="home-q goal" key={c.id}>
@@ -385,7 +376,7 @@ function ConcernEditor() {
           }}
         >
           <label className="q-label" htmlFor="concern-text">
-            {concerns.length ? 'Anything else?' : 'Something else on your mind?'}
+            {concerns.length ? 'Anything else?' : 'In your own words'}
           </label>
           <div className="goal-row">
             <input id="concern-text" value={text} maxLength={60} autoComplete="off" placeholder="My parents need care, rent keeps rising…" onChange={(e) => setText(e.target.value)} />
@@ -397,6 +388,7 @@ function ConcernEditor() {
         </form>
       )}
     </div>
+    </details>
   );
 }
 
@@ -514,36 +506,6 @@ function WhatIfPanel({ a }: { a: Analysis }) {
   );
 }
 
-function Together() {
-  const inputs = useStore((s) => s.inputs);
-  const levers = useStore((s) => s.levers);
-  const rows = useMemo(() => {
-    const [p] = simulate(inputs, {}, levers, 1, { calm: true, paths: 1, trace: true, detail: false });
-    const t = p.trace!;
-    return [1, 2, 3, 4, 5].map((y) => ({ year: y, cushion: t.cushion[y] ?? 0, target: t.target[y] ?? 0, long: (t.plan[y] ?? 0) + (t.flex[y] ?? 0) }));
-  }, [inputs, levers]);
-  const max = Math.max(1, ...rows.map((r) => Math.max(r.cushion, r.long, r.target)));
-  return (
-    <section className="card together">
-      <div className="bars" role="img" aria-label={`After 5 steady years: cushion ${money(rows[4].cushion)}, long-term savings ${money(rows[4].long)}.`}>
-        {rows.map((r) => (
-          <div key={r.year} className="bar-col">
-            <div className="bar-pair">
-              <span className="bar cushion" style={{ height: `${(r.cushion / max) * 100}%` }} />
-              <span className="bar long" style={{ height: `${(r.long / max) * 100}%` }} />
-            </div>
-            <span className="bar-label">Year {r.year}</span>
-          </div>
-        ))}
-      </div>
-      <p className="bar-key">
-        <span><i className="key cushion" /> Cushion: {moneyShort(rows[4].cushion)} by year 5</span>
-        <span><i className="key long" /> Long-term: {moneyShort(rows[4].long)} by year 5</span>
-      </p>
-    </section>
-  );
-}
-
 // Is the best step still the best step when the return assumptions or the
 // person's own worries change? The answer a calculator cannot give.
 function HoldsCard({ a }: { a: Analysis }) {
@@ -558,10 +520,12 @@ function HoldsCard({ a }: { a: Analysis }) {
     return t.onTop ? `Also ${lowerFirst(clause)}` : clause;
   };
   return (
-    <section className="card holds" aria-labelledby="holds-title">
-      <h3 id="holds-title">Does it still hold?</h3>
+    <details className="drawer holds">
+      <summary>
+        Does the top habit still hold? {num(h.held)} of {num(n)} tests
+      </summary>
       <p className="answer">
-        {leverCopy(h.lever, inputs).noun} is ranked first below: it rescues <strong>{num(h.rescued)}</strong> of your futures.{' '}
+        {leverCopy(h.lever, inputs).noun} is ranked first: it rescues <strong>{num(h.rescued)}</strong> of your futures.{' '}
         {h.held === n ? (
           <>It stays first in <strong>{n === 2 ? 'both' : `all ${num(n)}`}</strong> tests.</>
         ) : (
@@ -588,7 +552,7 @@ function HoldsCard({ a }: { a: Analysis }) {
         ))}
       </ul>
       {!worries && <p className="hint">Pick a worry on the previous screen and it is tested here too.</p>}
-    </section>
+    </details>
   );
 }
 
@@ -599,7 +563,6 @@ function HabitsPanel({ a }: { a: Analysis }) {
   const now = a.summary.counts[0];
   return (
     <>
-      <HoldsCard a={a} />
       {a.ranking.some((r) => r.askHR) && a.ranking[0] && !a.ranking[0].askHR && (
         <p className="hint">Not sure about a match at work? Asking HR is free, so it’s worth doing either way.</p>
       )}
@@ -637,11 +600,8 @@ function HabitsPanel({ a }: { a: Analysis }) {
           Starting {A.waitingYears} years later: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
         </p>
       )}
+      <HoldsCard a={a} />
       <KeepReachableCard />
-      <details className="drawer">
-        <summary>Short and long term, together</summary>
-        <Together />
-      </details>
     </>
   );
 }

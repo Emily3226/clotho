@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DISCLAIMER } from '../config';
+import { ClearData } from './ClearData';
 import { ASSUMPTIONS, LIMITATIONS, type Assumption } from '../engine/assumptions';
 import { CITIES, FIELDS, MARKET_SETS, STAGES, STATCAN_GRAD_URL } from '../engine/profile';
 import stability from '../engine/stability.json';
@@ -14,13 +15,20 @@ import { Segmented, Switch } from './bits';
 export function AiToggle() {
   const aiOn = useStore((s) => s.aiOn);
   const setState = useStore((s) => s.setState);
+  const open = useStore((s) => s.showAssumptions);
   const [note, setNote] = useState('');
+  // Hidden on the static site, where there is no server to word things.
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (open && available === null) void narrationAvailable().then(setAvailable);
+  }, [open, available]);
   const change = async (on: boolean) => {
     setNote('');
     if (!on) return setState({ aiOn: false });
     if (await narrationAvailable()) setState({ aiOn: true });
     else setNote('Not set up here. Nothing was sent.');
   };
+  if (!available && !aiOn) return null;
   return (
     <div className="ai-toggle">
       <Switch checked={aiOn} onChange={change} label="AI narration" />
@@ -91,6 +99,7 @@ export function AssumptionsPanel() {
         </header>
         <p className="lede">{DISCLAIMER}</p>
         <AiToggle />
+        <ClearData />
         <p>
           Every amount is in today’s dollars, so inflation is already taken out. The same inputs and the same seed always
           give the same thousand futures.

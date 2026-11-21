@@ -42,8 +42,11 @@ export function useEngine(): void {
       const noLevers = !st.levers.match && !st.levers.raises && !st.levers.cushion && st.levers.auto === 0;
       const kept = st.first && st.first.worry === st.activeWorry ? st.first : null;
       const first = kept ?? (noLevers ? { monthly: st.inputs.monthly, inControl: analysis.summary.counts[0], worry: st.activeWorry } : null);
-      st.setState({ analysis, computing: false, note, pendingNote: null, first });
+      st.setState({ analysis, computing: false, note, pendingNote: null, first, engineError: false });
     };
+    const failed = () => useStore.getState().setState({ computing: false, engineError: true });
+    w.onerror = failed;
+    w.onmessageerror = failed;
     worker.current = w;
     return () => w.terminate();
   }, []);
