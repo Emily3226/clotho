@@ -63,7 +63,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.55 var(--sans);
+  font: 1rem/1.55 var(--sans);
   min-height: 100vh;
 }
 #root {
@@ -1100,6 +1100,23 @@ dialog.panel::backdrop {
   border-radius: 999px;
 }
 
+@media (max-width: 639px) {
+  .top {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .steps {
+    order: 3;
+    width: 100%;
+  }
+  .steps li {
+    flex: 1;
+  }
+  .steps button {
+    width: 100%;
+  }
+}
+
 @media (min-width: 640px) {
   .river {
     height: 300px;
@@ -1146,6 +1163,17 @@ dialog.panel::backdrop {
   }
   .context {
     font-size: 1rem;
+  }
+}
+
+/* Projector and large screens */
+@media (min-width: 1500px) {
+  html {
+    font-size: 112.5%;
+  }
+  main,
+  .top {
+    max-width: 1560px;
   }
 }
 

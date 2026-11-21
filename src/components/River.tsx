@@ -104,7 +104,9 @@ export function River({ analysis, mask, selected, onSelect }: Props) {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    ctx.font = '11px system-ui, sans-serif';
+    const big = w > 900;
+    const fontPx = big ? 13 : 11;
+    ctx.font = `${fontPx}px system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
 
     // Grid and axes.
@@ -147,7 +149,7 @@ export function River({ analysis, mask, selected, onSelect }: Props) {
       for (let s = 3; s >= 0; s--) {
         ctx.strokeStyle = colour(STATUS_VARS[s]);
         ctx.globalAlpha = m ? (pass === 0 ? baseAlpha * 0.3 : 0.32) : baseAlpha;
-        ctx.lineWidth = m && pass === 1 ? 1.3 : 1;
+        ctx.lineWidth = (m && pass === 1 ? 1.3 : 1) * (big ? 1.3 : 1);
         let batch = 0;
         ctx.beginPath();
         for (let i = 0; i < to.n; i++) {
@@ -187,7 +189,7 @@ export function River({ analysis, mask, selected, onSelect }: Props) {
 
     // Milestone markers.
     ctx.textAlign = 'center';
-    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.font = `600 ${fontPx}px system-ui, sans-serif`;
     for (const age of MILESTONE_AGES) {
       if (age < to.startAge) continue;
       const x = X(age - to.startAge);
