@@ -3,7 +3,6 @@ import { Engine } from '../engine/analyse';
 import { PERSONAS } from '../engine/personas';
 import { NO_LEVERS } from '../engine/types';
 import { factNumbers, numbersIn, validateNarration } from '../narrate/validate';
-import { ask } from './ask';
 import { pathFacts, story, timeline, worryAnswer } from './copy';
 import { buildIcs, nextFriday } from './ics';
 
@@ -21,6 +20,12 @@ describe('narration validator', () => {
     expect(validateNarration('In 622 of your 1,000 futures things get harder.', facts)).toBe(false);
     expect(validateNarration('That is 62.1% of your futures.', facts)).toBe(false);
     expect(validateNarration('', facts)).toBe(false);
+  });
+
+  it('rejects numbers spelled out in words, which cannot be checked', () => {
+    expect(validateNarration('At twenty-seven you were out of work for 5 months.', facts)).toBe(false);
+    expect(validateNarration('You saved three hundred thousand dollars.', facts)).toBe(false);
+    expect(validateNarration('This is one version of you: at 27 you were out of work for 5 months.', facts)).toBe(true);
   });
 
   it('rejects advice and shaming words', () => {
@@ -54,19 +59,6 @@ describe('templates', () => {
   });
 });
 
-describe('question box', () => {
-  it('answers from the computed futures', () => {
-    const res = ask('What happens if I lose my job at 30?', analysis.paths);
-    const n = analysis.paths.filter((p) => p.events.some((e) => e.type === 'job' && Math.abs(e.age - 30) <= 1)).length;
-    expect(res.facts?.matchingFutures).toBe(n);
-    expect(validateNarration(res.text, res.facts, 'What happens if I lose my job at 30?')).toBe(true);
-  });
-
-  it('says what it can answer when the question is off topic', () => {
-    expect(ask('Which fund is best?', analysis.paths).facts).toBeNull();
-  });
-});
-
 describe('calendar reminder', () => {
   it('builds an all-day event on the chosen payday', () => {
     const ics = buildIcs('2026-11-27', 'Clotho: Take the full employer match', 'Line one, line two; done.', new Date(Date.UTC(2026, 10, 21, 15, 0, 0)));
@@ -75,6 +67,12 @@ describe('calendar reminder', () => {
     expect(ics).toContain('DTEND;VALUE=DATE:20261128');
     expect(ics).toContain('DESCRIPTION:Line one\\, line two\\; done.');
     expect(ics.trimEnd().endsWith('END:VCALENDAR')).toBe(true);
+  });
+
+  it('repeats monthly when asked, for the check-in', () => {
+    const ics = buildIcs('2026-11-27', 'Clotho: Automate $25 a month', 'Check in.', new Date(Date.UTC(2026, 10, 21)), true);
+    expect(ics).toContain('RRULE:FREQ=MONTHLY\r\n');
+    expect(buildIcs('2026-11-27', 'x', 'y')).not.toContain('RRULE');
   });
 
   it('picks the coming Friday as the default payday', () => {

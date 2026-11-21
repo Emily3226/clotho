@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
-import { APP_NAME, DISCLAIMER } from './config';
-import { Employer } from './screens/Employer';
+import { APP_NAME } from './config';
 import { Explore } from './screens/Explore';
-import { Basics, CheckIn, Landing } from './screens/Intro';
+import { About, Landing } from './screens/Intro';
+import { Return } from './screens/Return';
 import { StepScreen } from './screens/StepScreen';
-import { STEPS, useStore, type Theme } from './store';
+import { STEP, STEPS, useStore, type Theme } from './store';
 import { useEngine } from './useEngine';
 
-const isEmployer = () => window.location.hash.startsWith('#/employer') || window.location.pathname.replace(/\/$/, '').endsWith('/employer');
-const NEXT_THEME: Record<Theme, Theme> = { auto: 'dark', dark: 'light', light: 'auto' };
+const NEXT_THEME: Record<Theme, Theme> = { dark: 'light', light: 'auto', auto: 'dark' };
 const THEME_LABEL: Record<Theme, string> = { auto: 'Auto', dark: 'Dark', light: 'Light' };
 
 export function App() {
@@ -17,18 +16,7 @@ export function App() {
   const step = useStore((s) => s.step);
   const setStep = useStore((s) => s.setStep);
   const theme = useStore((s) => s.theme);
-  const set = useStore((s) => s.set);
-  const [employer, setEmployer] = useState(isEmployer());
-
-  useEffect(() => {
-    const on = () => setEmployer(isEmployer());
-    window.addEventListener('hashchange', on);
-    window.addEventListener('popstate', on);
-    return () => {
-      window.removeEventListener('hashchange', on);
-      window.removeEventListener('popstate', on);
-    };
-  }, []);
+  const setState = useStore((s) => s.setState);
 
   useEffect(() => {
     if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
@@ -36,8 +24,8 @@ export function App() {
   }, [theme]);
 
   useEffect(() => {
-    document.title = employer ? `${APP_NAME} for plan sponsors` : `${APP_NAME} · ${STEPS[step]}`;
-  }, [employer, step]);
+    document.title = `${APP_NAME} · ${step === STEP.back ? 'Check-in' : STEPS[step]}`;
+  }, [step]);
 
   return (
     <>
@@ -45,16 +33,10 @@ export function App() {
         Skip to content
       </a>
       <header className="top">
-        <a
-          className="brand"
-          href="#/"
-          onClick={() => {
-            if (!employer) setStep(0);
-          }}
-        >
+        <a className="brand" href="#/" onClick={() => setStep(STEP.start)}>
           {APP_NAME}
         </a>
-        {!employer && step > 0 && (
+        {step > 0 && step < STEP.back && (
           <nav className="steps" aria-label="Progress">
             <ol>
               {STEPS.slice(1).map((label, i) => {
@@ -73,41 +55,34 @@ export function App() {
           </nav>
         )}
         <div className="top-actions">
-          <button type="button" className="ghost" onClick={() => set({ showAssumptions: true })}>
+          <button type="button" className="ghost" onClick={() => setState({ showAssumptions: true })}>
             Assumptions
           </button>
-          <button type="button" className="ghost" onClick={() => set({ theme: NEXT_THEME[theme] })} aria-label={`Colour theme: ${THEME_LABEL[theme]}. Change theme.`}>
+          <button type="button" className="ghost" onClick={() => setState({ theme: NEXT_THEME[theme] })} aria-label={`Colour theme: ${THEME_LABEL[theme]}. Change theme.`}>
             {THEME_LABEL[theme]}
           </button>
         </div>
       </header>
 
       <main id="main">
-        {employer ? (
-          <Employer />
-        ) : step === 0 ? (
+        {step === STEP.start ? (
           <Landing />
-        ) : step === 1 ? (
-          <CheckIn />
-        ) : step === 2 ? (
-          <Basics />
-        ) : step <= 5 ? (
+        ) : step === STEP.about ? (
+          <About />
+        ) : step <= STEP.whatIf ? (
           <Explore />
-        ) : (
+        ) : step === STEP.pick ? (
           <StepScreen />
+        ) : (
+          <Return />
         )}
       </main>
 
-      <footer className="foot">
-        <p>{DISCLAIMER} All amounts are in today’s dollars.</p>
-        <p>
-          <button type="button" className="link" onClick={() => set({ showAssumptions: true })}>
-            Assumptions and sources
-          </button>
-          {' · '}
-          {employer ? <a href="#/">For individuals</a> : <a href="#/employer">For plan sponsors</a>}
-        </p>
-      </footer>
+      {step === STEP.start && (
+        <footer className="foot">
+          <p>Educational, not financial advice. Today’s dollars.</p>
+        </footer>
+      )}
       <AssumptionsPanel />
     </>
   );

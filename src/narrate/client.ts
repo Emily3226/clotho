@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
+import { isGoalKind } from '../engine/goals';
+import type { GoalKind } from '../engine/types';
 import { validateNarration } from './validate';
 
 export type NarrateKind = 'story' | 'worry' | 'ask';
@@ -31,6 +33,24 @@ export async function narrate(kind: NarrateKind, facts: unknown, question = ''):
     return null;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// Asks the server to sort a goal into a kind. Null on any failure: the
+// offline word match stands.
+export async function classifyGoal(text: string): Promise<GoalKind | null> {
+  try {
+    const res = await fetch('/api/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const kind = ((await res.json()) as { kind?: string }).kind;
+    return isGoalKind(kind) ? kind : null;
+  } catch {
+    return null;
   }
 }
 

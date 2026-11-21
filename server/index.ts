@@ -11,7 +11,7 @@ try {
 
 // The app launcher sets PORT for the web app, so this server reads API_PORT only.
 const port = Number(process.env.API_PORT) || 8787;
-const key = process.env.GEMINI_API_KEY ?? '';
+const key = process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '';
 const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const timeoutMs = Number(process.env.NARRATE_TIMEOUT_MS) || 4000;
 
@@ -19,6 +19,7 @@ const SYSTEM = [
   'You put simulation results into warm, plain words for a young Canadian. Grade-8 reading level, Canadian spelling.',
   'You are given FACTS as JSON. Use only those facts.',
   'Never state a number that is not in the facts. Never do arithmetic. Never turn a count into a percentage.',
+  'Always write numbers as digits, exactly as they appear in the facts (for example 24 or $327,000). Never spell a number out in words.',
   'Never give advice, never recommend or name any product, fund, provider or company.',
   'Never use the words: behind, should have, too late, at risk, danger, doom.',
   'Speak about options and control. Be calm and direct. No lists, no headings, no emoji. Plain text only.',
@@ -61,6 +62,45 @@ app.post('/api/narrate', async (req, res) => {
     res.json({ text });
   } catch {
     res.status(504).json({ error: 'narration timed out' });
+  }
+});
+
+// Sorts a goal typed in the person's own words into one of a fixed set of
+// kinds. It never returns an amount: costs come from the app's own table.
+const GOAL_KINDS = ['car', 'travel', 'school', 'wedding', 'family', 'business', 'move', 'pet', 'gear', 'other'];
+app.post('/api/classify', async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.slice(0, 80) : '';
+  if (!key) return void res.status(503).json({ error: 'not configured' });
+  if (!text.trim()) return void res.status(400).json({ error: 'bad request' });
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            {
+              text:
+                "Sort a young person's savings goal into exactly one kind. car: any vehicle. travel: trips and time away. " +
+                'school: degrees, courses, lessons, licences, training. wedding: weddings and engagements. ' +
+                'family: children, or helping or caring for family. business: starting or growing a business. ' +
+                'move: moving, deposits, first and last rent. pet: getting a pet. gear: things to buy such as tech, ' +
+                'furniture, instruments. other: anything else. Reply with the single kind only, lower case, nothing else.',
+            },
+          ],
+        },
+        contents: [{ role: 'user', parts: [{ text }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 5 },
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!r.ok) return void res.status(502).json({ error: 'failed' });
+    const data = (await r.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    const word = (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim().toLowerCase().replace(/[^a-z]/g, '');
+    if (!GOAL_KINDS.includes(word)) return void res.status(422).json({ error: 'rejected' });
+    res.json({ kind: word });
+  } catch {
+    res.status(504).json({ error: 'timed out' });
   }
 });
 

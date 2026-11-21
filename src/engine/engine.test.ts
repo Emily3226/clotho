@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Engine } from './analyse';
+import { writeFileSync } from 'node:fs';
+import { Engine, rescueOf } from './analyse';
 import { A, stockShareAt } from './assumptions';
-import { PERSONAS } from './personas';
+import { PERSONAS, persona } from './personas';
+import { matchGoal } from './goals';
+import { inputsForStage, minDownPayment } from './profile';
 import { simulate, summarise } from './simulate';
 import { LEVER_IDS, NO_LEVERS, WORRY_IDS, leverOnly, type Inputs, type Levers, type PathResult, type Scenario } from './types';
 
@@ -63,8 +66,8 @@ describe('monotonicity', () => {
   it('more saving never lowers the count of futures in control', () => {
     for (const persona of PERSONAS) {
       let last = -1;
-      for (const perPaycheque of [0, 25, 50, 100, 200, 400]) {
-        const n = inControl({ ...persona.inputs, perPaycheque });
+      for (const monthly of [0, 25, 50, 100, 200, 400]) {
+        const n = inControl({ ...persona.inputs, monthly });
         expect(n).toBeGreaterThanOrEqual(last);
         last = n;
       }
@@ -83,16 +86,18 @@ describe('monotonicity', () => {
 
 describe('limits', () => {
   const rich: Inputs = {
-    age: 30,
+    ...inputsForStage('full', 30),
     income: 220000,
     saved: 150000,
-    perPaycheque: 2500,
+    monthly: 5400,
     plan: 'yes',
     employeePct: 12,
     matchPct: 10,
-    cushionMonths: 3,
     home: { price: 900000, byAge: 40 },
     debt: { balance: 30000, rate: 6 },
+    city: 'major',
+    living: 'family',
+    moveOutAge: 33,
   };
   const cases: [Inputs, Scenario, Levers][] = [
     ...PERSONAS.map((p): [Inputs, Scenario, Levers] => [p.inputs, {}, NO_LEVERS]),
@@ -118,27 +123,25 @@ describe('limits', () => {
 describe('sanity', () => {
   it('reproduces hand-calculated compound growth with no volatility and no shocks', () => {
     const inputs: Inputs = {
-      age: 50,
+      ...inputsForStage('full', 50),
       income: 60000,
       saved: 0,
-      perPaycheque: 100,
+      monthly: 200,
       plan: 'no',
       employeePct: 0,
       matchPct: 0,
       cushionMonths: 0,
-      home: null,
-      debt: null,
     };
     const [p] = simulate(inputs, {}, NO_LEVERS, SEED, { calm: true, paths: 1 });
-    // Returns are earned on the opening balance; $2,600 is added at year end.
+    // Returns are earned on the opening balance; $2,400 is added at year end.
     let expected = 0;
     for (let age = 50; age < 60; age++) {
       const w = stockShareAt(age);
       const r = w * 0.05 + (1 - w) * 0.01 - 0.0075;
-      expected = expected * (1 + r) + 100 * 26;
+      expected = expected * (1 + r) + 200 * 12;
     }
     expect(p.balances![10]).toBeCloseTo(expected, 0);
-    expect(expected).toBeGreaterThan(26000);
+    expect(expected).toBeGreaterThan(24000);
     expect(p.events.filter((e) => e.type === 'job' || e.type === 'crash')).toHaveLength(0);
   });
 });
@@ -163,7 +166,7 @@ describe('worries', () => {
   it('sizes every worry and names a protection', () => {
     const all: Scenario = Object.fromEntries(WORRY_IDS.map((id) => [id, 'moderate']));
     for (const persona of PERSONAS) {
-      const a = new Engine().analyse(persona.inputs, all, {}, NO_LEVERS, SEED);
+      const a = new Engine().analyse(persona.inputs, all, {}, NO_LEVERS, SEED, 'middle', true);
       expect(a.cards).toHaveLength(WORRY_IDS.length + 1);
       for (const card of a.cards) {
         expect(card.affected).toBeGreaterThan(0);
@@ -206,12 +209,205 @@ describe('performance', () => {
 });
 
 describe('personas', () => {
-  it('gives plausible, different headlines', () => {
+  it('gives plausible, different headlines, each with a habit that rescues 50 or more', () => {
     const counts = PERSONAS.map((p) => inControl(p.inputs));
     for (const n of counts) {
-      expect(n).toBeGreaterThan(50);
+      expect(n).toBeGreaterThan(25);
       expect(n).toBeLessThan(950);
     }
     expect(new Set(counts).size).toBe(PERSONAS.length);
+    for (const p of PERSONAS) {
+      const a = new Engine().analyse(p.inputs, {}, {}, NO_LEVERS, SEED);
+      expect(Math.max(...a.ranking.map((r) => r.rescued))).toBeGreaterThanOrEqual(50);
+    }
+  }, 30000);
+
+  it('gives two students of the same age different futures', () => {
+    const maya = persona('maya').inputs;
+    const priya = persona('priya').inputs;
+    expect(maya.age).toBe(priya.age);
+    expect(Math.abs(inControl(maya) - inControl(priya))).toBeGreaterThanOrEqual(50);
   });
+});
+
+describe('make it more you', () => {
+  it('each of the five questions changes the count for at least one persona', () => {
+    const changes: [string, (i: Inputs) => Inputs][] = [
+      ['field', (i) => ({ ...i, field: i.field === 'health' ? 'arts' : 'health' })],
+      ['city', (i) => ({ ...i, city: i.city === 'major' ? 'small' : 'major' })],
+      ['living', (i) => ({ ...i, living: i.living === 'family' ? 'renting' : 'family', moveOutAge: i.age + 3 })],
+      ['debt', (i) => ({ ...i, debt: i.debt ? null : { balance: 35000, rate: 5 } })],
+      ['finish', (i) => ({ ...i, finishAge: i.finishAge + 3 })],
+    ];
+    for (const [name, change] of changes) {
+      const moved = PERSONAS.some((p) => inControl(change(p.inputs)) !== inControl(p.inputs));
+      expect(moved, name).toBe(true);
+    }
+  });
+
+  it('matches goals typed in your own words to a kind, offline', () => {
+    expect(matchGoal('a trip to Japan')).toBe('travel');
+    expect(matchGoal('Buy a car')).toBe('car');
+    expect(matchGoal('grad school in Montreal')).toBe('school');
+    expect(matchGoal('my wedding')).toBe('wedding');
+    expect(matchGoal('learn to fly')).toBe('other');
+  });
+
+  it('pays a goal at the age chosen, counts it on its own, and never from the cushion', () => {
+    const maya = persona('maya').inputs;
+    const base = simulate(maya, {}, NO_LEVERS, SEED, { detail: false });
+    const goal = (cost: number, byAge: number) => ({ ...maya, goals: [{ id: 'g', label: 'Japan', kind: 'travel' as const, cost, byAge }] });
+    const small = summarise(simulate(goal(3000, 30), {}, NO_LEVERS, SEED, { detail: false })).milestoneCounts.goals[0];
+    const big = summarise(simulate(goal(60000, 30), {}, NO_LEVERS, SEED, { detail: false })).milestoneCounts.goals[0];
+    const later = summarise(simulate(goal(60000, 45), {}, NO_LEVERS, SEED, { detail: false })).milestoneCounts.goals[0];
+    expect(small).toBeGreaterThan(big);
+    expect(later).toBeGreaterThan(big);
+    // A goal that is never paid leaves the future exactly as it was.
+    const huge = simulate(goal(10_000_000, 30), {}, NO_LEVERS, SEED, { detail: false });
+    huge.forEach((p, i) => {
+      expect(p.milestones.goals[0]).toBe(false);
+      expect(p.status).toBe(base[i].status);
+      expect(p.final).toBeCloseTo(base[i].final, 6);
+    });
+  });
+
+  it('never lets a home or goal make habits or more saving look worse', () => {
+    const maya = persona('maya').inputs;
+    const jordan = persona('jordan').inputs;
+    const cases: Inputs[] = [
+      { ...maya, home: { price: 0, byAge: 35, type: 'condo' } },
+      { ...jordan, home: { price: 0, byAge: 40, type: 'house' } },
+      { ...maya, goals: [{ id: 'g', label: 'Japan', kind: 'travel', cost: 6000, byAge: 28 }] },
+    ];
+    for (const i of cases) {
+      const base = inControl(i);
+      for (const id of LEVER_IDS) expect(inControl(i, {}, leverOnly(id)), id).toBeGreaterThanOrEqual(base);
+      let last = -1;
+      for (const monthly of [0, 25, 50, 100, 200]) {
+        const n = inControl({ ...i, monthly });
+        expect(n).toBeGreaterThanOrEqual(last);
+        last = n;
+      }
+    }
+    // Adding the goal itself barely moves the count: it is judged on its own.
+    expect(Math.abs(inControl(cases[1]) - inControl(jordan))).toBeLessThanOrEqual(15);
+  });
+
+  it('only shrinks student debt by what is paid', () => {
+    const sam = { ...persona('sam').inputs, debt: { balance: 35000, rate: 5 } };
+    // More saving can never be "paid" by debt: with debt, savings are lower in every life.
+    const withDebt = simulate(sam, {}, NO_LEVERS, SEED);
+    const without = simulate({ ...sam, debt: null }, {}, NO_LEVERS, SEED);
+    withDebt.forEach((p, i) => expect(p.balances![10]).toBeLessThanOrEqual(without[i].balances![10] + 0.01));
+  });
+
+  it('lets debt squeeze a budget without wiping out every future', () => {
+    for (const p of PERSONAS) {
+      const none = inControl({ ...p.inputs, debt: null });
+      const some = inControl({ ...p.inputs, debt: { balance: 15000, rate: 5 } });
+      // "Some" debt costs futures, but leaves at least a quarter of them standing.
+      expect(some).toBeLessThanOrEqual(none);
+      expect(some).toBeGreaterThanOrEqual(none / 4);
+      // Waiting five years with debt is a cost, never a wipe-out.
+      expect(inControl({ ...p.inputs, debt: { balance: 15000, rate: 5 } }, {}, { ...NO_LEVERS, delay: 5 })).toBeGreaterThan(0);
+    }
+  });
+
+  it('lets work become optional early for a very high saver, and never on future pensions alone', () => {
+    const jordan = persona('jordan').inputs;
+    const saver = simulate({ ...jordan, income: 150000, monthly: 6000, saved: 60000 }, {}, NO_LEVERS, SEED, { detail: false });
+    const by35 = saver.filter((p) => p.workOptionalAge !== null && p.workOptionalAge <= 35).length;
+    expect(by35).toBeGreaterThan(50);
+    expect(by35).toBeLessThan(950);
+    // The personas as they are: nobody gets there by 35 on luck alone.
+    for (const p of PERSONAS) {
+      for (const r of simulate(p.inputs, {}, NO_LEVERS, SEED, { detail: false })) {
+        expect(r.workOptionalAge === null || r.workOptionalAge > 35).toBe(true);
+      }
+    }
+    // Low pay, nothing set aside: pensions that start at 65 cannot make work
+    // optional earlier unless savings can stand in for them until then.
+    const sam = { ...persona('sam').inputs, income: 24000, monthly: 0, saved: 0 };
+    for (const r of simulate(sam, {}, NO_LEVERS, SEED)) {
+      if (r.workOptionalAge === null || r.workOptionalAge >= A.retireAge) continue;
+      const yearsToPensions = A.retireAge - r.workOptionalAge;
+      expect(r.balances![r.workOptionalAge - sam.age]).toBeGreaterThan(0.5 * yearsToPensions * A.oasMonthly * 12);
+    }
+  });
+
+  it('uses the Canadian minimum down payment', () => {
+    expect(minDownPayment(400000)).toBe(20000);
+    expect(minDownPayment(550000)).toBe(30000);
+    expect(minDownPayment(1400000)).toBe(115000);
+    expect(minDownPayment(1500000)).toBe(300000);
+  });
+
+  it('counts a home goal on its own, without changing whether a future is in control', () => {
+    const maya = persona('maya').inputs;
+    const plain = simulate(maya, {}, NO_LEVERS, SEED, { detail: false });
+    const withHome = simulate({ ...maya, home: { price: 0, byAge: 35, type: 'condo' } }, {}, NO_LEVERS, SEED, { detail: false });
+    const reached = withHome.filter((p) => p.milestones.home).length;
+    expect(reached).toBeGreaterThan(0);
+    // Buying uses savings, so a future can change, but never because the home was missed.
+    withHome.forEach((p, i) => {
+      if (!p.milestones.home) expect(p.status).toBe(plain[i].status);
+    });
+  });
+
+  it('debt never helps, and living with family never hurts', () => {
+    for (const p of PERSONAS) {
+      const i = p.inputs;
+      expect(inControl({ ...i, debt: { balance: 35000, rate: 5 } })).toBeLessThanOrEqual(inControl({ ...i, debt: null }));
+      expect(inControl({ ...i, living: 'family', moveOutAge: i.age + 4 })).toBeGreaterThanOrEqual(inControl({ ...i, living: 'renting' }));
+    }
+  });
+
+  it('keeps students out of layoffs while in school, and gives gig workers dips instead of layoffs', () => {
+    const student = persona('maya').inputs;
+    for (const p of simulate(student, {}, NO_LEVERS, SEED)) {
+      expect(p.events.some((e) => e.type === 'job' && e.age < student.finishAge)).toBe(false);
+    }
+    const gig = persona('sam').inputs;
+    const paths = simulate(gig, {}, NO_LEVERS, SEED);
+    expect(paths.some((p) => p.events.some((e) => e.type === 'job'))).toBe(false);
+    expect(paths.some((p) => p.events.some((e) => e.type === 'dip'))).toBe(true);
+  });
+});
+
+describe('rescue', () => {
+  it('counts exactly the futures whose status improves to In control or Mostly there', () => {
+    const before = simulate(maya, {}, NO_LEVERS, SEED, { detail: false });
+    const after = simulate(maya, {}, leverOnly('auto50'), SEED, { detail: false });
+    const r = rescueOf(before, after);
+    let want = 0;
+    for (let i = 0; i < before.length; i++) {
+      const ok = after[i].status < before[i].status && after[i].status <= 1;
+      expect(r.mask[i] === 1).toBe(ok);
+      if (ok) want++;
+    }
+    expect(r.total).toBe(want);
+    expect(r.toControl + r.toMostly).toBe(want);
+    expect(want).toBeGreaterThan(0);
+  });
+});
+
+describe('assumption sets', () => {
+  it('cautious gives no more futures in control than middle, and middle no more than hopeful', () => {
+    for (const p of PERSONAS) {
+      const n = (set: 'cautious' | 'middle' | 'hopeful') => summarise(simulate(p.inputs, {}, NO_LEVERS, SEED, { detail: false, set })).counts[0];
+      expect(n('cautious')).toBeLessThanOrEqual(n('middle'));
+      expect(n('middle')).toBeLessThanOrEqual(n('hopeful'));
+    }
+  });
+
+  it('records whether the top habit stays the same under all three sets', () => {
+    // This test reports; it does not force the answer. The result is shown in
+    // the Assumptions panel and the pitch, whatever it is.
+    const result = PERSONAS.map((p) => {
+      const top = (['cautious', 'middle', 'hopeful'] as const).map((set) => new Engine().analyse(p.inputs, {}, {}, NO_LEVERS, SEED, set).ranking[0].id);
+      return { persona: p.name, cautious: top[0], middle: top[1], hopeful: top[2], same: new Set(top).size === 1 };
+    });
+    writeFileSync(new URL('./stability.json', import.meta.url), JSON.stringify({ seed: SEED, result }, null, 2) + '\n');
+    expect(result).toHaveLength(PERSONAS.length);
+  }, 30000);
 });

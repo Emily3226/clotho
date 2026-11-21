@@ -1,37 +1,58 @@
 import { useMemo, useState } from 'react';
 import { DEFAULT_SEED } from '../config';
-import { AnimatedNumber, Segmented, Switch, Term } from '../components/bits';
+import { AnimatedNumber, Switch, Term } from '../components/bits';
+import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
 import type { Analysis, WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
+import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
-import { STATUS_LABELS, type Severity, type WorryId } from '../engine/types';
-import { worryInfo } from '../engine/worries';
-import { ASK_HINT, ask } from '../lib/ask';
-import { ageShift, leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
+import { LEVER_IDS, STATUS_LABELS, type LeverId } from '../engine/types';
+import { WORRIES } from '../engine/worries';
+import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
-import { narrate, narrationAvailable, useNarration } from '../narrate/client';
-import { leverIsOn, useStore } from '../store';
-import { WorryChips } from './Intro';
+import { useNarration } from '../narrate/client';
+import { STEP, anyLever, leverIsOn, useStore } from '../store';
+
+function onLevers(): LeverId[] {
+  const l = useStore.getState().levers;
+  return LEVER_IDS.filter((id) => leverIsOn(l, id));
+}
 
 function Headline({ a }: { a: Analysis | null }) {
   const levers = useStore((s) => s.levers);
   const activeWorry = useStore((s) => s.activeWorry);
   const inputs = useStore((s) => s.inputs);
-  const leversOn = levers.match || levers.raises || levers.cushion || levers.auto > 0;
   const now = a?.summary.counts[0] ?? 0;
-  const before = !a ? null : leversOn ? a.scenarioSummary.counts[0] : activeWorry ? a.baseSummary.counts[0] : null;
-  const context: string[] = [];
-  if (activeWorry) context.push(`What if: ${worryTitle(activeWorry)}`);
-  if (levers.match) context.push(inputs.plan === 'unsure' ? 'employer match found and taken' : 'full employer match');
-  if (levers.auto) context.push(`+$${levers.auto} a paycheque`);
-  if (levers.raises) context.push('a little of every raise');
-  if (levers.cushion) context.push('cushion first');
+  const ids = onLevers();
+  // With a habit switched on, lead with what it rescues.
+  if (a && a.rescue && anyLever(levers)) {
+    const subject = ids.length === 1 ? leverCopy(ids[0], inputs).noun : 'These habits';
+    return (
+      <div className="headline">
+        <p className="count" aria-live="polite">
+          <strong>
+            +<AnimatedNumber value={a.rescue.total} />
+          </strong>{' '}
+          futures rescued
+        </p>
+        <p className="context">
+          {subject}{activeWorry ? ` · ${worryTitle(activeWorry)}` : ''} · <span className="was">{num(a.scenarioSummary.counts[0])}</span>
+          <span aria-hidden="true"> → </span>
+          <span className="sr-only"> then </span>
+          <b>
+            <AnimatedNumber value={now} />
+          </b>{' '}
+          in control
+        </p>
+      </div>
+    );
+  }
+  const before = a && activeWorry ? a.baseSummary.counts[0] : null;
   return (
     <div className="headline">
       <p className="count" aria-live="polite">
-        You stay in control in{' '}
         <strong>
           {before !== null && before !== now && (
             <>
@@ -42,9 +63,59 @@ function Headline({ a }: { a: Analysis | null }) {
           )}
           <AnimatedNumber value={now} />
         </strong>{' '}
-        of your 1,000 futures.
+        of 1,000 futures in control
       </p>
-      <p className="context">{context.length ? context.join(' · ') : 'Same you, a thousand different runs of luck.'}</p>
+      {activeWorry && <p className="context">What if: {worryTitle(activeWorry)}</p>}
+    </div>
+  );
+}
+
+// The toy: drag what you set aside each month and watch all 1,000 lives move.
+function SaveDial() {
+  const monthly = useStore((s) => s.inputs.monthly);
+  const first = useStore((s) => s.first);
+  const now = useStore((s) => s.analysis?.summary.counts[0] ?? null);
+  const setInputs = useStore((s) => s.setInputs);
+  const set = (v: number) => setInputs({ monthly: Math.max(0, Math.min(2000, Math.round(v / 5) * 5)) });
+  const moved = first && now !== null && monthly !== first.monthly;
+  return (
+    <div className="dial">
+      <div className="dial-top">
+        <label htmlFor="dial">Set aside</label>
+        <span className="dial-amount">
+          <AnimatedNumber value={monthly} duration={200} prefix="$" />
+          <small> a month</small>
+        </span>
+      </div>
+      <input
+        id="dial"
+        type="range"
+        min={0}
+        max={1000}
+        step={5}
+        value={Math.min(1000, monthly)}
+        aria-valuetext={`$${monthly} a month`}
+        onChange={(e) => set(Number(e.target.value))}
+      />
+      <div className="dial-row">
+        {[25, 50, 100].map((d) => (
+          <button type="button" key={d} className="chip" onClick={() => set(monthly + d)}>
+            +${d}
+          </button>
+        ))}
+        {moved && (
+          <button type="button" className="link" onClick={() => set(first!.monthly)}>
+            Back to ${first!.monthly}
+          </button>
+        )}
+        <span className="dial-delta" aria-live="polite">
+          {moved && now !== null ? (
+            <>
+              {num(first!.inControl)} → <b>{num(now)}</b> in control
+            </>
+          ) : null}
+        </span>
+      </div>
     </div>
   );
 }
@@ -65,12 +136,18 @@ function Legend({ a }: { a: Analysis | null }) {
 
 function Milestones({ a }: { a: Analysis }) {
   const m = a.summary.milestoneCounts;
+  const goals = useStore((s) => s.inputs.goals ?? []);
   const items: [string, number | null, string][] = [
-    ['Shock-proof', m.shockProof, 'Never had to dip into the workplace plan, and never ended a year short.'],
-    ['Room to move at 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
-    ['Room to move at 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
+    ['Got through bad years', m.shockProof, 'Never had to dip into the workplace plan, and never ended a year short.'],
+    ['6 months saved by 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
+    ['A year saved by 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
     ['Home', m.home, 'The down payment is reached by your target age.'],
-    ['Work-optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of your recent spending, so working is a choice.'],
+    ['Work optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of the spending you’re used to, so working is a choice.'],
+    ...goals.map((g, k): [string, number | null, string] => [
+      `${g.label} by ${g.byAge}`,
+      m.goals[k] ?? null,
+      `Paid from savings you can reach, without touching the cushion. Counted on its own: it doesn’t change whether a future is in control.`,
+    ]),
   ];
   return (
     <ul className="milestones">
@@ -88,70 +165,35 @@ function Milestones({ a }: { a: Analysis }) {
   );
 }
 
-function AskBox({ a }: { a: Analysis }) {
-  const aiOn = useStore((s) => s.aiOn);
-  const [q, setQ] = useState('');
-  const [answer, setAnswer] = useState<{ text: string; narrated: boolean } | null>(null);
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!q.trim()) return;
-    const res = ask(q, a.paths);
-    setAnswer({ text: res.text, narrated: false });
-    if (aiOn && res.facts) {
-      const text = await narrate('ask', res.facts, q);
-      if (text) setAnswer({ text, narrated: true });
-    }
-  };
-  return (
-    <form className="ask card" onSubmit={submit}>
-      <label htmlFor="ask">Ask about your futures</label>
-      <div className="ask-row">
-        <input id="ask" value={q} onChange={(e) => setQ(e.target.value)} placeholder="What happens if I lose my job at 30?" />
-        <button type="submit" className="secondary">
-          Ask
-        </button>
-      </div>
-      <p className="hint" aria-live="polite">
-        {answer ? (
-          <>
-            {answer.text}
-            {answer.narrated && <span className="tag">AI wording</span>}
-          </>
-        ) : (
-          `Answers come only from your thousand futures. ${ASK_HINT}`
-        )}
-      </p>
-    </form>
-  );
-}
-
 function FuturesPanel({ a }: { a: Analysis }) {
   const seed = useStore((s) => s.seed);
-  const set = useStore((s) => s.set);
+  const note = useStore((s) => s.note);
+  const computing = useStore((s) => s.computing);
+  const setState = useStore((s) => s.setState);
   return (
     <>
-      <p className="lede">
-        Each line is one version of your life, from now to 70: same choices, different luck with jobs and markets. The
-        dark line is the middle future, and the shaded band holds half of them.
-      </p>
       <Milestones a={a} />
+      <CompareCard />
+      <details className="drawer live-answers">
+        <summary>Change your answers</summary>
+        <p className={`note-line${computing ? ' busy' : ''}${note ? '' : ' empty'}`} aria-live="polite">
+          {note}
+        </p>
+        <AboutYou live />
+      </details>
       <p className="hint">
-        Tap any line to read that life. Amounts are in today’s dollars.{' '}
-        <button type="button" className="link" onClick={() => set({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
-          {seed === DEFAULT_SEED ? 'Try a new run of luck' : 'Back to the first run of luck'}
+        <button type="button" className="link" onClick={() => setState({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
+          {seed === DEFAULT_SEED ? 'New run of luck' : 'First run of luck'}
         </button>
       </p>
-      <AskBox a={a} />
     </>
   );
 }
 
 function WorryCardView({ card }: { card: WorryCard }) {
   const inputs = useStore((s) => s.inputs);
-  const worries = useStore((s) => s.worries);
   const active = useStore((s) => s.activeWorry);
   const setActive = useStore((s) => s.setActiveWorry);
-  const setSeverity = useStore((s) => s.setSeverity);
   const answer = worryAnswer(card, inputs);
   const { text, narrated } = useNarration('worry', answer.facts, answer.plain);
   const on = active === card.id;
@@ -159,18 +201,6 @@ function WorryCardView({ card }: { card: WorryCard }) {
     <article className={`card worry${on ? ' on' : ''}`}>
       <header>
         <h3>{worryTitle(card.id)}</h3>
-        {card.id !== 'all' && (
-          <Segmented<Severity>
-            label={`How hard: ${worryTitle(card.id)}`}
-            value={worries[card.id as WorryId] ?? 'moderate'}
-            onChange={(sev) => setSeverity(card.id as WorryId, sev)}
-            options={[
-              { value: 'mild', label: 'Mild' },
-              { value: 'moderate', label: 'Moderate' },
-              { value: 'severe', label: 'Severe' },
-            ]}
-          />
-        )}
       </header>
       <p className="answer">
         {narrated ? (
@@ -182,28 +212,44 @@ function WorryCardView({ card }: { card: WorryCard }) {
           answer.parts.map((p, i) => (typeof p === 'string' ? <span key={i}>{p}</span> : <strong key={i}>{p.strong}</strong>))
         )}
       </p>
-      {card.id !== 'all' && (
-        <p className="hint">What if, not a forecast: {worryInfo(card.id as WorryId).changes[['mild', 'moderate', 'severe'].indexOf(worries[card.id as WorryId] ?? 'moderate')].toLowerCase()}.</p>
-      )}
-      {card.id === 'all' && <p className="hint">The honest hard case: every worry you picked, in the same life.</p>}
       <button type="button" className="secondary" aria-pressed={on} onClick={() => setActive(on ? null : card.id)}>
-        {on ? 'Showing in the river · tap to clear' : 'Show in the river'}
+        {on ? 'Showing' : 'Show'}
       </button>
     </article>
   );
 }
 
-function WorriesPanel({ a }: { a: Analysis }) {
+function WhatIfPanel({ a }: { a: Analysis }) {
+  const worries = useStore((s) => s.worries);
+  const toggle = useStore((s) => s.toggleWorry);
+  const showAll = useStore((s) => s.showAll);
+  const setState = useStore((s) => s.setState);
+  const active = useStore((s) => s.activeWorry);
+  const count = Object.keys(worries).length;
   return (
     <>
-      <p className="lede">Name it, then size it. Each worry is run against the same thousand futures.</p>
-      <WorryChips />
-      {a.cards.length === 0 && <p className="hint">Pick one above to see how many of your futures it touches, and what protects them.</p>}
+      <div className="chips">
+        {WORRIES.map((w) => (
+          <button type="button" key={w.id} className="chip" aria-pressed={!!worries[w.id]} onClick={() => toggle(w.id)}>
+            <span aria-hidden="true">{worries[w.id] ? '✓ ' : '+ '}</span>
+            {w.label}
+          </button>
+        ))}
+      </div>
       <div className="stack">
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
         ))}
       </div>
+      {count > 1 && (
+        <button
+          type="button"
+          className="link"
+          onClick={() => setState({ showAll: !showAll, activeWorry: showAll && active === 'all' ? null : active })}
+        >
+          {showAll ? 'Hide the toughest case' : 'All at once'}
+        </button>
+      )}
     </>
   );
 }
@@ -214,16 +260,11 @@ function Together() {
   const rows = useMemo(() => {
     const [p] = simulate(inputs, {}, levers, 1, { calm: true, paths: 1, trace: true, detail: false });
     const t = p.trace!;
-    return [1, 2, 3, 4, 5].map((y) => ({ year: y, cushion: t.cushion[y], target: t.target[y], long: t.plan[y] + t.flex[y] }));
+    return [1, 2, 3, 4, 5].map((y) => ({ year: y, cushion: t.cushion[y] ?? 0, target: t.target[y] ?? 0, long: (t.plan[y] ?? 0) + (t.flex[y] ?? 0) }));
   }, [inputs, levers]);
   const max = Math.max(1, ...rows.map((r) => Math.max(r.cushion, r.long, r.target)));
   return (
     <section className="card together">
-      <h3>Short-term and long-term, together</h3>
-      <p className="hint">
-        You don’t have to choose. In a steady five years with your plan, the cushion fills while long-term savings
-        {inputs.plan !== 'no' ? ' and the workplace plan grow' : ' grow'} beside it.
-      </p>
       <div className="bars" role="img" aria-label={`After 5 steady years: cushion ${money(rows[4].cushion)}, long-term savings ${money(rows[4].long)}.`}>
         {rows.map((r) => (
           <div key={r.year} className="bar-col">
@@ -243,32 +284,13 @@ function Together() {
   );
 }
 
-function LeversPanel({ a }: { a: Analysis }) {
+function HabitsPanel({ a }: { a: Analysis }) {
   const inputs = useStore((s) => s.inputs);
   const levers = useStore((s) => s.levers);
   const toggle = useStore((s) => s.toggleLever);
-  const worries = useStore((s) => s.worries);
-  const active = useStore((s) => s.activeWorry);
-  const setActive = useStore((s) => s.setActiveWorry);
-  const ids = Object.keys(worries) as WorryId[];
   const now = a.summary.counts[0];
   return (
     <>
-      <p className="lede">Smallest step, biggest shift. Each habit is tested alone against your thousand futures. Switch one on and watch the river move.</p>
-      {ids.length > 0 && (
-        <label className="against">
-          Test against
-          <select value={active ?? ''} onChange={(e) => setActive((e.target.value || null) as WorryId | 'all' | null)}>
-            <option value="">an ordinary run of luck</option>
-            {ids.map((id) => (
-              <option key={id} value={id}>
-                {worryInfo(id).label}
-              </option>
-            ))}
-            {ids.length > 1 && <option value="all">Everything at once</option>}
-          </select>
-        </label>
-      )}
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);
@@ -277,88 +299,110 @@ function LeversPanel({ a }: { a: Analysis }) {
             <li key={row.id} className={`card lever${on ? ' on' : ''}`}>
               <span className="rank" aria-hidden="true">{i + 1}</span>
               <div className="lever-body">
-                <h3>{copy.title}</h3>
+                <h3>
+                  {copy.title}
+                  {row.noExtraCost && <span className="tag">No extra cost</span>}
+                </h3>
                 <p className="cost">{leverCostLine(row)}</p>
                 {row.id === 'match' && (
                   <p className="hint">
-                    {row.askHR ? 'If your plan has matching, that could be about ' : 'Money your employer adds: about '}
-                    <b>{money(row.yearlyMatch)} a year</b>.
+                    {row.askHR ? 'If matched: ' : 'Employer adds '}
+                    <b>~{money(row.yearlyMatch)}/yr</b>
                   </p>
                 )}
                 <p className="effect">
-                  <b>{row.gained >= 0 ? '+' : '−'}{num(Math.abs(row.gained))}</b> futures in control
-                  {row.ageDelta !== null && row.ageDelta !== 0 && <span> · {ageShift(row.ageDelta)}</span>}
+                  <b>+{num(row.rescued)}</b> rescued
                 </p>
-                <p className="hint">{copy.explain}</p>
               </div>
               <Switch checked={on} onChange={() => toggle(row.id)} label={copy.title} />
             </li>
           );
         })}
       </ol>
-      <section className="card waiting">
-        <h3>What waiting costs</h3>
-        <p>
-          The same plan, started {A.waitingYears} years later, keeps you in control in <b>{num(a.waiting.inControl)}</b> of
-          1,000 futures instead of <b>{num(now)}</b>
-          {a.waiting.ageDelta !== null && a.waiting.ageDelta > 0 ? `, and work becomes optional about ${a.waiting.ageDelta === 1 ? '1 year' : `${a.waiting.ageDelta} years`} later.` : '.'}
-        </p>
-        <p className="hint">Not a choice to make, just what time is worth. Starting small now does more than starting bigger later.</p>
-      </section>
-      <Together />
+      <p className="hint waiting-line">
+        Wait {A.waitingYears} years: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
+      </p>
+      <details className="drawer">
+        <summary>Short and long term, together</summary>
+        <Together />
+      </details>
     </>
   );
 }
 
-function AiToggle() {
-  const aiOn = useStore((s) => s.aiOn);
-  const set = useStore((s) => s.set);
-  const [note, setNote] = useState('');
-  const change = async (on: boolean) => {
-    setNote('');
-    if (!on) return set({ aiOn: false });
-    if (await narrationAvailable()) set({ aiOn: true });
-    else setNote('AI narration isn’t set up here, so the built-in wording stays on. Nothing was sent.');
-  };
-  return (
-    <div className="ai-toggle">
-      <Switch checked={aiOn} onChange={change} label="AI narration" />
-      <p className="hint" aria-live="polite">
-        <b>AI narration {aiOn ? 'on' : 'off'}.</b>{' '}
-        {note || 'When on, anonymous simulation facts (counts, ages, events) are sent to be put into warmer words. Every number still comes from the simulation.'}
-      </p>
-    </div>
-  );
-}
 
-const NEXT_LABEL: Record<number, string> = { 3: 'Size my worries', 4: 'See what I control', 5: 'Pick my one step' };
-const TITLES: Record<number, string> = { 3: 'Your thousand futures', 4: 'Your worries, sized', 5: 'What you control' };
+const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'What helps most?', [STEP.habits]: 'What if…', [STEP.whatIf]: 'Pick one to try' };
 
 export function Explore() {
   const step = useStore((s) => s.step);
   const setStep = useStore((s) => s.setStep);
   const a = useStore((s) => s.analysis);
   const selected = useStore((s) => s.selectedPath);
+  const playing = useStore((s) => s.playing);
   const activeWorry = useStore((s) => s.activeWorry);
-  const set = useStore((s) => s.set);
-  const mask = step === 4 && a && activeWorry ? (a.cards.find((c) => c.id === activeWorry)?.mask ?? null) : null;
+  const seed = useStore((s) => s.seed);
+  const setState = useStore((s) => s.setState);
+  const [another, setAnother] = useState(0);
+  const mask =
+    a && step === STEP.whatIf && activeWorry
+      ? (a.cards.find((c) => c.id === activeWorry)?.mask ?? null)
+      : a && step === STEP.habits && a.rescue
+        ? a.rescue.mask
+        : null;
   const path = a && selected !== null ? a.paths[selected] : null;
+  const plain = a && selected !== null && a.plainPaths ? a.plainPaths[selected] : null;
+  // Lives shown by "Show me another", in a seeded order so the mix of
+  // statuses matches the real counts.
+  const order = useMemo(() => {
+    const rng = mulberry32(seed + 7);
+    const idx = Array.from({ length: 1000 }, (_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    return idx;
+  }, [seed]);
+  const showAnother = () => {
+    setState({ selectedPath: order[another % order.length] });
+    setAnother(another + 1);
+  };
   return (
     <section className="explore">
       <div className="stage">
-        <p className="eyebrow">{TITLES[step]}</p>
         <Headline a={a} />
-        <River analysis={a} mask={mask} selected={selected} onSelect={(i) => set({ selectedPath: i })} />
+        {step === STEP.futures && <SaveDial />}
+        <River
+          analysis={a}
+          mask={mask}
+          selected={selected}
+          playing={playing}
+          onPlayDone={(i) => setState({ playing: null, selectedPath: i })}
+          onSelect={(i) => setState({ selectedPath: i, playing: null })}
+        />
         <Legend a={a} />
       </div>
       <div className="side">
-        {path && selected !== null && <Inspector index={selected} path={path} onClose={() => set({ selectedPath: null })} />}
-        {a && step === 3 && <FuturesPanel a={a} />}
-        {a && step === 4 && <WorriesPanel a={a} />}
-        {a && step === 5 && <LeversPanel a={a} />}
-        <AiToggle />
+        {path && selected !== null && (
+          <Inspector key={selected} index={selected} path={path} plain={plain} onAnother={showAnother} onClose={() => setState({ selectedPath: null })} />
+        )}
+        {a && (
+          <button
+            type="button"
+            className="secondary play"
+            disabled={playing !== null}
+            onClick={() => {
+              setState({ selectedPath: null, playing: order[another % order.length] });
+              setAnother(another + 1);
+            }}
+          >
+            {playing !== null ? 'Playing one of your lives…' : '▶ Play one of your lives'}
+          </button>
+        )}
+        {a && step === STEP.futures && <FuturesPanel a={a} />}
+        {a && step === STEP.habits && <HabitsPanel a={a} />}
+        {a && step === STEP.whatIf && <WhatIfPanel a={a} />}
         <div className="nav">
-          <button type="button" className="ghost" onClick={() => setStep(step - 1)}>
+          <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.about : step - 1)}>
             Back
           </button>
           <button type="button" className="primary" onClick={() => setStep(step + 1)}>

@@ -4,3 +4,9 @@ dist
 .env.local
 *.log
 .DS_Store
+
+# Local tooling and planning files, kept out of the repo
+.claude/
+.21st/
+thousand-futures-v2.md
+public/ui-options*.html

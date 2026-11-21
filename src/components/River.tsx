@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Analysis } from '../engine/analyse';
 import { STATUS_LABELS } from '../engine/types';
+import { timeline } from '../lib/copy';
 import { moneyRound, moneyShort, num, reducedMotion } from '../lib/format';
 import { useStore } from '../store';
 
@@ -23,6 +24,7 @@ const DASHES: number[][] = [[], [9, 4], [3, 4], [1, 5]];
 const STATUS_VARS = ['--s0', '--s1', '--s2', '--s3'];
 const Y_TICKS = [10e3, 25e3, 50e3, 100e3, 250e3, 500e3, 1e6, 2e6, 3e6, 5e6, 10e6, 20e6];
 const MILESTONE_AGES = [35, 45, 65];
+const PLAY_MS = 7000;
 
 function frameOf(a: Analysis): Frame {
   const w = a.years + 1;
@@ -51,9 +53,12 @@ interface Props {
   mask: Uint8Array | null;
   selected: number | null;
   onSelect: (index: number | null) => void;
+  // A life to play back, drawn year by year with its events shown as it goes.
+  playing?: number | null;
+  onPlayDone?: (index: number) => void;
 }
 
-export function River({ analysis, mask, selected, onSelect }: Props) {
+export function River({ analysis, mask, selected, onSelect, playing = null, onPlayDone }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const baseCanvas = useRef<HTMLCanvasElement>(null);
   const overCanvas = useRef<HTMLCanvasElement>(null);
@@ -70,6 +75,9 @@ export function River({ analysis, mask, selected, onSelect }: Props) {
   const hoverRef = useRef<number | null>(null);
   const selectedRef = useRef<number | null>(selected);
   const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
+  const playRef = useRef<{ index: number; start: number; raf: number } | null>(null);
+  const [caption, setCaption] = useState<{ age: number; text: string; kind: string; x: number; y: number } | null>(null);
+  const goals = useStore((s) => s.inputs.goals ?? []);
   const theme = useStore((s) => s.theme);
   const repPos = useRef(3);
 
@@ -251,11 +259,94 @@ export function River({ analysis, mask, selected, onSelect }: Props) {
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
     };
+    const play = playRef.current;
+    if (play && play.index < to.n) {
+      const p = Math.min(1, (performance.now() - play.start) / PLAY_MS);
+      const upto = p * to.years;
+      const s = to.statuses[play.index];
+      const pt = (t: number) => {
+        const t0 = Math.floor(t);
+        const t1 = Math.min(to.years, t0 + 1);
+        const f = t - t0;
+        const v = to.bal[play.index * cols + t0] * (1 - f) + to.bal[play.index * cols + t1] * f;
+        return [M.left + (t / to.years) * plotW, Y(v)] as const;
+      };
+      ctx.lineJoin = 'round';
+      for (const [style, width] of [[css.getPropertyValue('--surface').trim(), 6], [css.getPropertyValue(STATUS_VARS[s]).trim(), 3.5]] as const) {
+        ctx.strokeStyle = style;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        for (let t = 0; t <= Math.floor(upto); t++) ctx.lineTo(...pt(t));
+        ctx.lineTo(...pt(upto));
+        ctx.stroke();
+      }
+      const [hx, hy] = pt(upto);
+      ctx.fillStyle = css.getPropertyValue('--ink').trim();
+      ctx.beginPath();
+      ctx.arc(hx, hy, 6, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
     const hov = hoverRef.current;
     const sel = selectedRef.current;
     if (hov !== null && hov !== sel && hov < to.n) stroke(hov, 2.2, 0.9);
     if (sel !== null && sel < to.n) stroke(sel, 3, 1);
   }, []);
+
+  // Play one life: draw it across the river and show each event as it is reached.
+  useEffect(() => {
+    if (playing === null || !analysis) {
+      playRef.current = null;
+      setCaption(null);
+      return;
+    }
+    const rows = timeline(analysis.paths[playing].events, goals);
+    const start = performance.now() - (reducedMotion() ? PLAY_MS : 0);
+    playRef.current = { index: playing, start, raf: 0 };
+    let shown = -1;
+    let done = 0;
+    const step = () => {
+      const pr = playRef.current;
+      if (!pr) return;
+      drawOverlay();
+      const p = Math.min(1, (performance.now() - pr.start) / PLAY_MS);
+      const age = analysis.startAge + p * analysis.years;
+      let k = -1;
+      for (let j = 0; j < rows.length; j++) if (rows[j].age <= age) k = j;
+      if (k !== shown && k >= 0) {
+        shown = k;
+        const { w, h } = size.current;
+        const plotW = w - M.left - M.right;
+        const plotH = h - M.top - M.bottom;
+        const t = Math.min(analysis.years, rows[k].age - analysis.startAge);
+        const ymax = anim.current.to?.ymax ?? 1;
+        const v = analysis.balances[playing * (analysis.years + 1) + t];
+        setCaption({
+          age: rows[k].age,
+          text: rows[k].text,
+          kind: rows[k].kind,
+          x: M.left + (t / analysis.years) * plotW,
+          y: M.top + plotH - Math.sqrt(Math.max(v, 0) / ymax) * plotH,
+        });
+      }
+      if (p < 1) pr.raf = requestAnimationFrame(step);
+      else {
+        playRef.current = null;
+        done = window.setTimeout(() => {
+          setCaption(null);
+          onPlayDone?.(playing);
+        }, 900);
+      }
+    };
+    step();
+    return () => {
+      // Leaving mid-play must not select a life afterwards.
+      clearTimeout(done);
+      if (playRef.current) cancelAnimationFrame(playRef.current.raf);
+      playRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, analysis]);
 
   const tick = useCallback(() => {
     draw();
@@ -426,7 +517,16 @@ export function River({ analysis, mask, selected, onSelect }: Props) {
       <canvas ref={baseCanvas} aria-hidden="true" />
       <canvas ref={overCanvas} aria-hidden="true" />
       {!analysis && <p className="river-wait">Spinning a thousand futures…</p>}
-      {tip && hover && (
+      {caption && (
+        <div
+          className={`river-caption ${caption.kind}`}
+          style={{ left: Math.min(Math.max(caption.x, 110), size.current.w - 110), top: Math.max(caption.y - 18, 30) }}
+          aria-live="polite"
+        >
+          <b>{caption.age}</b> {caption.text}
+        </div>
+      )}
+      {tip && hover && !caption && (
         <div
           className="river-tip"
           style={{ left: Math.min(Math.max(hover.x, 90), size.current.w - 90), top: Math.max(hover.y - 14, 34) }}

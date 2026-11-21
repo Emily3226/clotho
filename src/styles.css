@@ -14,7 +14,7 @@
   --river-alpha: 0.14;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --radius: 14px;
+  --radius: 4px;
   color-scheme: light;
 }
 
@@ -111,7 +111,7 @@ button {
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 3px;
 }
 .sr-only {
   position: absolute !important;
@@ -127,7 +127,7 @@ button {
   top: 8px;
   background: var(--surface);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   z-index: 50;
 }
 .skip:focus {
@@ -206,7 +206,7 @@ button {
 .primary,
 .secondary,
 .ghost {
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 10px 20px;
   min-height: 44px;
   border: 1.5px solid transparent;
@@ -274,7 +274,7 @@ button {
   display: inline-block;
   margin-left: 8px;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: 3px;
   border: 1px solid var(--line);
   font: 500 0.72rem var(--sans);
   color: var(--muted);
@@ -406,7 +406,7 @@ input[type='range'] {
 .chip {
   border: 1.5px solid var(--line);
   background: var(--surface);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 9px 14px;
   min-height: 44px;
   text-align: left;
@@ -469,7 +469,7 @@ fieldset.plan legend {
 .segmented {
   display: inline-flex;
   border: 1.5px solid var(--line);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 3px;
   background: var(--surface);
   max-width: 100%;
@@ -477,7 +477,7 @@ fieldset.plan legend {
 .segmented button {
   border: 0;
   background: transparent;
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 7px 14px;
   min-height: 38px;
 }
@@ -556,7 +556,7 @@ fieldset.plan legend {
   margin-top: 8px;
   cursor: crosshair;
   touch-action: pan-y;
-  border-radius: 10px;
+  border-radius: 3px;
 }
 .river canvas {
   position: absolute;
@@ -579,7 +579,7 @@ fieldset.plan legend {
   background: var(--ink);
   color: var(--bg);
   padding: 3px 9px;
-  border-radius: 6px;
+  border-radius: 3px;
   font-size: 0.78rem;
   white-space: nowrap;
   pointer-events: none;
@@ -633,7 +633,7 @@ fieldset.plan legend {
 .milestones li {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 3px;
   padding: 10px 12px;
   font-size: 0.9rem;
 }
@@ -654,7 +654,7 @@ fieldset.plan legend {
   min-width: 0;
   border: 1.5px solid var(--line);
   background: var(--bg);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 0 16px;
   min-height: 44px;
 }
@@ -706,7 +706,7 @@ fieldset.plan legend {
 .against select {
   border: 1.5px solid var(--line);
   background: var(--surface);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 8px 14px;
   min-height: 44px;
   max-width: 100%;
@@ -743,7 +743,7 @@ fieldset.plan legend {
 .switch {
   width: 52px;
   height: 32px;
-  border-radius: 999px;
+  border-radius: 3px;
   border: 1.5px solid var(--muted);
   background: transparent;
   padding: 0;
@@ -757,7 +757,7 @@ fieldset.plan legend {
   left: 3px;
   width: 23px;
   height: 23px;
-  border-radius: 50%;
+  border-radius: 2px;
   background: var(--muted);
   transition: transform 0.15s, background 0.15s;
 }
@@ -863,7 +863,7 @@ fieldset.plan legend {
 }
 .marks li {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 2px 10px;
 }
 .marks .yes {
@@ -1015,7 +1015,7 @@ dialog.panel::backdrop {
 .row input[type='date'] {
   border: 1.5px solid var(--line);
   background: var(--bg);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 0 14px;
   min-height: 44px;
 }
@@ -1031,7 +1031,7 @@ dialog.panel::backdrop {
   padding: 10px 14px;
   border-left: 3px solid var(--accent);
   background: var(--accent-soft);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0;
   font: 400 1.05rem var(--serif);
 }
 .checklist {
@@ -1069,7 +1069,7 @@ dialog.panel::backdrop {
 .sample-flag {
   align-self: flex-start;
   border: 1.5px dashed var(--s2);
-  border-radius: 999px;
+  border-radius: 3px;
   padding: 4px 14px;
   font-weight: 600;
   font-size: 0.86rem;
@@ -1088,7 +1088,7 @@ dialog.panel::backdrop {
 }
 .meter-track {
   height: 10px;
-  border-radius: 999px;
+  border-radius: 3px;
   background: var(--accent-soft);
   overflow: hidden;
   margin-top: 4px;
@@ -1097,10 +1097,23 @@ dialog.panel::backdrop {
   display: block;
   height: 100%;
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: 3px;
 }
 
 @media (max-width: 639px) {
+  /* Keep the pinned river short so the habits below have room. */
+  .stage .river {
+    height: 160px;
+  }
+  .stage .legend {
+    display: none;
+  }
+  .stage .count {
+    font-size: 1.15rem;
+  }
+  .stage .context {
+    display: none;
+  }
   .top {
     flex-wrap: wrap;
     row-gap: 4px;
@@ -1183,4 +1196,258 @@ dialog.panel::backdrop {
     animation: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* v2 additions */
+fieldset.more-q {
+  border: 0;
+  padding: 0;
+  margin: 18px 0 0;
+}
+fieldset.more-q legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 10px;
+}
+.note-line {
+  min-height: 3em;
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0;
+  transition: opacity 0.2s;
+}
+.note-line.busy {
+  opacity: 0.6;
+}
+.welcome,
+.compare,
+.test-mode {
+  margin: 18px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.welcome p,
+.compare p,
+.test-mode p {
+  margin: 0;
+  flex: 1 1 240px;
+}
+.lever h3 .tag {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.inspector .segmented {
+  margin: 4px 0 8px;
+}
+.inspector > .secondary {
+  margin-top: 12px;
+}
+.side > .link {
+  display: block;
+  margin: 0 0 12px;
+}
+.back .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* One-screen intake. Chip pattern adapted from the 21st "Chip Group". */
+.intake {
+  display: grid;
+  gap: 22px;
+  padding: 22px;
+}
+.about {
+  display: grid;
+  gap: 20px;
+}
+.q {
+  display: grid;
+  gap: 10px;
+}
+.q-label {
+  font-weight: 600;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  transition: gap 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+.chip-check {
+  display: inline-block;
+  width: 0;
+  height: 0.7em;
+  overflow: hidden;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+  transition: width 0.18s ease, transform 0.18s ease;
+}
+.chip[aria-pressed='true'] {
+  gap: 8px;
+}
+.chip[aria-pressed='true'] .chip-check {
+  width: 0.38em;
+  transform: rotate(45deg) scale(1) translate(-1px, -2px);
+}
+.chip:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.home-q {
+  display: grid;
+  gap: 16px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.home-q .chip {
+  background: var(--surface);
+}
+.live-answers .about {
+  margin-top: 14px;
+}
+details.why summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.waiting-line {
+  margin: 14px 0;
+}
+
+/* Goals typed in the person's own words. */
+.goals {
+  display: grid;
+  gap: 14px;
+}
+.goal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.goal-add {
+  display: grid;
+  gap: 8px;
+}
+.goal-row {
+  display: flex;
+  gap: 8px;
+}
+.goal-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.goal-row input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
+/* The savings dial: the thing to play with on the results. */
+.dial {
+  margin: 6px 0 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: grid;
+  gap: 8px;
+}
+.dial-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-weight: 600;
+}
+.dial-amount {
+  font: 600 1.8rem var(--serif);
+  color: var(--accent);
+}
+.dial-amount small {
+  font: 400 0.9rem var(--sans);
+  color: var(--muted);
+}
+.dial-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dial-row .chip {
+  min-height: 36px;
+  padding: 6px 12px;
+}
+.dial-delta {
+  margin-left: auto;
+  color: var(--muted);
+}
+.dial-delta b {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+/* Playing one life. */
+.play {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.river-caption {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.9rem;
+  line-height: 1.3;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+  animation: caption-in 0.25s ease-out;
+}
+.river-caption b {
+  margin-right: 4px;
+}
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -80%);
+  }
+}
+
+/* A small real river on the landing page. */
+.landing-river {
+  height: 170px;
+  margin: 18px 0 4px;
+  position: relative;
+}
+.landing-river canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.note-line.empty {
+  display: none;
+}
+.landing h1 em {
+  font-style: normal;
 }
