@@ -4,7 +4,7 @@ import { AnimatedNumber } from '../components/bits';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
-import { CANADA_LIFE_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, yearFromToday, type Outcome } from '../lib/doNow';
+import { PLAN_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, yearFromToday, type Outcome } from '../lib/doNow';
 import { buildIcs, nextFriday } from '../lib/ics';
 import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
@@ -144,8 +144,10 @@ export function StepScreen() {
   const pickOutcome = (o: Outcome) => {
     const next = outcome === o ? null : o;
     setState({ outcome: next });
-    if (commitment && pick && commitment.lever === pick.id && commitment.streak === 0) {
-      setState({ commitment: { ...commitment, outcome: next, lastCheckISO: next === 'done' ? new Date().toISOString() : null } });
+    // Only while the streak is still just this first answer.
+    const onlyThis = commitment && (commitment.streak === 0 || (commitment.streak === 1 && commitment.outcome === 'done'));
+    if (commitment && pick && commitment.lever === pick.id && onlyThis) {
+      setState({ commitment: { ...commitment, outcome: next, streak: next === 'done' ? 1 : 0, lastCheckISO: next === 'done' ? new Date().toISOString() : null } });
     }
   };
   const copyHR = async () => {
@@ -182,7 +184,7 @@ export function StepScreen() {
           startedISO: new Date().toISOString(),
           startInControl: a.baseSummary.counts[0],
           startInputs: inputs,
-          streak: 0,
+          streak: outcome === 'done' ? 1 : 0,
           lastCheckISO: outcome === 'done' ? new Date().toISOString() : null,
           outcome,
         },
@@ -250,7 +252,7 @@ export function StepScreen() {
                 </button>
               </div>
               <span className="sr-only" aria-live="polite">{copied ? 'Message copied' : ''}</span>
-              <p className="hint">{CANADA_LIFE_NOTE}</p>
+              <p className="hint">{PLAN_NOTE}</p>
             </div>
           )}
           {now.kind === 'raise' && (

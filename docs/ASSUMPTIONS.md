@@ -74,7 +74,7 @@ Worries are tested as what-ifs, never as predictions. Each one is run against th
 - **Work-optional by 65:** income from savings and public pensions covers 70% of average spending over the last five working years. The earliest age this holds is recorded from 30 to 70. Before 65, savings must first stand in for public pensions until they start; pensions only count as far as that gap is funded.
 - **In control:** all milestones met. **Mostly there:** work-optional by 65, one other missed. **Tight:** work-optional by 65 with two or more others missed, or work-optional missed by less than 20 points. **Off track:** the rest.
 - A worry is **sized** by how far it moves things on the same 1,000 paths: how many futures stay in control with it and without it, and the savings at 65 in the middle future. The habit named on the card is the one that leaves the most futures in control under that worry. In the river, the futures a worry touches are the ones whose status drops.
-- Habits are ranked by futures gained per dollar of take-home pay given up per paycheque today.
+- Habits are ranked by how many futures they rescue, with ties going to the one that costs less. Asking HR is free and is suggested either way.
 
 ## Model order within a year
 

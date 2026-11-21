@@ -192,6 +192,13 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
   const less = card.baseMiddleAt65 - card.middleAt65;
   if (card.affected === 0) {
     parts.push(`${clause}, none of your 1,000 futures change. Your plan already covers this one.`);
+  } else if (card.baseInControl === 0) {
+    // Nothing to lose from a count of zero: say what moves, and what helps.
+    if (less > 0) parts.push(`${clause}, the middle future has about `, { strong: money(card.middleAt65) }, ' saved at 65 instead of ', { strong: money(card.baseMiddleAt65) }, '.');
+    else parts.push(`${clause}, some of your futures get a little harder.`);
+    if (card.best && card.best.inControl > 0) {
+      parts.push(` ${leverCopy(card.best.lever, inputs).noun} puts `, { strong: num(card.best.inControl) }, ' of them in control.');
+    }
   } else if (drop <= 0 && less <= 0) {
     // Some futures get harder, but neither headline number moves.
     parts.push(`${clause}, you stay in control in just as many futures, `, { strong: num(card.inControl) }, ' of 1,000. Some get a little harder, but not enough to change that.');

@@ -14,7 +14,7 @@ Clotho shows you a thousand simulated versions of your own financial life, from 
 
 - **The river.** A thousand lines, a middle line, and one headline: "You stay in control in 705 of your 1,000 futures." Tap any line to read that life as a story.
 - **Your worries, sized.** Pick what's on your mind: AI and your job, a recession, rising costs, housing, a rougher world, public pensions. Each is run against the same thousand lives: how many get harder, how many still get there, and which habit lifts the most back up.
-- **What you control.** Habits ranked by futures gained per dollar: take the full employer match, add an automatic $25, save a little of every raise, build the cushion first. Switch one on and the river moves, line by line.
+- **What you control.** Habits ranked by how many futures they rescue: take the full employer match, add an automatic $25, save a little of every raise, build the cushion first. Switch one on and the river moves, line by line.
 - **One step.** You pick one. You get a two-line plan, a calendar reminder for payday, and a message to send HR. Then the same confidence question you answered at the start, so you can see what changed.
 
 It runs fully in the browser, with no account and no network. It is an educational tool and never names a product.
@@ -33,7 +33,7 @@ It runs fully in the browser, with no account and no network. It is an education
 - **Making a hard picture useful instead of frightening.** Our first version of "everything keeps getting more expensive" left almost no futures standing for a low saver. The fix was not to hide it but to make the what-if explicit and adjustable, and to always pair it with the habit that moves it.
 - **Fair comparisons.** Without shared luck across variants, switching on a habit reshuffled the whole picture. Drawing all randomness up front fixed both the maths and the animation.
 - **Keeping the model out of the numbers.** A language model will happily do arithmetic. We made that impossible to ship: no number reaches the screen unless the engine produced it.
-- **Ranking habits honestly.** Per dollar, small automatic amounts often beat the match on "futures in control", while the match moves the work-optional age most. We show both rather than tuning the model to flatter one.
+- **Ranking habits honestly.** Our first ranking put a free step first even when another habit rescued far more, so two parts of the screen disagreed. Now the headline, the list and the "does it still hold" card all name the habit that rescues the most.
 
 ## Accomplishments we're proud of
 

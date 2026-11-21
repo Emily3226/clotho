@@ -31,6 +31,7 @@ function onLevers(): LeverId[] {
 // read as a forecast.
 function RangeLine({ a, inControl = false }: { a: Analysis; inControl?: boolean }) {
   const { low, high, bySet } = a.range;
+  if (high === 0) return null;
   if (low === high) {
     return <p className="range">The same under cautious, middle and hopeful markets.</p>;
   }
@@ -72,13 +73,16 @@ function Headline({ a }: { a: Analysis | null }) {
           </b>{' '}
           in control
         </p>
+        <p className="range">
+          {num(a.rescue.toControl)} now in control, {num(a.rescue.toMostly)} mostly there
+        </p>
         <RangeLine a={a} inControl />
       </div>
     );
   }
   const before = a && activeWorry ? a.baseSummary.counts[0] : null;
-  // The single habit that leaves the most futures in control, same luck.
-  const best = a?.ranking.reduce<(typeof a.ranking)[number] | null>((b, r) => (!b || r.inControl > b.inControl ? r : b), null) ?? null;
+  // The habit ranked first: the same one the list and the card name.
+  const best = a?.ranking[0] ?? null;
   return (
     <div className="headline">
       <p className="count" aria-live="polite">
@@ -572,6 +576,9 @@ function HabitsPanel({ a }: { a: Analysis }) {
   return (
     <>
       <HoldsCard a={a} />
+      {a.ranking.some((r) => r.askHR) && a.ranking[0] && !a.ranking[0].askHR && (
+        <p className="hint">Not sure about a match at work? Asking HR is free, so it’s worth doing either way.</p>
+      )}
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);

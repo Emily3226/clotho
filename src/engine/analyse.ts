@@ -205,14 +205,11 @@ const ageDelta = (a: number | null, b: number | null): number | null => (a === n
 
 const MARKET_ORDER: AssumptionSetId[] = ['cautious', 'middle', 'hopeful'];
 
-// No-extra-cost steps first, by futures rescued; then futures rescued per
-// dollar of take-home pay given up each month.
-function byRank(x: { noExtraCost: boolean; rescued: number; perDollar: number }, y: { noExtraCost: boolean; rescued: number; perDollar: number }): number {
-  return (
-    Number(y.noExtraCost) - Number(x.noExtraCost) ||
-    (x.noExtraCost ? y.rescued - x.rescued : y.perDollar - x.perDollar) ||
-    y.rescued - x.rescued
-  );
+// The habit that rescues the most futures comes first, so the headline, the
+// list and the "does it hold" card all name the same step. Ties go to the
+// one that costs less.
+function byRank(x: { rescued: number; perDollar: number }, y: { rescued: number; perDollar: number }): number {
+  return y.rescued - x.rescued || y.perDollar - x.perDollar;
 }
 
 // Runs variants on demand and remembers them, so toggling a lever only
@@ -339,7 +336,7 @@ export class Engine {
         return available
           .map((id) => {
             const rescued = rescueOf(plain, this.run(inputs, s, leverOnly(id), seed, false, m)).total;
-            return { id, rescued, perDollar: rescued / Math.max(1, leverCost(id, inputs).perMonth), noExtraCost: id === 'match' && inputs.plan === 'unsure' };
+            return { id, rescued, perDollar: rescued / Math.max(1, leverCost(id, inputs).perMonth) };
           })
           .sort(byRank);
       };
