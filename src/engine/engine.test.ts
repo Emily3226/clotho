@@ -7,6 +7,7 @@ import { matchGoal } from './goals';
 import { inputsForStage, minDownPayment } from './profile';
 import { simulate, summarise } from './simulate';
 import { LEVER_IDS, NO_LEVERS, WORRY_IDS, leverOnly, type Inputs, type Levers, type PathResult, type Scenario } from './types';
+import { WORRY } from './worries';
 
 const SEED = 2026;
 const maya = PERSONAS[0].inputs;
@@ -333,6 +334,35 @@ describe('make it more you', () => {
       const yearsToPensions = A.retireAge - r.workOptionalAge;
       expect(r.balances![r.workOptionalAge - sam.age]).toBeGreaterThan(0.5 * yearsToPensions * A.oasMonthly * 12);
     }
+  });
+
+  it('never claims work is optional on money spent on a goal', () => {
+    const jordan = { ...persona('jordan').inputs, income: 150000, monthly: 6000, saved: 60000 };
+    const plain = simulate(jordan, {}, NO_LEVERS, SEED, { detail: false });
+    const goal = { id: 'g', label: 'A business', kind: 'business' as const, cost: 100000, byAge: jordan.age + 3 };
+    const spent = simulate({ ...jordan, goals: [goal] }, {}, NO_LEVERS, SEED, { detail: false });
+    const later = (x: number | null) => x ?? Infinity;
+    let paid = 0;
+    spent.forEach((p, i) => {
+      if (!p.milestones.goals[0]) return;
+      paid++;
+      // Spending $100k can only delay the age work becomes optional.
+      expect(later(p.workOptionalAge)).toBeGreaterThanOrEqual(later(plain[i].workOptionalAge));
+    });
+    expect(paid).toBeGreaterThan(0);
+    expect(spent.some((p, i) => p.milestones.goals[0] && later(p.workOptionalAge) > later(plain[i].workOptionalAge))).toBe(true);
+  });
+
+  it('carries AI pressure during school into the first full-time pay', () => {
+    // The AI years end before this student finishes, so a smaller yearly
+    // saving after graduation can only come from pay pulled down in school.
+    const student: Inputs = { ...inputsForStage('student', 18), field: 'business', finishAge: 18 + WORRY.ai.years + 1 };
+    const opts = { detail: true, calm: true } as const;
+    const at = student.finishAge - student.age;
+    const plain = simulate(student, {}, NO_LEVERS, SEED, opts)[0].balances!;
+    const ai = simulate(student, { ai: 'severe' }, NO_LEVERS, SEED, opts)[0].balances!;
+    const added = (b: Float32Array) => b[at + 4] - b[at + 3];
+    expect(added(plain) - added(ai)).toBeGreaterThan(4000);
   });
 
   it('uses the Canadian minimum down payment', () => {

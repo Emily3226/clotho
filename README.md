@@ -85,7 +85,7 @@ docs/                    ASSUMPTIONS, PITCH, DEVPOST
 - "Build the cushion first" is an extra $90 a month that stops by itself when the cushion is full.
 - Spending rises by 75% to 85% of each raise depending on the city, and follows the expected career: a layoff, a pay cut or a slower career squeezes saving, not lifestyle. An earlier version spent half of each raise, which quietly saved the other half and showed someone saving nothing as "in control" in 7 of 10 futures. The results are sensitive to this rule; it is listed in the Assumptions panel.
 - Living with family is modelled as the same lifestyle as renting, plus the rent not paid, saved until moving out.
-- Student debt payments start when school ends. They come out of what would have been saved first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work.
+- Student debt payments start when school ends (now, for anyone already working). The saving someone enters is before loan payments, so payments come on top: out of what would have been saved first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work.
 - Work becoming optional is checked from age 30. Before 65, savings first have to stand in for public pensions until they start, so it takes a very high saving rate to get there in your thirties.
 - "Save part of every raise" adds one point of pay at each raise of 3% or more, up to 5 points.
 - Higher-paid fields can show fewer futures in control at the same share of pay saved, because CPP and OAS replace less of a higher income. The app says so when it happens instead of hiding it.
