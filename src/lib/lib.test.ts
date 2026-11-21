@@ -50,6 +50,14 @@ describe('templates', () => {
     }
   });
 
+  it('never say nothing changes when a worry makes some futures harder', () => {
+    const card = analysis.cards[0];
+    const flat = { ...card, affected: 12, inControl: card.baseInControl, middleAt65: card.baseMiddleAt65 };
+    expect(worryAnswer(flat, maya).plain).not.toMatch(/none of your/);
+    expect(validateNarration(worryAnswer(flat, maya).plain, worryAnswer(flat, maya).facts)).toBe(true);
+    expect(worryAnswer({ ...flat, affected: 0 }, maya).plain).toMatch(/none of your/);
+  });
+
   it('never use shaming words, and group the timeline by age', () => {
     for (const p of analysis.paths.slice(0, 200)) {
       expect(story(p)).not.toMatch(/behind|should have|too late|at risk|danger|doom/i);

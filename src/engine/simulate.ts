@@ -497,9 +497,10 @@ export function simulate(
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
       if (lowest < minBalance) minBalance = lowest;
 
-      // The yardstick stays the lifestyle that was planned: trimming to get
-      // through, or spending more after good luck, does not move the target.
-      lastSpend = spend + squeezed + trim;
+      // Trimming to get through does not lower the yardstick: it stays the
+      // lifestyle that was planned. Spending more after good luck raises it,
+      // because that higher lifestyle is the one to keep up.
+      lastSpend = spend + squeezed + Math.max(0, trim);
       ring[ringN % 5] = lastSpend;
       ringN++;
       if (!inSchool) {

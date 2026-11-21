@@ -184,8 +184,11 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
   const parts: WorryAnswer['parts'] = [];
   const drop = card.baseInControl - card.inControl;
   const less = card.baseMiddleAt65 - card.middleAt65;
-  if (card.affected === 0 || (drop <= 0 && less <= 0)) {
+  if (card.affected === 0) {
     parts.push(`${clause}, none of your 1,000 futures change. Your plan already covers this one.`);
+  } else if (drop <= 0 && less <= 0) {
+    // Some futures get harder, but neither headline number moves.
+    parts.push(`${clause}, you stay in control in just as many futures, `, { strong: num(card.inControl) }, ' of 1,000. Some get a little harder, but not enough to change that.');
   } else {
     // Sized by how far it moves things, not by a pass or fail.
     if (drop > 0) parts.push(`${clause}, you stay in control in `, { strong: num(card.inControl) }, ' of your 1,000 futures instead of ', { strong: num(card.baseInControl) }, '.');
