@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { persona } from '../engine/personas';
 import { simulate, summarise } from '../engine/simulate';
 import { leverOnly } from '../engine/types';
-import { bonusEffect, leversFor, raiseOffer, raiseOnTop, windfallAnsweredThisMonth, withBonus } from './windfall';
+import { bonusEffect, countMoves, leversFor, raiseOffer, raiseOnTop, windfallAnsweredThisMonth, windfallCarryOver, withBonus } from './windfall';
 
 const maya = persona('maya').inputs;
 const SEED = 2026;
@@ -56,5 +56,29 @@ describe('bonus', () => {
     expect(e.after).toBe(direct);
     expect(levers.raises).toBe(false);
     expect(e.after).toBeGreaterThanOrEqual(e.before);
+  });
+});
+
+describe('picking a step again', () => {
+  it('keeps the raise habit and this month’s answer', () => {
+    const iso = new Date(2026, 10, 21).toISOString();
+    expect(windfallCarryOver({ alsoRaises: true, lastWindfallISO: iso })).toEqual({ alsoRaises: true, lastWindfallISO: iso });
+    expect(windfallCarryOver({ alsoRaises: false, lastWindfallISO: null })).toEqual({});
+    expect(windfallCarryOver(null)).toEqual({});
+  });
+
+  it('so the question stays answered for the month after re-picking', () => {
+    const now = new Date(2026, 10, 21, 12);
+    const kept = windfallCarryOver({ lastWindfallISO: new Date(2026, 10, 3).toISOString() });
+    expect(windfallAnsweredThisMonth(kept.lastWindfallISO, now)).toBe(true);
+  });
+});
+
+describe('wording when the count does not move', () => {
+  it('only quotes a change when there is one', () => {
+    expect(countMoves(700, 938, 261)).toBe(true);
+    expect(countMoves(1000, 1000, 0)).toBe(false);
+    expect(countMoves(948, 948)).toBe(false);
+    expect(countMoves(948, 950, 0)).toBe(false);
   });
 });

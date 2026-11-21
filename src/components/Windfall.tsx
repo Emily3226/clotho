@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Field } from './bits';
 import { leverCopy } from '../lib/copy';
 import { money, num } from '../lib/format';
-import { bonusEffect, leversFor, raiseOffer, raiseOnTop, windfallAnsweredThisMonth, withBonus, type Windfall } from '../lib/windfall';
+import { countMoves, raiseOffer, windfallAnsweredThisMonth, withBonus, type Windfall } from '../lib/windfall';
+import type { WindfallRequest, WindfallResult } from '../lib/windfall.worker';
 import { useStore, type Commitment } from '../store';
 
 // "Got a raise or bonus since last time?" at the monthly check-in.
@@ -18,17 +19,40 @@ export function WindfallQuestion({ commitment }: { commitment: Commitment }) {
   const [done, setDone] = useState<string | null>(null);
 
   const offer = raiseOffer(commitment.lever, commitment.alsoRaises);
-  const raise = useMemo(
-    () => (pick === 'raise' && offer === 'offer' ? raiseOnTop(inputs, commitment.lever, seed, set) : null),
-    [pick, offer, inputs, commitment.lever, seed, set],
-  );
   const aside = Math.min(putAside, bonus);
-  const levers = leversFor(commitment.lever, commitment.alsoRaises);
-  const effect = useMemo(
-    () => (pick === 'bonus' ? bonusEffect(inputs, levers, aside, seed, set) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pick, inputs, aside, seed, set, commitment.lever, commitment.alsoRaises],
-  );
+  const [raise, setRaise] = useState<Extract<WindfallResult, { kind: 'raise' }>['result'] | null>(null);
+  const [effect, setEffect] = useState<Extract<WindfallResult, { kind: 'bonus' }>['result'] | null>(null);
+
+  // The counts run in a background worker, like the other what-ifs. Only the
+  // latest answer is shown, so a fast drag never shows a stale count.
+  const worker = useRef<Worker | null>(null);
+  const latest = useRef(0);
+  const wanted = pick === 'bonus' || (pick === 'raise' && offer === 'offer');
+  useEffect(() => {
+    if (!wanted) return;
+    const w = new Worker(new URL('../lib/windfall.worker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent<WindfallResult>) => {
+      if (e.data.id !== latest.current) return;
+      if (e.data.kind === 'raise') setRaise(e.data.result);
+      else setEffect(e.data.result);
+    };
+    worker.current = w;
+    return () => {
+      w.terminate();
+      worker.current = null;
+    };
+  }, [wanted]);
+
+  useEffect(() => {
+    if (!wanted) return;
+    const t = setTimeout(() => {
+      const base = { id: ++latest.current, inputs, lever: commitment.lever, seed, set };
+      const req: WindfallRequest =
+        pick === 'raise' ? { ...base, kind: 'raise' } : { ...base, kind: 'bonus', alsoRaises: !!commitment.alsoRaises, aside };
+      worker.current?.postMessage(req);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [wanted, pick, inputs, commitment.lever, commitment.alsoRaises, aside, seed, set]);
 
   if (windfallAnsweredThisMonth(commitment.lastWindfallISO) && !done) return null;
 
@@ -84,11 +108,19 @@ export function WindfallQuestion({ commitment }: { commitment: Commitment }) {
 
       {pick === 'raise' && offer === 'offer' && raise && (
         <>
-          <p>
-            Send part of each raise to savings before it reaches everyday spending. On top of {habit}, it would rescue{' '}
-            <b>{num(raise.rescued)}</b> more of your futures, pointing to <b>{num(raise.after)}</b> of 1,000 instead of{' '}
-            {num(raise.before)}. It costs $0 today.
-          </p>
+          {countMoves(raise.before, raise.after, raise.rescued) ? (
+            <p>
+              Send part of each raise to savings before it reaches everyday spending. On top of {habit}, it would rescue{' '}
+              <b>{num(raise.rescued)}</b> more of your futures, pointing to <b>{num(raise.after)}</b> of 1,000 instead of{' '}
+              {num(raise.before)}. It costs $0 today.
+            </p>
+          ) : (
+            <p>
+              Send part of each raise to savings before it reaches everyday spending. With {habit}, your futures point to{' '}
+              <b>{num(raise.after)}</b> of 1,000 either way, so the count doesn’t move, but every raise would still add to your
+              savings. It costs $0 today.
+            </p>
+          )}
           <div className="row">
             <button
               type="button"
@@ -104,7 +136,7 @@ export function WindfallQuestion({ commitment }: { commitment: Commitment }) {
         </>
       )}
 
-      {pick === 'bonus' && effect && (
+      {pick === 'bonus' && (
         <>
           <div className="fields two">
             <Field id="bonus-amount" label="About how much was it?" value={bonus} min={0} max={20000} step={100} prefix="$" onChange={(v) => setBonus(Math.max(0, v))} />
@@ -120,8 +152,21 @@ export function WindfallQuestion({ commitment }: { commitment: Commitment }) {
             />
           </div>
           <p aria-live="polite">
-            Putting {money(aside)} aside points to <b>{num(effect.after)}</b> of 1,000 instead of {num(effect.before)}. It’s a
-            one-off, so your monthly amount stays the same.
+            {!effect ? (
+              <>Working out where that points…</>
+            ) : aside <= 0 ? (
+              <>Nothing put aside, so nothing changes.</>
+            ) : countMoves(effect.before, effect.after) ? (
+              <>
+                Putting {money(aside)} aside points to <b>{num(effect.after)}</b> of 1,000 instead of {num(effect.before)}.
+              </>
+            ) : (
+              <>
+                Putting {money(aside)} aside adds {money(aside)} to your savings. Your futures point to <b>{num(effect.after)}</b> of
+                1,000 either way, so the count doesn’t move.
+              </>
+            )}
+            {effect && aside > 0 ? ' It’s a one-off, so your monthly amount stays the same.' : ''}
           </p>
           <div className="row">
             <button

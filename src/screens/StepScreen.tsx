@@ -6,6 +6,7 @@ import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
 import { CANADA_LIFE_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, testSummary, yearFromToday, type Outcome } from '../lib/doNow';
 import { buildIcs, nextFriday } from '../lib/ics';
+import { windfallCarryOver } from '../lib/windfall';
 import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
 import { ConfidenceSlider } from './Intro';
@@ -197,6 +198,7 @@ export function StepScreen() {
           streak: outcome === 'done' ? 1 : 0,
           lastCheckISO: outcome === 'done' ? new Date().toISOString() : null,
           outcome,
+          ...windfallCarryOver(useStore.getState().commitment),
         },
       });
     }
