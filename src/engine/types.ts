@@ -1,3 +1,5 @@
+import type { LifeEventType, LifePlan } from './lifePlan';
+
 export type PlanAnswer = 'yes' | 'no' | 'unsure';
 
 export type Stage = 'student' | 'coop' | 'part' | 'first' | 'gig' | 'full';
@@ -42,6 +44,8 @@ export interface Inputs {
   // Students only: the age full-time pay starts.
   finishAge: number;
   goals?: Goal[];
+  // What they want out of life: kids, family, travel, time off and so on.
+  life?: LifePlan | null;
 }
 
 export type WorryId = 'ai' | 'recession' | 'costs' | 'home' | 'world' | 'pensions';
@@ -89,7 +93,8 @@ export type EventType =
   | 'goal'
   | 'debtFree'
   | 'room'
-  | 'optional';
+  | 'optional'
+  | LifeEventType;
 
 export interface PathEvent {
   age: number;

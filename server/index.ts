@@ -67,37 +67,55 @@ app.post('/api/narrate', async (req, res) => {
 
 // Sorts a goal typed in the person's own words into one of a fixed set of
 // kinds. It never returns an amount: costs come from the app's own table.
-const GOAL_KINDS = ['car', 'travel', 'school', 'wedding', 'family', 'business', 'move', 'pet', 'gear', 'other'];
+const SORTERS: Record<string, { kinds: string[]; prompt: string }> = {
+  goal: {
+    kinds: ['car', 'travel', 'school', 'wedding', 'family', 'business', 'move', 'pet', 'gear', 'other'],
+    prompt:
+      "Sort a young person's savings goal into exactly one kind. car: any vehicle. travel: trips and time away. " +
+      'school: degrees, courses, lessons, licences, training. wedding: weddings and engagements. ' +
+      'family: children, or helping or caring for family. business: starting or growing a business. ' +
+      'move: moving, deposits, first and last rent. pet: getting a pet. gear: things to buy such as tech, ' +
+      'furniture, instruments. other: anything else. Reply with the single kind only, lower case, nothing else.',
+  },
+  worry: {
+    kinds: ['ai', 'costs', 'world', 'recession', 'home', 'pensions', 'other'],
+    prompt:
+      "Sort a young person's money worry by what it would mostly do to them. ai: they would earn less or lose work. " +
+      'costs: everyday things would keep costing more. world: a big one-off bill or crisis, such as illness, an accident, ' +
+      'a disaster, or family needing help. recession: markets and jobs take a hit. home: housing or rent gets out of reach. ' +
+      'pensions: less help from government later. other: none of these. Reply with the single word only, lower case, nothing else.',
+  },
+  field: {
+    kinds: ['health', 'trades', 'engcs', 'business', 'science', 'social', 'arts', 'other'],
+    prompt:
+      "Sort a person's field of work or study into exactly one group. health: health care. trades: skilled trades and hands-on " +
+      'work. engcs: engineering and computing. business: business, finance, sales, management. science: natural sciences and math. ' +
+      'social: social sciences, education, law, public service. arts: arts, media, humanities. other: none of these. ' +
+      'Reply with the single word only, lower case, nothing else.',
+  },
+};
 app.post('/api/classify', async (req, res) => {
   const text = typeof req.body?.text === 'string' ? req.body.text.slice(0, 80) : '';
   if (!key) return void res.status(503).json({ error: 'not configured' });
-  if (!text.trim()) return void res.status(400).json({ error: 'bad request' });
+  const sorter = SORTERS[typeof req.body?.type === 'string' ? req.body.type : 'goal'];
+  if (!text.trim() || !sorter) return void res.status(400).json({ error: 'bad request' });
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [
-            {
-              text:
-                "Sort a young person's savings goal into exactly one kind. car: any vehicle. travel: trips and time away. " +
-                'school: degrees, courses, lessons, licences, training. wedding: weddings and engagements. ' +
-                'family: children, or helping or caring for family. business: starting or growing a business. ' +
-                'move: moving, deposits, first and last rent. pet: getting a pet. gear: things to buy such as tech, ' +
-                'furniture, instruments. other: anything else. Reply with the single kind only, lower case, nothing else.',
-            },
-          ],
+          parts: [{ text: sorter.prompt }],
         },
         contents: [{ role: 'user', parts: [{ text }] }],
-        generationConfig: { temperature: 0, maxOutputTokens: 5 },
+        generationConfig: { temperature: 0, maxOutputTokens: 12 },
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!r.ok) return void res.status(502).json({ error: 'failed' });
     const data = (await r.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
     const word = (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim().toLowerCase().replace(/[^a-z]/g, '');
-    if (!GOAL_KINDS.includes(word)) return void res.status(422).json({ error: 'rejected' });
+    if (!sorter.kinds.includes(word)) return void res.status(422).json({ error: 'rejected' });
     res.json({ kind: word });
   } catch {
     res.status(504).json({ error: 'timed out' });

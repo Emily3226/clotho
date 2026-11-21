@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { isGoalKind } from '../engine/goals';
-import type { GoalKind } from '../engine/types';
+import { FIELDS } from '../engine/profile';
+import { WORRY_IDS, type FieldId, type GoalKind, type WorryId } from '../engine/types';
 import { validateNarration } from './validate';
 
 export type NarrateKind = 'story' | 'worry' | 'ask';
@@ -38,20 +39,34 @@ export async function narrate(kind: NarrateKind, facts: unknown, question = ''):
 
 // Asks the server to sort a goal into a kind. Null on any failure: the
 // offline word match stands.
-export async function classifyGoal(text: string): Promise<GoalKind | null> {
+async function classify(type: 'goal' | 'worry' | 'field', text: string): Promise<string | null> {
   try {
     const res = await fetch('/api/classify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ type, text }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) return null;
-    const kind = ((await res.json()) as { kind?: string }).kind;
-    return isGoalKind(kind) ? kind : null;
+    return ((await res.json()) as { kind?: string }).kind ?? null;
   } catch {
     return null;
   }
+}
+
+export async function classifyGoal(text: string): Promise<GoalKind | null> {
+  const kind = await classify('goal', text);
+  return isGoalKind(kind) ? kind : null;
+}
+
+export async function classifyWorry(text: string): Promise<WorryId | null> {
+  const kind = await classify('worry', text);
+  return WORRY_IDS.includes(kind as WorryId) ? (kind as WorryId) : null;
+}
+
+export async function classifyField(text: string): Promise<FieldId | null> {
+  const kind = await classify('field', text);
+  return kind !== 'unsure' && FIELDS.some((f) => f.id === kind) ? (kind as FieldId) : null;
 }
 
 export async function narrationAvailable(): Promise<boolean> {

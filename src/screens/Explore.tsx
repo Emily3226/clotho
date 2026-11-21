@@ -14,7 +14,7 @@ import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
 import { WORRIES, worryInfo } from '../engine/worries';
 import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
-import { useNarration } from '../narrate/client';
+import { classifyWorry, useNarration } from '../narrate/client';
 import { STEP, anyLever, leverIsOn, selectedWorries, useStore } from '../store';
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
@@ -327,6 +327,7 @@ function ConcernEditor() {
   const add = useStore((s) => s.addConcern);
   const setKind = useStore((s) => s.setConcernKind);
   const remove = useStore((s) => s.removeConcern);
+  const aiOn = useStore((s) => s.aiOn);
   const [text, setText] = useState('');
   return (
     <div className="goals concerns">
@@ -357,8 +358,14 @@ function ConcernEditor() {
           className="goal-add"
           onSubmit={(e) => {
             e.preventDefault();
-            add(text);
+            const added = add(text);
             setText('');
+            // Keywords first; with AI wording on, Gemini sorts what they miss.
+            if (added && !added.kind && aiOn) {
+              void classifyWorry(added.label).then((kind) => {
+                if (kind && useStore.getState().concerns.some((c) => c.id === added.id && !c.kind)) setKind(added.id, kind);
+              });
+            }
           }}
         >
           <label className="q-label" htmlFor="concern-text">
@@ -370,7 +377,7 @@ function ConcernEditor() {
               Add
             </button>
           </div>
-          <p className="hint">Stays on this device. It is tested as the closest what-if, which you can change.</p>
+          <p className="hint">{aiOn ? 'With AI wording on, what you type is sent to sort it.' : 'Stays on this device.'} It is tested as the closest what-if, which you can change.</p>
         </form>
       )}
     </div>
