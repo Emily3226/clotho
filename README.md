@@ -33,11 +33,11 @@ The app needs no network and no API key. AI narration is optional: copy `.env.ex
 
 1. **Landing.** The tagline, a small real river drawing in, a start button, and three one-tap personas (Maya, a student; Jordan, a first job; Sam, gig work). A fourth, Priya, is used on stage to compare with Maya.
 2. **About you.** One screen, mostly taps: confidence, age, monthly saving, life stage, school, field, city, living situation, debt, what you want room for (a home asks what kind and when), and any goal typed in your own words (it asks how much and when).
-3. **Your futures.** A thousand lives from now to 70, with a headline count. A savings dial ("What if you set aside $150 a month?") moves every life live and shows "378 → 676". **Play one of your lives** draws a single life across the river with its events as it goes. "Change your answers" re-runs the river from any answer.
+3. **Your futures.** A thousand lives from now to 70, with a headline count. A savings dial ("What if you set aside $150 a month?") moves every life live and shows "378 → 679". **Play one of your lives** draws a single life across the river with its events as it goes. "Change your answers" re-runs the river from any answer.
 4. **What helps most.** Habits ranked by futures rescued per dollar a month. Switch one on and the futures it rescues light up: "Automating $25 a month rescues 74 of your futures." The inspector can show the same life, with the same luck, without the habit.
 5. **What if…** Optional worries, each sized and shown with the habit that protects the most, on the same card. The toughest case (all of them at once) is behind a link.
 6. **Pick one to try.** One habit, a two-line plan, a monthly calendar reminder, a message for HR when relevant, the confidence question again, and a 9:16 summary card to save or share.
-7. **Monthly check-in.** On a return visit: "Did you do it this month?", a streak, and "You started at 378. Keeping it up points to 795 of 1,000". One "Yes" per month. `?demo=1` adds a "jump ahead 3 months" button for the stage.
+7. **Monthly check-in.** On a return visit: "Did you do it this month?", a streak, and "You started at 378. Keeping it up points to 809 of 1,000". One "Yes" per month. `?demo=1` adds a "jump ahead 3 months" button for the stage.
 
 `?test=1` turns on user-test mode: each finished session adds an anonymous record (life stage, field, confidence before and after, habit picked, whether the reminder was added or the HR message copied) on this device, with a CSV export.
 
@@ -85,7 +85,8 @@ docs/                    ASSUMPTIONS, PITCH, DEVPOST
 - "Build the cushion first" is an extra $90 a month that stops by itself when the cushion is full.
 - Spending rises by 75% to 85% of each raise depending on the city, and follows the expected career: a layoff, a pay cut or a slower career squeezes saving, not lifestyle. An earlier version spent half of each raise, which quietly saved the other half and showed someone saving nothing as "in control" in 7 of 10 futures. The results are sensitive to this rule; it is listed in the Assumptions panel.
 - Living with family is modelled as the same lifestyle as renting, plus the rent not paid, saved until moving out.
-- Student debt payments come out of what would have been saved, starting when school ends.
+- Student debt payments start when school ends. They come out of what would have been saved first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work.
+- Work becoming optional is checked from age 30. Before 65, savings first have to stand in for public pensions until they start, so it takes a very high saving rate to get there in your thirties.
 - "Save part of every raise" adds one point of pay at each raise of 3% or more, up to 5 points.
 - Higher-paid fields can show fewer futures in control at the same share of pay saved, because CPP and OAS replace less of a higher income. The app says so when it happens instead of hiding it.
 - Three return settings (cautious, middle, hopeful) can be switched in the Assumptions panel. A test records whether the top-ranked habit changes between them (`src/engine/stability.json`); for all four personas it does not.

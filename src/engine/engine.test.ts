@@ -301,6 +301,40 @@ describe('make it more you', () => {
     withDebt.forEach((p, i) => expect(p.balances![10]).toBeLessThanOrEqual(without[i].balances![10] + 0.01));
   });
 
+  it('lets debt squeeze a budget without wiping out every future', () => {
+    for (const p of PERSONAS) {
+      const none = inControl({ ...p.inputs, debt: null });
+      const some = inControl({ ...p.inputs, debt: { balance: 15000, rate: 5 } });
+      // "Some" debt costs futures, but leaves at least a quarter of them standing.
+      expect(some).toBeLessThanOrEqual(none);
+      expect(some).toBeGreaterThanOrEqual(none / 4);
+      // Waiting five years with debt is a cost, never a wipe-out.
+      expect(inControl({ ...p.inputs, debt: { balance: 15000, rate: 5 } }, {}, { ...NO_LEVERS, delay: 5 })).toBeGreaterThan(0);
+    }
+  });
+
+  it('lets work become optional early for a very high saver, and never on future pensions alone', () => {
+    const jordan = persona('jordan').inputs;
+    const saver = simulate({ ...jordan, income: 150000, monthly: 6000, saved: 60000 }, {}, NO_LEVERS, SEED, { detail: false });
+    const by35 = saver.filter((p) => p.workOptionalAge !== null && p.workOptionalAge <= 35).length;
+    expect(by35).toBeGreaterThan(50);
+    expect(by35).toBeLessThan(950);
+    // The personas as they are: nobody gets there by 35 on luck alone.
+    for (const p of PERSONAS) {
+      for (const r of simulate(p.inputs, {}, NO_LEVERS, SEED, { detail: false })) {
+        expect(r.workOptionalAge === null || r.workOptionalAge > 35).toBe(true);
+      }
+    }
+    // Low pay, nothing set aside: pensions that start at 65 cannot make work
+    // optional earlier unless savings can stand in for them until then.
+    const sam = { ...persona('sam').inputs, income: 24000, monthly: 0, saved: 0 };
+    for (const r of simulate(sam, {}, NO_LEVERS, SEED)) {
+      if (r.workOptionalAge === null || r.workOptionalAge >= A.retireAge) continue;
+      const yearsToPensions = A.retireAge - r.workOptionalAge;
+      expect(r.balances![r.workOptionalAge - sam.age]).toBeGreaterThan(0.5 * yearsToPensions * A.oasMonthly * 12);
+    }
+  });
+
   it('uses the Canadian minimum down payment', () => {
     expect(minDownPayment(400000)).toBe(20000);
     expect(minDownPayment(550000)).toBe(30000);

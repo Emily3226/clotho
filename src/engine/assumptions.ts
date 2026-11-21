@@ -80,6 +80,10 @@ export const A = {
   roomMonths35: 6,
   roomMonths45: 12,
   debtYears: 10,
+  // Share of spending someone will trim to keep up debt payments.
+  debtTrimShare: 0.15,
+  // The earliest age the work-optional test is run.
+  workOptionalFromAge: 30,
   inflationForDebt: 0.02,
   defaultMatchPct: 4,
   raisesStep: 0.03,
@@ -185,11 +189,11 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('spending', 'Spending', 'Take-home pay minus saving; rises by 85% of each raise in Toronto or Vancouver, 80% in another big city, 75% in a smaller city or town', FP_URL, 'Illustrative behaviour rule', 'Lifestyle follows the expected career: a layoff or slower career squeezes saving, not spending. Living with family saves the rent not paid ($9,000, $7,000 or $5,000 a year by city, at most a quarter of take-home pay) until moving out (default age 25). The results are sensitive to this rule.'),
   illustrative('withdrawal', 'Sustainable income from savings', '4% a year of long-term savings', FP_URL, 'A common rule of thumb', 'Workplace-plan income is taxed at 15%.'),
   illustrative('raid', 'Emergency withdrawal from the workplace plan', '30% lost to tax; the room is gone', 'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/making-withdrawals/tax-rates-on-withdrawals.html', 'Based on RRSP withholding rates'),
-  illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of the spending you’re used to', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 50. Before 65, savings must also bridge the years until public pensions start.'),
+  illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of the spending you’re used to', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 30. Before 65, savings must first stand in for public pensions until they start, so early freedom takes a lot more.'),
   illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
   official('downPayment', 'Minimum down payment', '5% of the first $500,000, 10% of the rest; 20% at $1.5 million or more', 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html', 'Financial Consumer Agency of Canada'),
   illustrative('homePrices', 'Home prices', 'Toronto or Vancouver: condo $650k, townhouse $950k, house $1.4M. Another big city: $400k, $550k, $750k. Smaller city or town: $300k, $400k, $500k.', 'https://stats.crea.ca/en-CA/', 'Illustrative, in the range of CREA average prices', 'Counted on its own: a home goal does not change whether a future is in control.'),
-  illustrative('debt', 'Student debt', 'Paid over 10 years, starting when school ends; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative', 'The chips use 5% before inflation. The federal part of Canada Student Loans is interest-free; provincial parts vary.'),
+  illustrative('debt', 'Student debt', 'Paid over 10 years, starting when school ends; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative', 'The chips use 5% before inflation. Payments come out of saving first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work. The federal part of Canada Student Loans is interest-free; provincial parts vary.'),
   illustrative('levers', 'Habits', 'Save part of every raise: +1 point of pay at each raise of 3% or more, up to 5 points. Cushion first: $90 a month while the cushion is filling. Automate: $25, $50 or $100 a month. Cost of waiting: 5 years.', FP_URL, 'Illustrative'),
 ];
 

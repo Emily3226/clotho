@@ -177,7 +177,7 @@ export function simulate(
         if (detail && room45) events.push({ age: a, type: 'room', value: A.roomMonths45 });
       }
 
-      if (a >= 50 && !retired) {
+      if (a >= A.workOptionalFromAge && !retired) {
         let avgSpend = lastSpend;
         if (ringN > 0) {
           const n = Math.min(ringN, 5);
@@ -190,8 +190,12 @@ export function simulate(
         const pens =
           (A.cppMaxMonthly * 12 * Math.min(1, avgInc / A.ympe) * cppYears + A.oasMonthly * 12) * pensionFactor;
         const bridge = a < A.retireAge ? pens * (A.retireAge - a) : 0;
-        const usable = Math.max(0, judged + (1 - A.workplaceRetirementTax) * workplace - bridge);
-        const ratio = (A.withdrawalRate * usable + pens) / Math.max(1, avgSpend);
+        // Before 65, savings first have to stand in for the public pensions
+        // until they start. Pensions only count as far as that gap is funded.
+        const assets = judged + (1 - A.workplaceRetirementTax) * workplace;
+        const funded = bridge > 0 ? Math.min(1, assets / bridge) : 1;
+        const usable = Math.max(0, assets - bridge);
+        const ratio = (A.withdrawalRate * usable + pens * funded) / Math.max(1, avgSpend);
         if (a === A.retireAge) ratio65 = ratio;
         if (ratio >= A.workOptionalShare && woAge === null) {
           woAge = a;
@@ -273,19 +277,6 @@ export function simulate(
       }
       prevGross = gross;
 
-      // Student debt payments come out of what would have been saved. In a
-      // year with nothing spare they still fall due, so they draw on savings
-      // like any other cost: the balance only shrinks by what is paid.
-      let debtDue = 0;
-      if (debtBal > 0 && debtStarted) {
-        debtDue = Math.min(debtPay, debtBal * (1 + debtRate));
-        debtBal = debtBal * (1 + debtRate) - debtDue;
-        if (debtBal <= 1) {
-          debtBal = 0;
-          if (detail) events.push({ age: a + 1, type: 'debtFree' });
-        }
-      }
-
       if (sCost >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + WORRY.costs.extra[sCost] * WORRY.costs.essentialsShare;
       // Rents follow home prices: housing, about 30% of spending, rises with them.
       if (sHome >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + homeFaster * WORRY.home.housingShare;
@@ -357,11 +348,31 @@ export function simulate(
       const yearIncome = gross * share + jobless * gross * (1 - share);
       const th = months > 0 ? takeHome(yearIncome) : nth;
 
+      // Student debt. In a year with time out of work, payments pause and the
+      // balance waits (as under repayment assistance). Otherwise the payment
+      // falls due and the balance only shrinks by what is paid: it comes out
+      // of what would have been saved first, then out of spending (people
+      // tighten their budget, up to a limit), and only what is left draws on
+      // savings like any other cost.
+      let debtDue = 0;
+      if (debtBal > 0 && debtStarted && months === 0) {
+        debtDue = Math.min(debtPay, debtBal * (1 + debtRate));
+        debtBal = debtBal * (1 + debtRate) - debtDue;
+        if (debtBal <= 1) {
+          debtBal = 0;
+          if (detail) events.push({ age: a + 1, type: 'debtFree' });
+        }
+      }
+
       let free = th - spend;
       // Living with family: the same lifestyle as renting, plus the rent not
       // paid, saved until moving out.
       if (a < moveOutAge) free += Math.min(city.moveOutCost, FAMILY_RENT_SHARE * th);
-      if (debtDue > 0) free -= debtDue;
+      if (debtDue > 0) {
+        const fromSaving = Math.min(debtDue, Math.max(0, free));
+        const trimmed = Math.min(debtDue - fromSaving, A.debtTrimShare * spend);
+        free -= debtDue - trimmed;
+      }
       if (worldChance > 0 && !calm && draws[o + S_COST_U] < worldChance) {
         free -= (WORRY.world.months / 12) * spend;
         if (detail) events.push({ age: a, type: 'cost' });
