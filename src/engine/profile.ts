@@ -117,9 +117,6 @@ export const DEBT_CHIPS = [
   { id: 'lots', label: 'A lot (about $35k)', balance: 35000 },
 ] as const;
 
-// Real rate on student debt, illustrative. The federal part of Canada Student
-// Loans is interest-free; provincial parts vary.
-export const DEBT_REAL_RATE = 3;
 
 export const FINISH_CHIPS = [
   { label: 'This year', years: 0 },

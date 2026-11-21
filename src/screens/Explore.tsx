@@ -366,7 +366,8 @@ function AiToggle() {
     <div className="ai-toggle">
       <Switch checked={aiOn} onChange={change} label="AI narration" />
       <p className="hint" aria-live="polite">
-        <b>AI wording {aiOn ? 'on' : 'off'}.</b> {note || 'Sends only anonymous counts. Numbers never change.'}
+        <b>AI wording {aiOn ? 'on' : 'off'}.</b>{' '}
+        {note || 'Sends anonymous counts and events, plus any goal you type, to be sorted. Numbers never change.'}
       </p>
     </div>
   );
@@ -413,7 +414,7 @@ export function Explore() {
       <div className="stage">
         <p className="eyebrow">{TITLES[step]}</p>
         <Headline a={a} />
-        {(step === STEP.futures || step === STEP.habits) && <SaveDial />}
+        {step === STEP.futures && <SaveDial />}
         <River
           analysis={a}
           mask={mask}

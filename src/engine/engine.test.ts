@@ -271,6 +271,36 @@ describe('make it more you', () => {
     });
   });
 
+  it('never lets a home or goal make habits or more saving look worse', () => {
+    const maya = persona('maya').inputs;
+    const jordan = persona('jordan').inputs;
+    const cases: Inputs[] = [
+      { ...maya, home: { price: 0, byAge: 35, type: 'condo' } },
+      { ...jordan, home: { price: 0, byAge: 40, type: 'house' } },
+      { ...maya, goals: [{ id: 'g', label: 'Japan', kind: 'travel', cost: 6000, byAge: 28 }] },
+    ];
+    for (const i of cases) {
+      const base = inControl(i);
+      for (const id of LEVER_IDS) expect(inControl(i, {}, leverOnly(id)), id).toBeGreaterThanOrEqual(base);
+      let last = -1;
+      for (const monthly of [0, 25, 50, 100, 200]) {
+        const n = inControl({ ...i, monthly });
+        expect(n).toBeGreaterThanOrEqual(last);
+        last = n;
+      }
+    }
+    // Adding the goal itself barely moves the count: it is judged on its own.
+    expect(Math.abs(inControl(cases[1]) - inControl(jordan))).toBeLessThanOrEqual(15);
+  });
+
+  it('only shrinks student debt by what is paid', () => {
+    const sam = { ...persona('sam').inputs, debt: { balance: 35000, rate: 5 } };
+    // More saving can never be "paid" by debt: with debt, savings are lower in every life.
+    const withDebt = simulate(sam, {}, NO_LEVERS, SEED);
+    const without = simulate({ ...sam, debt: null }, {}, NO_LEVERS, SEED);
+    withDebt.forEach((p, i) => expect(p.balances![10]).toBeLessThanOrEqual(without[i].balances![10] + 0.01));
+  });
+
   it('uses the Canadian minimum down payment', () => {
     expect(minDownPayment(400000)).toBe(20000);
     expect(minDownPayment(550000)).toBe(30000);

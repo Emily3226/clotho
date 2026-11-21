@@ -7,7 +7,7 @@ export function AnimatedNumber({ value, duration = 600, prefix = '' }: { value: 
   const from = useRef(value);
   useEffect(() => {
     const start = from.current;
-    if (start === value || reducedMotion()) {
+    if (start === value || reducedMotion() || document.hidden) {
       from.current = value;
       setShown(value);
       return;

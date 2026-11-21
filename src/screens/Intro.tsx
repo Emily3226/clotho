@@ -15,7 +15,8 @@ export function Landing() {
     const p = PERSONAS.find((x) => x.id === id)!;
     restart();
     setState({ inputs: p.inputs, room: p.room, personaId: p.id, incomeEdited: true });
-    setStep(STEP.futures);
+    // Prefilled, so it's one tap to the results, but confidence is still asked.
+    setStep(STEP.about);
   };
   return (
     <section className="landing">

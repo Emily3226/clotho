@@ -304,6 +304,7 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     const start = performance.now() - (reducedMotion() ? PLAY_MS : 0);
     playRef.current = { index: playing, start, raf: 0 };
     let shown = -1;
+    let done = 0;
     const step = () => {
       const pr = playRef.current;
       if (!pr) return;
@@ -331,7 +332,7 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
       if (p < 1) pr.raf = requestAnimationFrame(step);
       else {
         playRef.current = null;
-        setTimeout(() => {
+        done = window.setTimeout(() => {
           setCaption(null);
           onPlayDone?.(playing);
         }, 900);
@@ -339,6 +340,8 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     };
     step();
     return () => {
+      // Leaving mid-play must not select a life afterwards.
+      clearTimeout(done);
       if (playRef.current) cancelAnimationFrame(playRef.current.raf);
       playRef.current = null;
     };

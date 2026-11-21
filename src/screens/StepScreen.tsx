@@ -162,7 +162,7 @@ export function StepScreen() {
         commitment: {
           lever: pick.id,
           startedISO: new Date().toISOString(),
-          startInControl: a.scenarioSummary.counts[0],
+          startInControl: a.baseSummary.counts[0],
           startInputs: inputs,
           streak: 0,
           lastCheckISO: null,

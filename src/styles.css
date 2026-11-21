@@ -1101,6 +1101,19 @@ dialog.panel::backdrop {
 }
 
 @media (max-width: 639px) {
+  /* Keep the pinned river short so the habits below have room. */
+  .stage .river {
+    height: 160px;
+  }
+  .stage .legend {
+    display: none;
+  }
+  .stage .count {
+    font-size: 1.15rem;
+  }
+  .stage .context {
+    display: none;
+  }
   .top {
     flex-wrap: wrap;
     row-gap: 4px;

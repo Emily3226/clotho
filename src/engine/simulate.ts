@@ -138,6 +138,9 @@ export function simulate(
     let room35 = false;
     let room45 = false;
     let bought = false;
+    // Money spent on a home or a goal, grown as if it had stayed invested.
+    // Counted back when judging the other milestones (see below).
+    let parked = 0;
     const goalsReached = goals.map(() => false);
     let cushionFullSeen = cushion >= cushionShare * spend0 - 1 && cushionShare > 0 && inputs.saved > 0;
 
@@ -152,6 +155,10 @@ export function simulate(
       const a = age + t;
       const flex = tfsa + fhsa + taxable;
       const total = cushion + flex + workplace;
+      // Room to move and work-optional are judged as if the home or goal had
+      // not been paid for: those are counted on their own, so reaching one
+      // never makes the rest of a future look worse.
+      const judged = flex + parked;
       if (balances) balances[t] = total;
       final = total;
       if (trace) {
@@ -162,11 +169,11 @@ export function simulate(
       }
 
       if (a === 35) {
-        room35 = cushion + flex >= (A.roomMonths35 / 12) * lastSpend - 1;
+        room35 = cushion + judged >= (A.roomMonths35 / 12) * lastSpend - 1;
         if (detail && room35) events.push({ age: a, type: 'room', value: A.roomMonths35 });
       }
       if (a === 45) {
-        room45 = cushion + flex >= (A.roomMonths45 / 12) * lastSpend - 1;
+        room45 = cushion + judged >= (A.roomMonths45 / 12) * lastSpend - 1;
         if (detail && room45) events.push({ age: a, type: 'room', value: A.roomMonths45 });
       }
 
@@ -183,7 +190,7 @@ export function simulate(
         const pens =
           (A.cppMaxMonthly * 12 * Math.min(1, avgInc / A.ympe) * cppYears + A.oasMonthly * 12) * pensionFactor;
         const bridge = a < A.retireAge ? pens * (A.retireAge - a) : 0;
-        const usable = Math.max(0, flex + (1 - A.workplaceRetirementTax) * workplace - bridge);
+        const usable = Math.max(0, judged + (1 - A.workplaceRetirementTax) * workplace - bridge);
         const ratio = (A.withdrawalRate * usable + pens) / Math.max(1, avgSpend);
         if (a === A.retireAge) ratio65 = ratio;
         if (ratio >= A.workOptionalShare && woAge === null) {
@@ -219,6 +226,7 @@ export function simulate(
       const r = w * rs + (1 - w) * rb - A.fees;
       cushion *= 1 + A.cushionReturn;
       tfsa *= 1 + r;
+      parked *= 1 + r;
       fhsa *= 1 + r;
       workplace *= 1 + r;
       taxable *= 1 + r - A.taxableDrag;
@@ -265,8 +273,9 @@ export function simulate(
       }
       prevGross = gross;
 
-      // Student debt payments come out of what would have been saved. If that
-      // is not enough, the rest is squeezed out of spending that year.
+      // Student debt payments come out of what would have been saved. In a
+      // year with nothing spare they still fall due, so they draw on savings
+      // like any other cost: the balance only shrinks by what is paid.
       let debtDue = 0;
       if (debtBal > 0 && debtStarted) {
         debtDue = Math.min(debtPay, debtBal * (1 + debtRate));
@@ -352,7 +361,7 @@ export function simulate(
       // Living with family: the same lifestyle as renting, plus the rent not
       // paid, saved until moving out.
       if (a < moveOutAge) free += Math.min(city.moveOutCost, FAMILY_RENT_SHARE * th);
-      if (debtDue > 0) free -= Math.min(debtDue, Math.max(0, free));
+      if (debtDue > 0) free -= debtDue;
       if (worldChance > 0 && !calm && draws[o + S_COST_U] < worldChance) {
         free -= (WORRY.world.months / 12) * spend;
         if (detail) events.push({ age: a, type: 'cost' });
@@ -438,6 +447,7 @@ export function simulate(
           need -= y;
           tfsa -= need;
           tfsaRoom += need;
+          parked += down;
           bought = true;
           if (detail) events.push({ age: a + 1, type: 'home' });
         }
@@ -453,6 +463,7 @@ export function simulate(
           taxable -= y;
           tfsa -= g.cost - y;
           tfsaRoom += g.cost - y;
+          parked += g.cost;
           goalsReached[k] = true;
           if (detail) events.push({ age: a + 1, type: 'goal', value: k });
         }

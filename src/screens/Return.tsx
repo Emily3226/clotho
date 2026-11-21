@@ -35,6 +35,10 @@ export function Return() {
   const copy = leverCopy(commitment.lever, inputs);
   const now = a?.summary.counts[0] ?? commitment.startInControl;
   const smaller = commitment.lever === 'auto100' ? 'auto50' : commitment.lever === 'auto50' ? 'auto25' : null;
+  // One "Yes" per calendar month. The demo jump is the only way past it.
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const doneThisMonth = commitment.lastCheckISO?.slice(0, 7) === thisMonth;
+  const started = commitment.streak > 0;
 
   const yes = (months = 1) => {
     // Each month done adds what was set aside, plus the habit's amount.
@@ -53,27 +57,27 @@ export function Return() {
       <div className="stage">
         <p className="eyebrow">Monthly check-in</p>
         <div className="headline">
+          {/* Honest at any streak: where you started, and where keeping the
+              habit points. The number is a projection, never claimed progress. */}
           <p className="count" aria-live="polite">
-            Since you started:{' '}
+            You started at <strong>{num(commitment.startInControl)}</strong>. Keeping it up points to{' '}
             <strong>
-              <span className="was">{num(commitment.startInControl)}</span>
-              <span aria-hidden="true"> → </span>
-              <span className="sr-only"> then </span>
               <AnimatedNumber value={now} />
             </strong>{' '}
-            futures in control.
+            of 1,000.
           </p>
           <p className="context">
-            {copy.title} · streak: {commitment.streak} {commitment.streak === 1 ? 'month' : 'months'}
+            {copy.title} ·{' '}
+            {started ? `kept ${commitment.streak} ${commitment.streak === 1 ? 'month' : 'months'} in a row` : 'not started yet'}
           </p>
         </div>
         <River analysis={a} mask={null} selected={null} onSelect={() => {}} />
       </div>
       <div className="side">
-        <h1 className="h-question">Did you do it this month?</h1>
-        <p className="hint">{copy.title}.</p>
+        <h1 className="h-question">{doneThisMonth && answer !== 'yes' ? 'You’ve checked in this month.' : 'Did you do it this month?'}</h1>
+        <p className="hint">{doneThisMonth && answer !== 'yes' ? 'See you next month.' : `${copy.title}.`}</p>
         <div className="row">
-          <button type="button" className="primary" aria-pressed={answer === 'yes'} onClick={() => yes(1)}>
+          <button type="button" className="primary" aria-pressed={answer === 'yes'} disabled={doneThisMonth || answer === 'yes'} onClick={() => yes(1)}>
             Yes
           </button>
           <button type="button" className="secondary" aria-pressed={answer === 'notyet'} onClick={() => setAnswer('notyet')}>
