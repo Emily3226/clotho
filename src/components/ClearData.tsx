@@ -9,7 +9,7 @@ export function ClearData() {
   return (
     <section className="clear-data">
       <h3>Your data</h3>
-      <p className="note">Your answers stay on this device. Nothing is sent anywhere unless you turn on AI wording.</p>
+      <p className="note">Your answers stay on this device.</p>
       {asking ? (
         <>
           <p role="alert">

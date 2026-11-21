@@ -778,62 +778,6 @@ fieldset.plan legend {
   background: var(--accent-ink);
 }
 .waiting,
-.together {
-  display: grid;
-  gap: 8px;
-}
-.bars {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  height: 130px;
-  margin-top: 6px;
-}
-.bar-col {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.bar-pair {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  border-bottom: 1px solid var(--line);
-}
-.bar {
-  flex: 1;
-  border-radius: 4px 4px 0 0;
-  min-height: 2px;
-  transition: height 0.5s ease;
-}
-.bar.cushion,
-.key.cushion {
-  background: var(--s2);
-}
-.bar.long,
-.key.long {
-  background: var(--s0);
-}
-.bar-label {
-  font-size: 0.74rem;
-  color: var(--muted);
-  text-align: center;
-}
-.bar-key {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 18px;
-  font-size: 0.86rem;
-}
-.key {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  margin-right: 5px;
-}
 .ai-toggle {
   display: flex;
   gap: 12px;
@@ -1230,7 +1174,6 @@ fieldset.more-q legend {
   opacity: 0.6;
 }
 .welcome,
-.compare,
 .test-mode {
   margin: 18px 0;
   display: flex;
@@ -1239,12 +1182,11 @@ fieldset.more-q legend {
   align-items: center;
   justify-content: space-between;
 }
-.welcome p,
-.compare p,
 .test-mode p {
   margin: 0;
   flex: 1 1 240px;
 }
+.welcome p,
 .lever h3 .tag {
   margin-left: 8px;
   vertical-align: middle;

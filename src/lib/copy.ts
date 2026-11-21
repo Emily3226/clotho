@@ -67,13 +67,6 @@ export function leverCostLine(row: LeverRow): string {
   return `${money(row.costPerMonth)} a month`;
 }
 
-export function ageShift(delta: number | null): string {
-  if (delta === null) return '';
-  if (delta === 0) return 'Work-optional age: no change';
-  const years = Math.abs(delta) === 1 ? '1 year' : `${Math.abs(delta)} years`;
-  return delta < 0 ? `Work optional ${years} sooner` : `Work optional ${years} later`;
-}
-
 const EVENT_TEXT: Record<PathEvent['type'], (v?: number) => string> = {
   job: (v) => `out of work for ${v === 1 ? '1 month' : `${v} months`}`,
   dip: (v) => `a slow stretch of gig work for ${v} months`,

@@ -42,7 +42,6 @@ export const A = {
   paths: 1000,
   endAge: 70,
   retireAge: 65,
-  paycheques: 26,
 
   tfsaAnnual: 7000,
   fhsaAnnual: 8000,
@@ -55,12 +54,8 @@ export const A = {
   cppFullYears: 39,
   careerStartAge: 22,
 
-  stockMean: 0.05,
-  stockVol: 0.17,
-  crashChance: 0.05,
   crashMean: -0.25,
   crashVol: 0.08,
-  bondMean: 0.01,
   bondVol: 0.06,
   stockShareEarly: 0.8,
   stockShareLate: 0.4,

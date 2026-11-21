@@ -103,7 +103,6 @@ interface Store {
 
   setStep: (step: number) => void;
   setInputs: (patch: Partial<Inputs>) => void;
-  toggleRoom: (id: string) => void;
   toggleWorry: (id: WorryId) => void;
   addConcern: (text: string) => Concern | null;
   setConcernKind: (id: string, kind: WorryId) => void;
@@ -182,10 +181,6 @@ export const useStore = create<Store>()(
         window.scrollTo({ top: 0 });
       },
       setInputs: (patch) => set({ inputs: { ...get().inputs, ...patch } }),
-      toggleRoom: (id) => {
-        const room = get().room.includes(id) ? get().room.filter((r) => r !== id) : [...get().room, id];
-        set({ room });
-      },
       toggleWorry: (id) => {
         const worries = { ...get().worries };
         if (worries[id]) delete worries[id];
@@ -275,4 +270,3 @@ export function currentScenario(worries: Scenario, active: WorryId | 'all' | nul
 export const params = (): URLSearchParams => new URLSearchParams(window.location.search);
 export const demoMode = (): boolean => params().get('demo') === '1';
 export const testMode = (): boolean => params().get('test') === '1';
-export const debugMode = (): boolean => params().get('debug') === '1';
