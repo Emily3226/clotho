@@ -19,9 +19,10 @@ import {
 import { GOAL_WHEN, MAX_GOALS, goalKind, matchGoal, newGoal } from '../engine/goals';
 import { matchField } from '../engine/concerns';
 import type { FieldId, Goal, HomeType, Inputs, Stage } from '../engine/types';
-import { classifyGoal } from '../narrate/client';
+import { classifyField, classifyGoal } from '../narrate/client';
 import { money } from '../lib/format';
-import { ROOM_FOR, useStore } from '../store';
+import { useStore } from '../store';
+import { LifeChoices } from './LifeChoices';
 
 // Every question, mostly as taps. Used on its own screen before the results,
 // and again beside the river so answers can be changed and the river moves.
@@ -104,16 +105,10 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           pickField(v, l);
         }}
       />
-      {fieldOther !== null && <FieldOther initial={fieldOther} onUse={(text, field) => { setState({ fieldOther: text }); pickField(field, text); }} />}
+      {fieldOther !== null && <FieldOther initial={fieldOther} current={inputs.field} onUse={(text, field) => { setState({ fieldOther: text }); pickField(field, text); }} />}
       <ChipGroup legend="Where" selected={(v) => v === inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(l, { city: v })} />
 
-      <details className="drawer">
-        <summary>More (optional)</summary>
-        <div className="fields">
-          {isStudent(inputs.stage) && (
-            <ChipGroup legend="Finishing school" selected={(v) => v === finishValue} options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))} onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })} />
-          )}
-          <ChipGroup legend="You want room for" options={ROOM_FOR.map((r) => ({ value: r.id, label: r.label }))} selected={(v) => room.includes(v)} onPick={(v) => toggleRoom(v)} />
+      <LifeChoices answer={answer} homeOn={!!home} onHome={() => toggleRoom('home')} />
           {home && (
             <div className="home-q">
               <ChipGroup<HomeType>             legend="What kind of home?"
@@ -128,6 +123,14 @@ export function AboutYou({ live = false }: { live?: boolean }) {
                 </p>
               )}
             </div>
+          )}
+      <GoalsEditor answer={answer} />
+
+      <details className="drawer">
+        <summary>More (optional)</summary>
+        <div className="fields">
+          {isStudent(inputs.stage) && (
+            <ChipGroup legend="Finishing school" selected={(v) => v === finishValue} options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))} onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })} />
           )}
           <ChipGroup
             legend="Living"
@@ -163,7 +166,6 @@ export function AboutYou({ live = false }: { live?: boolean }) {
               onChange={(v) => answer(`Debt: ${money(v)}`, { debt: { balance: Math.round(v), rate: inputs.debt?.rate ?? 5 } })}
             />
           )}
-          <GoalsEditor answer={answer} />
           <Field
             id="income"
             label={isStudent(inputs.stage) ? 'Income now (part-time is fine)' : 'Income before tax'}
@@ -217,28 +219,32 @@ export function AboutYou({ live = false }: { live?: boolean }) {
 // A field of work in the person's own words. It is matched to the closest
 // field the app has pay figures for; when nothing fits, a middle figure is
 // used and said so.
-function FieldOther({ initial, onUse }: { initial: string; onUse: (text: string, field: FieldId) => void }) {
+function FieldOther({ initial, current, onUse }: { initial: string; current: Inputs['field']; onUse: (text: string, field: FieldId) => void }) {
+  const aiOn = useStore((s) => s.aiOn);
   const [text, setText] = useState(initial);
   const used = initial.trim();
-  const match = used ? matchField(used) : null;
+  // Keywords first; with AI wording on, Gemini sorts what they miss.
+  const match = used && current && current !== 'unsure' ? current : null;
   const info = FIELDS.find((f) => f.id === (match ?? 'unsure'))!;
-  const use = () => {
+  const use = async () => {
     const t = text.trim().slice(0, 40);
-    if (t && t !== used) onUse(t, matchField(t) ?? 'unsure');
+    if (!t || t === used) return;
+    const found = matchField(t) ?? (aiOn ? await classifyField(t) : null);
+    onUse(t, found ?? 'unsure');
   };
   return (
     <form
       className="goal-add"
       onSubmit={(e) => {
         e.preventDefault();
-        use();
+        void use();
       }}
     >
       <label className="q-label" htmlFor="field-text">
         What field?
       </label>
       <div className="goal-row">
-        <input id="field-text" value={text} maxLength={40} autoComplete="off" placeholder="Nursing, film, plumbing…" onChange={(e) => setText(e.target.value)} onBlur={use} />
+        <input id="field-text" value={text} maxLength={40} autoComplete="off" placeholder="Nursing, film, plumbing…" onChange={(e) => setText(e.target.value)} onBlur={() => void use()} />
         <button type="submit" className="secondary" disabled={!text.trim() || text.trim() === used}>
           Use
         </button>

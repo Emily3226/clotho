@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { A } from './assumptions';
+import { EMPTY_LIFE } from './lifePlan';
 import { CUT_AGES, cutAgesFor, defaultCutAge, ifCutShort } from './noSixtyFive';
 import { PERSONAS } from './personas';
 import { simulate } from './simulate';
@@ -70,6 +71,27 @@ describe('what if there is no 65', () => {
       }
     }
   }, 30000);
+
+  it('counts what a habit gives up correctly alongside kids and planned time off', () => {
+    const life = { ...EMPTY_LIFE, kids: 1, firstKidAge: 27, breakMonths: 6, breakAge: 30 };
+    const inputs: Inputs = { ...simple, monthly: 200, life };
+    const opts = { calm: true, paths: 1, detail: false, cutAge: 35 } as const;
+    const [plain] = simulate(inputs, {}, NO_LEVERS, SEED, opts);
+    const [habit] = simulate(inputs, {}, leverOnly('auto100'), SEED, opts);
+    const gaveUp = plain.atCut!.lived - habit.atCut!.lived;
+    expect(gaveUp).toBeGreaterThan(0);
+    expect(gaveUp).toBeLessThanOrEqual(1200 * 10 + 0.01);
+    // No plan and no match here: what you gain is what you gave up, plus growth.
+    expect(habit.atCut!.yours - plain.atCut!.yours).toBeGreaterThanOrEqual(gaveUp - 0.01);
+  });
+
+  it('counts a chosen cost as lived, not as money that vanished', () => {
+    const opts = { calm: true, paths: 1, detail: false, cutAge: 35 } as const;
+    const [none] = simulate({ ...simple, monthly: 500 }, {}, NO_LEVERS, SEED, opts);
+    const [travel] = simulate({ ...simple, monthly: 500, life: { ...EMPTY_LIFE, travelYearly: 2000 } }, {}, NO_LEVERS, SEED, opts);
+    expect(travel.atCut!.lived).toBeGreaterThan(none.atCut!.lived - 1);
+    expect(travel.atCut!.yours).toBeLessThan(none.atCut!.yours);
+  });
 
   it('never uses wording that scares or shames, and states only computed numbers', () => {
     const r = ifCutShort(PERSONAS[0].inputs, leverOnly('raises'), 40, SEED);

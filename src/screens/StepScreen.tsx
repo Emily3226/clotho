@@ -154,8 +154,10 @@ export function StepScreen() {
   const pickOutcome = (o: Outcome) => {
     const next = outcome === o ? null : o;
     setState({ outcome: next });
-    if (commitment && pick && commitment.lever === pick.id && commitment.streak === 0) {
-      setState({ commitment: { ...commitment, outcome: next, lastCheckISO: next === 'done' ? new Date().toISOString() : null } });
+    // Only while the streak is still just this first answer.
+    const onlyThis = commitment && (commitment.streak === 0 || (commitment.streak === 1 && commitment.outcome === 'done'));
+    if (commitment && pick && commitment.lever === pick.id && onlyThis) {
+      setState({ commitment: { ...commitment, outcome: next, streak: next === 'done' ? 1 : 0, lastCheckISO: next === 'done' ? new Date().toISOString() : null } });
     }
   };
   const copyHR = async () => {
@@ -192,7 +194,7 @@ export function StepScreen() {
           startedISO: new Date().toISOString(),
           startInControl: a.baseSummary.counts[0],
           startInputs: inputs,
-          streak: 0,
+          streak: outcome === 'done' ? 1 : 0,
           lastCheckISO: outcome === 'done' ? new Date().toISOString() : null,
           outcome,
         },

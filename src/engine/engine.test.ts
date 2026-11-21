@@ -268,13 +268,13 @@ describe('why this number', () => {
 });
 
 describe('levers', () => {
-  it('ranks levers and puts the HR question first when the plan is unknown', () => {
+  it('ranks habits by futures rescued and keeps the free HR question available', () => {
     const a = new Engine().analyse({ ...maya, plan: 'unsure' }, {}, {}, NO_LEVERS, SEED);
-    expect(a.ranking[0].id).toBe('match');
-    expect(a.ranking[0].askHR).toBe(true);
+    const ask = a.ranking.find((r) => r.id === 'match')!;
+    expect(ask.askHR).toBe(true);
+    expect(ask.noExtraCost).toBe(true);
     expect(a.yearlyMatch).toBeCloseTo(0.04 * maya.income, 6);
-    const rest = a.ranking.slice(1);
-    for (let i = 1; i < rest.length; i++) expect(rest[i - 1].perDollar).toBeGreaterThanOrEqual(rest[i].perDollar);
+    for (let i = 1; i < a.ranking.length; i++) expect(a.ranking[i - 1].rescued).toBeGreaterThanOrEqual(a.ranking[i].rescued);
   });
 
   it('shows that waiting five years costs futures', () => {
