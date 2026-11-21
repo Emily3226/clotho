@@ -7,26 +7,27 @@ Numbers below are what the app shows with the default seed and the Middle return
 **0:00 The problem (15 s)**
 "Canada Life found that dread about the future leads to doomscrolling, and every extra hour of scrolling goes with fewer people setting up automatic savings. We didn't build another feed. It's two minutes once, then thirty seconds a month."
 
-**0:15 Maya, and the dial (20 s)**
-Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. Every line is one version of her life, same choices, different luck. She's in control in **378 of 1,000**." Drag the dial from $40 to $150 a month: "**378 → 676**. Same luck, her choice." Tap **Back to $40**.
+**0:15 Maya, and her worry (15 s)**
+Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. We ask what worries her before anything else." Tap **AI changes my job**, then **Show my thousand futures**.
 
-**0:35 Play one life (10 s)**
+**0:30 Today, and what's within reach (20 s)**
+"Every line is one version of her life: same choices, different luck. **378 of 1,000** are in control today, and **794 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, **924** of her futures get harder, and saving part of every raise protects **802** of them." Drag the dial from $40 to $150 a month: "**378 → 676**. Same luck, her choice." Tap **Back to $40**.
+
+Don't tap **Show** on the AI card on stage: for Maya it puts the headline at 0 in control.
+
+**0:50 Play one life (10 s)**
 Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
 
-**0:45 One habit, the rescue (20 s)**
-"What helps most?". Switch on **Automate $25 a month**. "Twenty-five dollars a month. Watch which of her futures it rescues: **73**, lit up, same luck." Then switch it off and switch on **Save part of every raise**: "**465** rescued, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
+**1:00 One habit, the rescue (20 s)**
+"What helps most?". Tap the **?** on **Save part of every raise**: "Each raise sends 1% more to savings, so it never feels like a cut." Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **73**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+465** futures rescued, **378 → 794**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
-**1:05 Same age, different futures (optional, 10 s)**
-Back on the futures screen, **Switch to Priya**: same age, health student in Halifax, living with family: **869**.
-
-**1:15 A worry, with its protection (15 s)**
-"What if…", tap **AI changes my job**. "Her field gets a stronger what-if. It's sized, and the protection is on the same card: saving part of every raise protects most of the futures it touches."
-
-**1:30 Pick one, and come back (15 s)**
+**1:20 Pick one, and come back (15 s)**
 "Pick one to try". Pick the habit, "Add a monthly reminder", move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **378**. Keeping it up points to **795**, and she's kept it 3 months in a row."
 
-**1:45 Proof and what's next (15 s)**
-Read the user-test result (n and the share who set a reminder). "Next: a pilot inside a group plan."
+**1:35 Proof and what's next (15 s)**
+"We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** set a reminder." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan."
+
+**Optional, if there's time (10 s):** on Your futures, **Switch to Priya**: same age, health student in Halifax, living with family: **869**.
 
 **Backup:** if anything misbehaves, reload; inputs are kept. Have the recorded demo video ready.
 
@@ -43,12 +44,12 @@ Read the user-test result (n and the share who set a reminder). "Next: a pilot i
 
 | Line in the brief | Feature |
 |---|---|
-| "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The check-in asks what you want room for; the "What if" screen tests the worries, each next to what protects against it. |
+| "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The first question after confidence is "What worries you most?". The first result answers it: each worry is sized on a card, next to the habit that protects the most. |
 | "helps Gen Z take meaningful action" | One step, a monthly reminder, a message ready for HR, and a monthly check-in that shows progress. |
-| "motivation" | "Rescues 465 of your futures", and at the check-in "You started at 378. Keeping it up points to 795", with a streak. |
+| "motivation" | The first headline: "378 in control today, 794 within reach with one habit". Then "+465 futures rescued", and at the check-in "You started at 378. Keeping it up points to 795", with a streak. |
 | "visualization" | The river: 1,000 lives, a middle line, milestones at 35, 45 and 65. |
 | "behavioral nudges" | The three behaviours the research measured: joining the plan, taking the match, automatic contributions. One step only; "make it automatic" checklist. |
-| "education" | Tap-to-explain terms, the short-term and long-term explainer, the Assumptions panel. |
+| "education" | A "?" on every habit (what a TFSA is, how matching works), a plain sentence under every result number, the short-term and long-term explainer, the Assumptions panel. |
 | "turns uncertainty into confidence" | Confidence is asked before and after, and shown side by side. |
 | "the future is still worth planning for" | Even in "everything at once", a small habit moves hundreds of futures. |
 | Research: fear-based messaging backfires | No red, no alarms, no shaming words. The worst case is offered, never forced. |
@@ -64,7 +65,7 @@ They are labelled illustrative, and they are conservative: 5% real for stocks wi
 No. It never names a product, fund or provider, and it never says what to buy. It shows scenarios and trade-offs for habits: join the plan, take the match, automate. The disclaimer is in the footer and in the Assumptions panel.
 
 **What if it tells someone they're doomed?**
-It can't say that. The headline is a count of futures in control, the palette has no red, and the ranked habits always show the smallest step that helps. When the picture is hard, the screen answers with what moves it. The hard case ("everything at once") is there if you ask for it.
+It can't say that. The first number is always today's, shown with what one habit puts within reach. Worries open as cards and only change the headline if you tap Show. The headline is a count of futures in control, the palette has no red, and the ranked habits always show the smallest step that helps. When the picture is hard, the screen answers with what moves it. The hard case ("everything at once") is there if you ask for it.
 
 **Why would Gen Z open this twice?**
 The monthly reminder brings them back to a 30-second check-in: "Did you do it?", a streak, and the river moving from where they started. "Not yet" offers a smaller version instead of guilt. Inside a workplace plan, onboarding, raise season and enrolment windows are natural moments too.
