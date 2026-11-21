@@ -7,16 +7,19 @@ Numbers below are what the app shows with the default seed and the Middle return
 **0:00 The problem (15 s)**
 "Canada Life found that dread about the future leads to doomscrolling, and every extra hour of scrolling goes with fewer people setting up automatic savings. We didn't build another feed. It's two minutes once, then thirty seconds a month."
 
-**0:15 Maya (15 s)**
-Tap **Maya, 20**. Next. "Maya is an arts student in Toronto, renting, with some student debt. She wants room to travel and to switch careers. Every line is one version of her life, same choices, different luck. She's in control in **380 of 1,000**."
+**0:15 Maya, and the dial (20 s)**
+Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. Every line is one version of her life, same choices, different luck. She's in control in **380 of 1,000**." Drag the dial from $40 to $150 a month: "**380 → 686**. Same luck, her choice." Tap **Back to $40**.
 
-**0:30 Same age, different futures (15 s)**
-"Make it more me", then **Switch to Priya**. "Priya is the same age with the same savings, but she studies health in Halifax and lives with family. Her river moves: **869**. Personal detail changes the picture." Switch back to Maya.
+**0:35 Play one life (10 s)**
+Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
 
-**0:45 One habit, the rescue (25 s)**
-"That's me". Switch on **Automate $25 a month**. "Twenty-five dollars a month. Watch which of her futures it rescues: **74**, lit up, same luck." Then switch it off and switch on **Save part of every raise**: "**466** rescued, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
+**0:45 One habit, the rescue (20 s)**
+"What helps most?". Switch on **Automate $25 a month**. "Twenty-five dollars a month. Watch which of her futures it rescues: **74**, lit up, same luck." Then switch it off and switch on **Save part of every raise**: "**466** rescued, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
-**1:10 A worry, with its protection (20 s)**
+**1:05 Same age, different futures (optional, 10 s)**
+Back on the futures screen, **Switch to Priya**: same age, health student in Halifax, living with family: **869**.
+
+**1:15 A worry, with its protection (15 s)**
 "What if…", tap **AI changes my job**. "Her field gets a stronger what-if. It's sized, and the protection is on the same card: saving part of every raise protects most of the futures it touches."
 
 **1:30 Pick one, and come back (15 s)**

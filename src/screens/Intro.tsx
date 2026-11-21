@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { APP_NAME, TAGLINE } from '../config';
 import { AboutYou } from '../components/AboutYou';
+import { LandingRiver } from '../components/LandingRiver';
 import { PERSONAS } from '../engine/personas';
 import { STEP, useStore } from '../store';
 
@@ -24,6 +25,7 @@ export function Landing() {
         <em>{second}</em>
       </h1>
       <p className="lede">A thousand runs of luck. See which small habit rescues the most of your futures.</p>
+      <LandingRiver />
       {commitment && (
         <div className="card welcome">
           <p>
@@ -111,7 +113,7 @@ export function About() {
           type="button"
           className="primary"
           onClick={() => {
-            setState({ confBefore: conf });
+            setState({ confBefore: conf, first: null });
             setStep(STEP.futures);
           }}
         >

@@ -36,7 +36,9 @@ export function useEngine(): void {
                 : `${st.pendingNote.label}: your river shifts down a little (${n} fewer in control). That’s what the habits are for.`
               : `${st.pendingNote.label}: no change to how many futures are in control.`;
       }
-      st.setState({ analysis, computing: false, note, pendingNote: null });
+      const noExtras = !st.levers.match && !st.levers.raises && !st.levers.cushion && st.levers.auto === 0 && !st.activeWorry;
+      const first = st.first ?? (noExtras ? { monthly: st.inputs.monthly, inControl: analysis.summary.counts[0] } : null);
+      st.setState({ analysis, computing: false, note, pendingNote: null, first });
     };
     worker.current = w;
     return () => w.terminate();
@@ -56,6 +58,8 @@ export function useEngine(): void {
       showAll,
     };
     useStore.getState().setState({ computing: true });
-    worker.current.postMessage(req);
+    // A short wait so dragging the dial sends only the latest value.
+    const t = setTimeout(() => worker.current?.postMessage(req), 60);
+    return () => clearTimeout(t);
   }, [active, inputs, worries, activeWorry, levers, seed, set, showAll]);
 }

@@ -6,7 +6,7 @@ import { DEFAULT_INPUTS } from './engine/personas';
 import { NO_LEVERS, type AssumptionSetId, type Inputs, type LeverId, type Levers, type Scenario, type WorryId } from './engine/types';
 
 export type Theme = 'auto' | 'light' | 'dark';
-export const STEPS = ['Start', 'About you', 'Your futures', 'Smallest step', 'What if', 'Pick one'] as const;
+export const STEPS = ['Start', 'About you', 'Your futures', 'What helps most', 'What if', 'Pick one'] as const;
 export const STEP = { start: 0, about: 1, futures: 2, habits: 3, whatIf: 4, pick: 5, back: 6 } as const;
 
 export const ROOM_FOR = [
@@ -69,6 +69,10 @@ interface Store {
   incomeEdited: boolean;
   pendingNote: Note | null;
   note: string | null;
+  // The first result after answering, so the dial can show "from 133 to 410".
+  first: { monthly: number; inControl: number } | null;
+  // A life being played back on the river.
+  playing: number | null;
   commitment: Commitment | null;
   testLog: TestRecord[];
   reminderAdded: boolean;
@@ -121,6 +125,8 @@ const fresh = {
   incomeEdited: false,
   pendingNote: null,
   note: null,
+  first: null,
+  playing: null,
   reminderAdded: false,
   hrCopied: false,
 };
@@ -172,6 +178,7 @@ export const useStore = create<Store>()(
         set({
           inputs: { ...get().inputs, ...patch },
           pendingNote: before === undefined ? null : { label, before, whyDown },
+          first: null,
           note: null,
         });
       },

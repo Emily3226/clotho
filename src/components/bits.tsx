@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { num, reducedMotion } from '../lib/format';
 
 // A number that visibly moves from its old value to its new one.
-export function AnimatedNumber({ value, duration = 600 }: { value: number; duration?: number }) {
+export function AnimatedNumber({ value, duration = 600, prefix = '' }: { value: number; duration?: number; prefix?: string }) {
   const [shown, setShown] = useState(value);
   const from = useRef(value);
   useEffect(() => {
@@ -25,7 +25,12 @@ export function AnimatedNumber({ value, duration = 600 }: { value: number; durat
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
-  return <span className="num">{num(shown)}</span>;
+  return (
+    <span className="num">
+      {prefix}
+      {num(shown)}
+    </span>
+  );
 }
 
 interface FieldProps {

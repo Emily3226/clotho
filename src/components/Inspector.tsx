@@ -27,11 +27,11 @@ export function Inspector({
   const { text, narrated } = useNarration('story', pathFacts(shown, goals), story(shown));
   const m = shown.milestones;
   const marks: [string, boolean | null][] = [
-    ['Shock-proof', m.shockProof],
-    ['Room to move at 35', m.room35],
-    ['Room to move at 45', m.room45],
+    ['Got through bad years', m.shockProof],
+    ['6 months saved by 35', m.room35],
+    ['A year saved by 45', m.room45],
     ['Home', m.home],
-    ['Work-optional by 65', m.workOptional65],
+    ['Work optional by 65', m.workOptional65],
     ...goals.map((g, k): [string, boolean | null] => [`${g.label} by ${g.byAge}`, m.goals[k] ?? null]),
   ];
   const changed = plain && plain.status !== path.status;

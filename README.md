@@ -31,15 +31,13 @@ The app needs no network and no API key. AI narration is optional: copy `.env.ex
 
 ## The flow (about 2 minutes, 30 seconds a month after that)
 
-1. **Landing.** The tagline, a start button, and three one-tap personas (Maya, a student; Jordan, a first job; Sam, gig work). A fourth, Priya, is used on stage to compare with Maya.
-2. **Check-in.** Confidence from 1 to 10, and "What do you want room for?" (travel, switching careers, a home, time off, helping family). Worries come later, never first.
-3. **Basics.** Three questions: age, life stage (student, first job, gig or contract, full-time) and how much you could set aside a month. Typical numbers for the life stage fill the rest, all editable under Fine-tune.
-4. **Your futures.** A thousand lives from now to 70, with a headline count. Tap any line to read that life.
-5. **Make it more you.** Five one-tap questions: field of study, city, living situation, student debt, when school ends. Each one re-runs the futures and says, in one neutral line, what changed.
-6. **Smallest step, biggest shift.** Habits ranked by futures rescued per dollar a month. Switch one on and the futures it rescues light up: "Automating $25 a month rescues 74 of your futures." The inspector can show the same life, with the same luck, without the habit.
-7. **What if…** Optional worries, each sized and shown with the habit that protects the most, on the same card. The toughest case (all of them at once) is behind a link.
-8. **Pick one to try.** One habit, a two-line plan, a monthly calendar reminder, a message for HR when relevant, the confidence question again, and a 9:16 summary card to save or share.
-9. **Monthly check-in.** On a return visit: "Did you do it this month?", a streak, and "Since you started: 380 → 449 futures in control". `?demo=1` adds a "jump ahead 3 months" button for the stage.
+1. **Landing.** The tagline, a small real river drawing in, a start button, and three one-tap personas (Maya, a student; Jordan, a first job; Sam, gig work). A fourth, Priya, is used on stage to compare with Maya.
+2. **About you.** One screen, mostly taps: confidence, age, monthly saving, life stage, school, field, city, living situation, debt, what you want room for (a home asks what kind and when), and any goal typed in your own words (it asks how much and when).
+3. **Your futures.** A thousand lives from now to 70, with a headline count. A savings dial ("What if you set aside $150 a month?") moves every life live and shows "380 → 686". **Play one of your lives** draws a single life across the river with its events as it goes. "Change your answers" re-runs the river from any answer.
+4. **What helps most.** Habits ranked by futures rescued per dollar a month. Switch one on and the futures it rescues light up: "Automating $25 a month rescues 74 of your futures." The inspector can show the same life, with the same luck, without the habit.
+5. **What if…** Optional worries, each sized and shown with the habit that protects the most, on the same card. The toughest case (all of them at once) is behind a link.
+6. **Pick one to try.** One habit, a two-line plan, a monthly calendar reminder, a message for HR when relevant, the confidence question again, and a 9:16 summary card to save or share.
+7. **Monthly check-in.** On a return visit: "Did you do it this month?", a streak, and "Since you started: 380 → 449 futures in control". `?demo=1` adds a "jump ahead 3 months" button for the stage.
 
 `?test=1` turns on user-test mode: each finished session adds an anonymous record (life stage, field, confidence before and after, habit picked, whether the reminder was added or the HR message copied) on this device, with a CSV export.
 

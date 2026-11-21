@@ -75,6 +75,58 @@ function Headline({ a }: { a: Analysis | null }) {
   );
 }
 
+// The toy: drag what you set aside each month and watch all 1,000 lives move.
+function SaveDial() {
+  const monthly = useStore((s) => s.inputs.monthly);
+  const first = useStore((s) => s.first);
+  const now = useStore((s) => s.analysis?.summary.counts[0] ?? null);
+  const setInputs = useStore((s) => s.setInputs);
+  const set = (v: number) => setInputs({ monthly: Math.max(0, Math.min(2000, Math.round(v / 5) * 5)) });
+  const moved = first && now !== null && monthly !== first.monthly;
+  return (
+    <div className="dial">
+      <div className="dial-top">
+        <label htmlFor="dial">What if you set aside</label>
+        <span className="dial-amount">
+          <AnimatedNumber value={monthly} duration={200} prefix="$" />
+          <small> a month</small>
+        </span>
+      </div>
+      <input
+        id="dial"
+        type="range"
+        min={0}
+        max={1000}
+        step={5}
+        value={Math.min(1000, monthly)}
+        aria-valuetext={`$${monthly} a month`}
+        onChange={(e) => set(Number(e.target.value))}
+      />
+      <div className="dial-row">
+        {[25, 50, 100].map((d) => (
+          <button type="button" key={d} className="chip" onClick={() => set(monthly + d)}>
+            +${d}
+          </button>
+        ))}
+        {moved && (
+          <button type="button" className="link" onClick={() => set(first!.monthly)}>
+            Back to ${first!.monthly}
+          </button>
+        )}
+        <span className="dial-delta" aria-live="polite">
+          {moved && now !== null ? (
+            <>
+              {num(first!.inControl)} → <b>{num(now)}</b> in control
+            </>
+          ) : (
+            'Drag it. Watch your lives move.'
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function Legend({ a }: { a: Analysis | null }) {
   return (
     <ul className="legend" aria-label="Futures by status">
@@ -93,11 +145,11 @@ function Milestones({ a }: { a: Analysis }) {
   const m = a.summary.milestoneCounts;
   const goals = useStore((s) => s.inputs.goals ?? []);
   const items: [string, number | null, string][] = [
-    ['Shock-proof', m.shockProof, 'Never had to dip into the workplace plan, and never ended a year short.'],
-    ['Room to move at 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
-    ['Room to move at 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
+    ['Got through bad years', m.shockProof, 'Never had to dip into the workplace plan, and never ended a year short.'],
+    ['6 months saved by 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
+    ['A year saved by 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
     ['Home', m.home, 'The down payment is reached by your target age.'],
-    ['Work-optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of the spending you’re used to, so working is a choice.'],
+    ['Work optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of the spending you’re used to, so working is a choice.'],
     ...goals.map((g, k): [string, number | null, string] => [
       `${g.label} by ${g.byAge}`,
       m.goals[k] ?? null,
@@ -320,14 +372,15 @@ function AiToggle() {
   );
 }
 
-const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'Smallest step', [STEP.habits]: 'What if…', [STEP.whatIf]: 'Pick one to try' };
-const TITLES: Record<number, string> = { [STEP.futures]: 'Your thousand futures', [STEP.habits]: 'Smallest step, biggest shift', [STEP.whatIf]: 'What if…' };
+const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'What helps most?', [STEP.habits]: 'What if…', [STEP.whatIf]: 'Pick one to try' };
+const TITLES: Record<number, string> = { [STEP.futures]: 'Your thousand futures', [STEP.habits]: 'What helps most', [STEP.whatIf]: 'What if…' };
 
 export function Explore() {
   const step = useStore((s) => s.step);
   const setStep = useStore((s) => s.setStep);
   const a = useStore((s) => s.analysis);
   const selected = useStore((s) => s.selectedPath);
+  const playing = useStore((s) => s.playing);
   const activeWorry = useStore((s) => s.activeWorry);
   const seed = useStore((s) => s.seed);
   const setState = useStore((s) => s.setState);
@@ -360,16 +413,32 @@ export function Explore() {
       <div className="stage">
         <p className="eyebrow">{TITLES[step]}</p>
         <Headline a={a} />
-        <River analysis={a} mask={mask} selected={selected} onSelect={(i) => setState({ selectedPath: i })} />
+        {(step === STEP.futures || step === STEP.habits) && <SaveDial />}
+        <River
+          analysis={a}
+          mask={mask}
+          selected={selected}
+          playing={playing}
+          onPlayDone={(i) => setState({ playing: null, selectedPath: i })}
+          onSelect={(i) => setState({ selectedPath: i, playing: null })}
+        />
         <Legend a={a} />
       </div>
       <div className="side">
         {path && selected !== null && (
           <Inspector key={selected} index={selected} path={path} plain={plain} onAnother={showAnother} onClose={() => setState({ selectedPath: null })} />
         )}
-        {!path && a && (
-          <button type="button" className="link" onClick={showAnother}>
-            Read one of your futures
+        {a && (
+          <button
+            type="button"
+            className="secondary play"
+            disabled={playing !== null}
+            onClick={() => {
+              setState({ selectedPath: null, playing: order[another % order.length] });
+              setAnother(another + 1);
+            }}
+          >
+            {playing !== null ? 'Playing one of your lives…' : '▶ Play one of your lives'}
           </button>
         )}
         {a && step === STEP.futures && <FuturesPanel a={a} />}

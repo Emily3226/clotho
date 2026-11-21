@@ -1346,3 +1346,89 @@ details.why summary {
   outline-offset: 2px;
   border-color: var(--accent);
 }
+
+/* The savings dial: the thing to play with on the results. */
+.dial {
+  margin: 6px 0 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: grid;
+  gap: 8px;
+}
+.dial-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-weight: 600;
+}
+.dial-amount {
+  font: 600 1.8rem var(--serif);
+  color: var(--accent);
+}
+.dial-amount small {
+  font: 400 0.9rem var(--sans);
+  color: var(--muted);
+}
+.dial-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dial-row .chip {
+  min-height: 36px;
+  padding: 6px 12px;
+}
+.dial-delta {
+  margin-left: auto;
+  color: var(--muted);
+}
+.dial-delta b {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+/* Playing one life. */
+.play {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.river-caption {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.9rem;
+  line-height: 1.3;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+  animation: caption-in 0.25s ease-out;
+}
+.river-caption b {
+  margin-right: 4px;
+}
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -80%);
+  }
+}
+
+/* A small real river on the landing page. */
+.landing-river {
+  height: 170px;
+  margin: 18px 0 4px;
+  position: relative;
+}
+.landing-river canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
