@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { writeFileSync } from 'node:fs';
-import { Engine, rescueOf } from './analyse';
+import { Engine, rescueOf, whyNot } from './analyse';
 import { A, stockShareAt } from './assumptions';
 import { PERSONAS, persona } from './personas';
 import { matchGoal } from './goals';
@@ -214,6 +214,27 @@ describe('worries', () => {
     expect(lucky).toBeGreaterThan(400);
     expect(lucky).toBeLessThan(850);
     for (const id of LEVER_IDS) expect(big(simulate(maya, {}, leverOnly(id), SEED))).toEqual(big(plain));
+  });
+});
+
+describe('why this number', () => {
+  it('explains every future that is not in control by a check it misses', () => {
+    for (const persona of PERSONAS) {
+      const paths = simulate(persona.inputs, {}, NO_LEVERS, SEED);
+      const why = whyNot(paths, persona.inputs.age);
+      expect(why.others).toBe(1000 - summarise(paths).counts[0]);
+      // Not in control always means at least one of the four checks is missed.
+      for (const p of paths) {
+        const m = p.milestones;
+        expect(p.status === 0).toBe(m.workOptional65 && m.room45 && m.room35 && m.shockProof);
+      }
+      for (const m of why.missed) {
+        expect(m.count).toBeGreaterThan(0);
+        expect(m.count).toBeLessThanOrEqual(why.others);
+      }
+      expect(why.missed.reduce((s, m) => s + m.count, 0)).toBeGreaterThanOrEqual(why.others);
+      expect(why.missed.map((m) => m.count)).toEqual([...why.missed.map((m) => m.count)].sort((x, y) => y - x));
+    }
   });
 });
 

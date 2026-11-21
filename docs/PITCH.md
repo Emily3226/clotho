@@ -57,6 +57,9 @@ Read the user-test result (n and the share who set a reminder). "Next: a pilot i
 
 ## Hard questions
 
+**Where does the headline number come from?**
+Tap **Why 599?** under the play button. Each future gets four checks (bad years, 6 months saved by 35, a year by 45, work optional by 65); in control means all four. For Maya, 401 miss at least one: 334 because work isn't optional by 65, 102 on the 35 check, 91 on a bad year, 19 on the 45 check. It is counted from the same 1,000 lives on screen, not a score.
+
 **Where do your return assumptions come from?**
 They are labelled illustrative, and they are conservative: 5% real for stocks with 17% volatility and a crash regime, 1% real for bonds, 0.75% fees, a glide path from 80/20 to 40/60. They sit in the range of the FP Canada projection guidelines. Every one is in the Assumptions panel with its source and date, and the published limits (TFSA, FHSA, RRSP, CPP, OAS) link to government pages. Change a number in one file and the whole tool follows.
 
