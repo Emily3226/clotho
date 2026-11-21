@@ -78,4 +78,10 @@ describe('what if there is no 65', () => {
     expect(text).toContain(r.ahead.toLocaleString('en-CA'));
     expect(text).toContain('at 40');
   });
+
+  it('agrees with one habit or several', () => {
+    const r = ifCutShort(PERSONAS[0].inputs, leverOnly('raises'), 40, SEED);
+    expect(noSixtyFiveAnswer(r, 'Saving part of every raise').plain).toContain('saving part of every raise leaves you');
+    expect(noSixtyFiveAnswer(r, 'These habits').plain).toContain('these habits leave you');
+  });
 });
