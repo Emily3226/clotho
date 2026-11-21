@@ -162,7 +162,8 @@ describe('worries', () => {
         expect(summarise(severe).counts[0]).toBeLessThanOrEqual(summarise(moderate).counts[0]);
       }
     }
-  });
+    // 72 runs of 1,000 lives: slow when the whole suite runs at once.
+  }, 20000);
 
   it('sizes every worry and names a protection', () => {
     const all: Scenario = Object.fromEntries(WORRY_IDS.map((id) => [id, 'moderate']));
@@ -363,6 +364,17 @@ describe('make it more you', () => {
     const ai = simulate(student, { ai: 'severe' }, NO_LEVERS, SEED, opts)[0].balances!;
     const added = (b: Float32Array) => b[at + 4] - b[at + 3];
     expect(added(plain) - added(ai)).toBeGreaterThan(4000);
+  });
+
+  it('lifts lifestyle when school ends this year, just as it does next year', () => {
+    const maya = persona('maya').inputs;
+    const now = inControl({ ...maya, age: 22, finishAge: 22 });
+    const next = inControl({ ...maya, age: 22, finishAge: 23 });
+    // Finishing a year sooner helps a little; it never puts every future in control.
+    expect(now).toBeLessThan(900);
+    expect(Math.abs(now - next)).toBeLessThan(150);
+    const story = simulate({ ...maya, age: 22, finishAge: 22 }, {}, NO_LEVERS, SEED)[0].events;
+    expect(story.some((e) => e.type === 'fulltime' && e.age === 22)).toBe(true);
   });
 
   it('uses the Canadian minimum down payment', () => {

@@ -277,9 +277,13 @@ export function simulate(
       // a pay cut or a slower career squeezes saving, not spending.
       const expectedPay = inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend;
       const expectedNth = takeHome(expectedPay);
-      if (t > 0) spendBase += raiseSpent * (expectedNth - prevNth);
+      // Starting full-time work lifts lifestyle like a raise, even when it
+      // happens this year (t = 0): otherwise spending stays at part-time level
+      // for life and nearly all of the new pay is saved.
+      const startsFullTime = student && a === finishAge;
+      if (t > 0 || startsFullTime) spendBase += raiseSpent * (expectedNth - prevNth);
       prevNth = expectedNth;
-      if (detail && student && t > 0 && a === finishAge) {
+      if (detail && startsFullTime) {
         events.push({ age: a, type: 'fulltime' });
       } else if (detail && t > 0 && gross / prevGross > 1.055) {
         events.push({ age: a, type: 'raise', value: Math.round((gross / prevGross - 1) * 100) });
