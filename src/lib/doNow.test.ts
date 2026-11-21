@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PERSONAS } from '../engine/personas';
 import { LEVER_IDS } from '../engine/types';
-import { CSV_HEAD, csvRow, doNow, hrMailto, outcomeSuffix, testCsv, type CsvRecord } from './doNow';
+import { CSV_HEAD, csvRow, doNow, hrMailto, outcomeSuffix, testCsv, testSummary, type CsvRecord } from './doNow';
 
 const base: CsvRecord = {
   at: '2026-11-21T20:00:00.000Z',
@@ -25,6 +25,22 @@ describe('user-test CSV', () => {
     const lines = testCsv([base, { ...base, outcome: 'sent' }]).trim().split('\n');
     expect(lines).toHaveLength(3);
     for (const l of lines) expect(l.split(',')).toHaveLength(9);
+  });
+});
+
+describe('user-test summary', () => {
+  it('counts people, average confidence and who took the step', () => {
+    const s = testSummary([
+      { ...base, confBefore: 4, confAfter: 7, lever: 'auto25', outcome: 'done' },
+      { ...base, confBefore: 5, confAfter: 8, lever: 'match', outcome: 'sent' },
+      { ...base, confBefore: 6, confAfter: 6, lever: 'raises', outcome: 'done' },
+      { ...base, confBefore: null, confAfter: 9, lever: 'auto25', outcome: 'notyet' },
+    ]);
+    expect(s).toEqual({ people: 4, confBefore: 5, confAfter: 7, tookStep: 3, reminderOnly: 1 });
+  });
+
+  it('has no averages before anyone has finished', () => {
+    expect(testSummary([])).toEqual({ people: 0, confBefore: null, confAfter: null, tookStep: 0, reminderOnly: 0 });
   });
 });
 

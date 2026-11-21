@@ -6,7 +6,7 @@ Clotho shows a young Canadian a thousand simulated versions of their own financi
 
 Built at Hack Western 13 for the Canada Life "Future Me" challenge. Clotho is the Fate who spins the thread of life; here you get to see a thousand threads and nudge them.
 
-It is an educational tool, not financial advice. It never names a product, fund or provider.
+It is an educational tool, not financial advice. It recommends no product, fund or provider. The only company named is Canada Life, in a note telling people whose plan is already there where to find it.
 
 ## Run it
 
@@ -34,8 +34,8 @@ The app needs no network and no API key. AI narration is optional: copy `.env.ex
 1. **Landing.** The tagline, a small real river drawing in, a start button, and three one-tap personas (Maya, a student; Jordan, a first job; Sam, gig work). A fourth, Priya, is used on stage to compare with Maya.
 2. **About you.** One screen, mostly taps (with "Other" for a field of work in your own words and for an exact debt amount): confidence, what worries you most, age, monthly saving, life stage (including co-op or internship and part-time), field and city. Under "More (optional)": when school ends, what you want room for (a home asks what kind and when), living situation, debt, goals typed in your own words, and exact numbers. **What do you want in life?** lets people choose kids (0 to 4, when, with a partner or alone, and leave), a home, helping family, caring for a parent, travel, time off, going back to school and a four-day week. Each is off until chosen and changes the same 1,000 lives.
 3. **Your futures.** A thousand lives from now to 70. The headline is today's count with what one habit puts within reach ("599 in control today, 921 within reach"). The worries you picked open as cards, each sized and shown with the habit that protects the most. A worry can also be typed in your own words: it is matched offline to the closest what-if, and you can change what it is tested as. **Show** puts one on the river, and "All at once" is behind a link. A savings dial ("Set aside $150 a month") moves every life live and shows "599 → 907". **Play one of your lives** draws a single life across the river with its events as it goes. **Why 599?** opens the working behind the headline: the four checks, how the 1,000 futures sort, and which checks the others miss. "Change your answers" re-runs the river from any answer. **What if there is no 65?** stops the same lives at 35, 40 or 50 and compares what is yours to use with the top habit and without it, against the spending it cost along the way.
-4. **What helps most.** Habits ranked by how many futures they rescue, with ties going to the cheaper one. Switch one on and the futures it rescues light up: "+114 futures rescued" for automating $25 a month. Each habit has a "?" with one plain sentence. The inspector can show the same life, with the same luck, without the habit. A **Does it still hold?** card re-ranks the habits under the other two return settings and under each worry you picked, and says in how many of those tests the top step stays first.
-5. **Pick one to try.** One habit, a two-line plan, a monthly calendar reminder, a message for HR when relevant, the confidence question again, and a 9:16 summary card to save or share.
+4. **What helps most.** Habits ranked by how many futures they rescue, with ties going to the cheaper one. Switch one on and the futures it rescues light up: "+114 futures rescued" for automating $25 a month. Each habit has a "?" with one plain sentence. The inspector can show the same life, with the same luck, without the habit. A **Does it still hold?** card re-ranks the habits under the other two return settings and under each worry you picked, and says in how many of those tests the top step stays first. With a workplace plan, **Keep yours reachable?** compares putting your own contributions in a TFSA while the employer match stays invested for retirement, including what it costs at 65.
+5. **Pick one to try.** One habit and **Do it now**: its exact steps, an HR email when relevant, and "Did you do it?" (a monthly reminder is the fallback for "Not yet"). Then the confidence question again, and a 9:16 summary card to save or share.
 6. **Monthly check-in.** On a return visit: "Did you do it this month?", a streak, and "You started at 599. Keeping it up points to 924 of 1,000". One "Yes" per month. `?demo=1` adds a "jump ahead 3 months" button for the stage.
 
 `?test=1` turns on user-test mode: each finished session adds an anonymous record (life stage, field, confidence before and after, habit picked, whether the reminder was added or the HR message copied) on this device, with a CSV export.
@@ -56,7 +56,7 @@ src/
     engine.test.ts       the test suite
   components/River.tsx   Canvas 2D river: draw-in, per-path morph, hit testing
   screens/               intro, explore (futures, make it more you, habits, what if), pick one, monthly check-in
-  lib/                   copy, templates, calendar file, question box
+  lib/                   copy, templates, calendar file, do-it-now steps
   narrate/               client and the number validator shared with the server
 server/index.ts          Express proxy for /api/narrate (keeps the key off the client)
 docs/                    ASSUMPTIONS, PITCH, DEVPOST
@@ -66,7 +66,7 @@ docs/                    ASSUMPTIONS, PITCH, DEVPOST
 
 - **Common random numbers.** Every random draw for path *i* comes from a generator seeded with `(seed, i)` and is drawn up front, in a fixed order, whatever the scenario or lever. Path *i* has the same luck in every variant. That is why the river can morph line by line when a habit is switched on, and why "this habit lifts 570 of your futures" is a real per-path comparison rather than two unrelated samples.
 - **Deterministic.** Same inputs and seed, same thousand futures. The "new run of luck" button changes the seed; it is never the default.
-- **Fast.** One 1,000-path run takes about 10 ms. Results are cached per variant in the worker, so a habit toggle only simulates what has not been seen.
+- **Fast.** One 1,000-path run takes about 20 ms. Results are cached per variant in the worker, so a habit toggle only simulates what has not been seen.
 
 **Numbers only come from the engine.** The language model is used for wording only. It receives a small JSON of anonymous facts, is told not to add numbers or advice, and every reply is checked: if it contains a number that is not in the facts, or a banned word, it is discarded and the template is shown. This check runs on the server and again in the browser.
 

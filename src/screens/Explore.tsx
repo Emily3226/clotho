@@ -3,6 +3,7 @@ import { DEFAULT_SEED } from '../config';
 import { AnimatedNumber, ChipGroup, Explain, Switch, Term } from '../components/bits';
 import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
+import { KeepReachableCard } from '../components/KeepReachable';
 import { River } from '../components/River';
 import { whyNot, type Analysis, type HoldTest, type WhyKey, type WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
@@ -611,6 +612,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
       <p className="hint waiting-line">
         Wait {A.waitingYears} years: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
       </p>
+      <KeepReachableCard />
       <details className="drawer">
         <summary>Short and long term, together</summary>
         <Together />

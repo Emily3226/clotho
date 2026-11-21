@@ -4,6 +4,7 @@ import { goalKind } from '../engine/goals';
 import { STATUS_LABELS, type Goal, type Inputs, type LeverId, type PathEvent } from '../engine/types';
 import { worryInfo } from '../engine/worries';
 import type { CutShort } from '../engine/noSixtyFive';
+import type { KeepReachable } from '../engine/keepReachable';
 import { money, moneyRound, num } from './format';
 
 export interface LeverCopy {
@@ -254,6 +255,21 @@ export function noSixtyFiveAnswer(r: CutShort, noun: string | null): WorryAnswer
 }
 
 const lowerStart = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1);
+
+// "Keep yours reachable", from the engine's numbers only. It says so plainly
+// when the retirement plan alone comes out ahead.
+export function keepReachableAnswer(r: KeepReachable): WorryAnswer {
+  const parts: WorryAnswer['parts'] = [];
+  const { plan, split } = r.inControl;
+  if (split === plan) parts.push('You stay in control in just as many futures, ', { strong: num(split) }, '.');
+  else parts.push('You stay in control in ', { strong: num(split) }, ' of your 1,000 futures instead of ', { strong: num(plan) }, '.');
+  if (r.dipped.plan !== r.dipped.split) {
+    parts.push(' ', { strong: num(r.dipped.split) }, ' have to dip into retirement savings instead of ', { strong: num(r.dipped.plan) }, '.');
+  }
+  parts.push(' The trade: about ', { strong: moneyRound(r.at65.split) }, ' at 65 after tax, instead of ', { strong: moneyRound(r.at65.plan) }, '.');
+  if (split < plan) parts.push(' For you, keeping it all in the retirement plan comes out ahead.');
+  return { parts, plain: parts.map((p) => (typeof p === 'string' ? p : p.strong)).join(''), facts: { ...r } };
+}
 
 export function planLines(id: LeverId, inputs: Inputs, yearlyMatch: number): [string, string] {
   switch (id) {

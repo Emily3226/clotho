@@ -4,7 +4,7 @@ import { AnimatedNumber } from '../components/bits';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
-import { PLAN_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, yearFromToday, type Outcome } from '../lib/doNow';
+import { PLAN_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, testSummary, yearFromToday, type Outcome } from '../lib/doNow';
 import { buildIcs, nextFriday } from '../lib/ics';
 import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
@@ -119,6 +119,16 @@ export function StepScreen() {
     }
   }, [copy, pick, confBefore, confAfter, roomLabels, outcome]);
 
+  // A change after the summary updates this person's row instead of being lost.
+  useEffect(() => {
+    const { testRowAt, testLog: log } = useStore.getState();
+    if (!testRowAt || confAfter === null) return;
+    const row = log.find((r) => r.at === testRowAt);
+    if (row && (row.outcome !== outcome || row.reminder !== reminderAdded || row.hrCopied !== hrCopied)) {
+      setState({ testLog: log.map((r) => (r.at === testRowAt ? { ...r, outcome, reminder: reminderAdded, hrCopied } : r)) });
+    }
+  }, [outcome, reminderAdded, hrCopied, confAfter, setState]);
+
   if (!a) return <section className="narrow"><p className="lede">Working out your futures…</p></section>;
 
   const lines = pick ? planLines(pick.id, inputs, a.yearlyMatch) : null;
@@ -191,24 +201,28 @@ export function StepScreen() {
       });
     }
     if (testMode()) {
-      setState({
-        testLog: [
-          ...testLog,
-          {
-            at: new Date().toISOString(),
-            stage: inputs.stage,
-            field: inputs.field ?? '',
-            confBefore,
-            confAfter: conf,
-            lever: pick?.id ?? '',
-            reminder: reminderAdded,
-            hrCopied,
-            outcome,
-          },
-        ],
-      });
+      // One row per person: finishing again updates it.
+      const { testRowAt, testLog: log, reminderAdded: reminder, hrCopied: copiedHR } = useStore.getState();
+      const row = {
+        at: testRowAt ?? new Date().toISOString(),
+        stage: inputs.stage,
+        field: inputs.field ?? '',
+        confBefore,
+        confAfter: conf,
+        lever: pick?.id ?? '',
+        reminder,
+        hrCopied: copiedHR,
+        outcome,
+      };
+      setState({ testRowAt: row.at, testLog: testRowAt ? log.map((r) => (r.at === testRowAt ? row : r)) : [...log, row] });
     }
   };
+  // Clears this person's answers and step, and keeps the results.
+  const nextPerson = () => {
+    setState({ commitment: null });
+    restart();
+  };
+  const results = testSummary(testLog);
   const exportCsv = () => {
     download('user-test-results.csv', new Blob([testCsv(testLog)], { type: 'text/csv' }));
   };
@@ -222,7 +236,7 @@ export function StepScreen() {
           const c = leverCopy(r.id, inputs);
           const on = r.id === pick?.id;
           return (
-            <button type="button" key={r.id} role="radio" aria-checked={on} className={`card choice${on ? ' on' : ''}`} onClick={() => setState({ chosen: r.id, outcome: null })}>
+            <button type="button" key={r.id} role="radio" aria-checked={on} className={`card choice${on ? ' on' : ''}`} onClick={() => r.id !== pick?.id && setState({ chosen: r.id, outcome: null, confAfter: null, reminderAdded: false, hrCopied: false })}>
               <b>{c.title}</b>
               <span>{leverCostLine(r)}</span>
               <span className="effect">Rescues {num(r.rescued)} futures</span>
@@ -346,11 +360,27 @@ export function StepScreen() {
       {testMode() && (
         <div className="card test-mode">
           <p>
-            <b>User-test mode.</b> {testLog.length} anonymous {testLog.length === 1 ? 'session' : 'sessions'} recorded on this device.
+            <b>User-test mode.</b> {results.people} anonymous {results.people === 1 ? 'person' : 'people'} recorded on this device.
           </p>
-          <button type="button" className="secondary" onClick={exportCsv} disabled={!testLog.length}>
-            Export results (CSV)
-          </button>
+          {results.people > 0 && (
+            <p className="test-summary">
+              {results.confBefore !== null && (
+                <>
+                  Confidence <b>{results.confBefore}</b> → <b>{results.confAfter}</b> out of 10.{' '}
+                </>
+              )}
+              <b>{results.tookStep} of {results.people}</b> took the step
+              {results.reminderOnly > 0 ? ` (${results.reminderOnly} by adding a reminder for their next raise)` : ''}.
+            </p>
+          )}
+          <div className="row">
+            <button type="button" className="primary" onClick={nextPerson}>
+              Next person
+            </button>
+            <button type="button" className="secondary" onClick={exportCsv} disabled={!testLog.length}>
+              Export results (CSV)
+            </button>
+          </div>
         </div>
       )}
 

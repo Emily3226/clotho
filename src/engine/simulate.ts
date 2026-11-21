@@ -53,7 +53,6 @@ export function simulate(
   const fullIncome = student ? fieldSalaryFor('first', inputs.field) : income;
   const field = fieldInfo(inputs.field);
   const city = cityInfo(inputs.city);
-  const raiseSpent = city.raiseSpent;
   const moveOutAge = inputs.living === 'family' ? Math.max(age + 1, inputs.moveOutAge) : -1;
   const wageNoise = gig ? GIG.wageNoise : A.wageNoise;
   const aiK = field.aiStrength;
@@ -87,6 +86,12 @@ export function simulate(
     0.6 * nth0,
   );
   const spend0 = nth0 - saving0;
+  // Keeping part of a raise takes a saving habit. Someone who sets nothing
+  // aside spends all of it; the city's usual share is reached once regular
+  // saving (with any habit switched on) is 2% of take-home pay.
+  const habitSaving = saving0 + levers.auto * 12 + matchExtra * income * (1 - marginalRate(income));
+  const raiseKept = (1 - city.raiseSpent) * Math.min(1, habitSaving / Math.max(1, nth0) / A.raiseHabitRate);
+  const raiseSpent = 1 - raiseKept;
   // The cushion is sized to the spending of the first year. For a student who
   // finishes school this year, that is already the full-time lifestyle.
   const spendStart = student && finishAge <= age ? spend0 + raiseSpent * Math.max(0, takeHome(fullIncome) - nth0) : spend0;
@@ -149,6 +154,10 @@ export function simulate(
     let yearsWorked = 0;
 
     let shockProof = true;
+    // Lost to tax by taking money out of the workplace plan early.
+    let raidLost = 0;
+    // Savings at 65 after the tax still owed on the retirement plan.
+    let at65Net = 0;
     let room35 = false;
     let room45 = false;
     let bought = false;
@@ -187,7 +196,10 @@ export function simulate(
         trace.target.push(cushionShare * lastSpend);
       }
 
-      if (a === A.retireAge) at65 = total;
+      if (a === A.retireAge) {
+        at65 = total;
+        at65Net = cushion + flex + (1 - A.workplaceRetirementTax) * workplace;
+      }
       if (a === opts.cutAge) atCut = { yours: cushion + flex + paidFor + (1 - A.raidTax) * workplace, lived };
       if (a === 35) {
         room35 = cushion + judged >= (A.roomMonths35 / 12) * lastSpend - 1;
@@ -450,7 +462,19 @@ export function simulate(
             er *= k;
           }
           if (we + er - room > maxRrspOver) maxRrspOver = we + er - room;
-          workplace += we + er;
+          if (opts.keepReachable) {
+            // Your own contributions stay within reach in a TFSA, with no tax
+            // break, so the same take-home pay buys a smaller contribution.
+            // The employer's match still goes to the retirement plan.
+            const own = we * relief;
+            const inTfsa = Math.min(own, tfsaRoom);
+            tfsa += inTfsa;
+            tfsaRoom -= inTfsa;
+            taxable += own - inTfsa;
+            workplace += er;
+          } else {
+            workplace += we + er;
+          }
           free -= we * relief;
         }
         const toCushion = Math.min(free, Math.max(0, target - cushion));
@@ -493,6 +517,7 @@ export function simulate(
           const g = Math.min(workplace, need / (1 - A.raidTax));
           workplace -= g;
           need -= g * (1 - A.raidTax);
+          raidLost += g * A.raidTax;
           shockProof = false;
           if (detail) events.push({ age: a, type: 'raid' });
         }
@@ -593,6 +618,8 @@ export function simulate(
       final,
       at65,
       atCut,
+      raidLost,
+      at65Net,
       balances,
       events,
       peakTfsaOver: Math.max(0, -minTfsaRoom),
