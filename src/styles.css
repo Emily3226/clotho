@@ -1611,6 +1611,18 @@ details.why summary {
   font-weight: 600;
 }
 
+/* Raise or bonus at the check-in. */
+.windfall {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+.windfall .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Taking money out for something you want. */
 .pay-ways {
   list-style: none;

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatedNumber, Field } from '../components/bits';
 import { River } from '../components/River';
-import { NO_LEVERS } from '../engine/types';
+import { WindfallQuestion } from '../components/Windfall';
 import { leverCopy } from '../lib/copy';
 import { num } from '../lib/format';
-import { STEP, demoMode, leverOn, useStore } from '../store';
+import { leversFor } from '../lib/windfall';
+import { STEP, demoMode, useStore } from '../store';
 
 // The monthly check-in: about 30 seconds, then out.
 export function Return() {
@@ -14,11 +15,11 @@ export function Return() {
   const setState = useStore((s) => s.setState);
   const setStep = useStore((s) => s.setStep);
   const [answer, setAnswer] = useState<'yes' | 'notyet' | 'changed' | null>(null);
-  const [saved, setSaved] = useState(inputs.saved);
 
-  // Run the futures with the committed habit locked in.
+  // Run the futures with the committed habit locked in, plus the raise habit
+  // if it was added at a check-in.
   useEffect(() => {
-    if (commitment) setState({ levers: leverOn(NO_LEVERS, commitment.lever), worries: {}, activeWorry: null });
+    if (commitment) setState({ levers: leversFor(commitment.lever, commitment.alsoRaises), worries: {}, activeWorry: null });
   }, [commitment, setState]);
 
   if (!commitment) {
@@ -54,7 +55,6 @@ export function Return() {
       commitment: { ...commitment, streak: streak + months, lastCheckISO: new Date().toISOString() },
       inputs: { ...inputs, saved: Math.round(inputs.saved + add) },
     });
-    setSaved(Math.round(inputs.saved + add));
     setAnswer('yes');
   };
 
@@ -73,7 +73,8 @@ export function Return() {
             of 1,000.
           </p>
           <p className="context">
-            {copy.title} ·{' '}
+            {copy.title}
+            {commitment.alsoRaises && commitment.lever !== 'raises' ? ' + part of every raise' : ''} ·{' '}
             {started
               ? `kept ${streak} ${streak === 1 ? 'month' : 'months'} in a row`
               : commitment.streak > 0
@@ -105,18 +106,18 @@ export function Return() {
             <Field
               id="saved-now"
               label="About how much have you saved now? (optional)"
-              value={saved}
+              value={inputs.saved}
               min={0}
               max={100000}
               step={100}
               prefix="$"
-              onChange={(v) => {
-                setSaved(v);
-                setState({ inputs: { ...useStore.getState().inputs, saved: v } });
-              }}
+              // Read from the store, so a bonus added below shows here and
+              // editing this field builds on it rather than erasing it.
+              onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })}
             />
           </>
         )}
+        <WindfallQuestion commitment={commitment} />
         {answer === 'notyet' && (
           <div className="card">
             <p>No problem. Life gets busy.{smaller ? ' Want a smaller version?' : ' It will be here next month.'}</p>
