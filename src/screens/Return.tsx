@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatedNumber, Field } from '../components/bits';
 import { River } from '../components/River';
-import { NO_LEVERS } from '../engine/types';
+import { WindfallQuestion } from '../components/Windfall';
 import { leverCopy } from '../lib/copy';
 import { num } from '../lib/format';
-import { STEP, demoMode, leverOn, useStore } from '../store';
+import { leversFor } from '../lib/windfall';
+import { STEP, demoMode, useStore } from '../store';
 
 // The monthly check-in: about 30 seconds, then out.
 export function Return() {
@@ -16,9 +17,10 @@ export function Return() {
   const [answer, setAnswer] = useState<'yes' | 'notyet' | 'changed' | null>(null);
   const [saved, setSaved] = useState(inputs.saved);
 
-  // Run the futures with the committed habit locked in.
+  // Run the futures with the committed habit locked in, plus the raise habit
+  // if it was added at a check-in.
   useEffect(() => {
-    if (commitment) setState({ levers: leverOn(NO_LEVERS, commitment.lever), worries: {}, activeWorry: null });
+    if (commitment) setState({ levers: leversFor(commitment.lever, commitment.alsoRaises), worries: {}, activeWorry: null });
   }, [commitment, setState]);
 
   if (!commitment) {
@@ -73,7 +75,8 @@ export function Return() {
             of 1,000.
           </p>
           <p className="context">
-            {copy.title} ·{' '}
+            {copy.title}
+            {commitment.alsoRaises && commitment.lever !== 'raises' ? ' + part of every raise' : ''} ·{' '}
             {started
               ? `kept ${streak} ${streak === 1 ? 'month' : 'months'} in a row`
               : commitment.streak > 0
@@ -117,6 +120,7 @@ export function Return() {
             />
           </>
         )}
+        <WindfallQuestion commitment={commitment} />
         {answer === 'notyet' && (
           <div className="card">
             <p>No problem. Life gets busy.{smaller ? ' Want a smaller version?' : ' It will be here next month.'}</p>
