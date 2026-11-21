@@ -158,11 +158,15 @@ export function Explain({ label, text }: { label: string; text: string }) {
 // the selected chip (plain CSS, reduced motion respected).
 export function ChipGroup<T extends string | number>({
   legend,
+  label,
   options,
   selected,
   onPick,
 }: {
+  // Names the group, and must be unique on the page.
   legend: string;
+  // Shown instead of the legend when several groups ask the same question.
+  label?: string;
   options: { value: T; label: string }[];
   selected: (value: T) => boolean;
   onPick: (value: T, label: string) => void;
@@ -188,7 +192,7 @@ export function ChipGroup<T extends string | number>({
   return (
     <div className="q">
       <span className="q-label" id={`q-${legend}`}>
-        {legend}
+        {label ?? legend}
       </span>
       <div className="chips" role="group" aria-labelledby={`q-${legend}`} onKeyDown={onKeyDown}>
         {options.map((o, i) => {

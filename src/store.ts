@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { DEFAULT_SEED } from './config';
 import type { Analysis } from './engine/analyse';
+import { MAX_CONCERNS, newConcern, selectedWorries, type Concern } from './engine/concerns';
 import { DEFAULT_INPUTS } from './engine/personas';
 import { NO_LEVERS, type AssumptionSetId, type Inputs, type LeverId, type Levers, type Scenario, type WorryId } from './engine/types';
 
@@ -51,6 +52,10 @@ interface Store {
   inputs: Inputs;
   room: string[];
   worries: Scenario;
+  // Worries typed in the person's own words, each tested as one of the what-ifs.
+  concerns: Concern[];
+  // A field of work typed in the person's own words (the "Other" chip).
+  fieldOther: string | null;
   activeWorry: WorryId | 'all' | null;
   showAll: boolean;
   levers: Levers;
@@ -83,6 +88,9 @@ interface Store {
   setInputs: (patch: Partial<Inputs>) => void;
   toggleRoom: (id: string) => void;
   toggleWorry: (id: WorryId) => void;
+  addConcern: (text: string) => void;
+  setConcernKind: (id: string, kind: WorryId) => void;
+  removeConcern: (id: string) => void;
   setActiveWorry: (id: WorryId | 'all' | null) => void;
   toggleLever: (id: LeverId) => void;
   answer: (label: string, patch: Partial<Inputs>, whyDown?: string) => void;
@@ -113,6 +121,8 @@ const fresh = {
   inputs: DEFAULT_INPUTS,
   room: [] as string[],
   worries: {} as Scenario,
+  concerns: [] as Concern[],
+  fieldOther: null as string | null,
   activeWorry: null,
   showAll: false,
   levers: NO_LEVERS,
@@ -158,8 +168,20 @@ export const useStore = create<Store>()(
         if (worries[id]) delete worries[id];
         else worries[id] = 'moderate';
         const active = get().activeWorry;
-        const stillValid = active === 'all' ? Object.keys(worries).length > 1 && get().showAll : active ? !!worries[active] : true;
-        set({ worries, activeWorry: stillValid ? active : null });
+        set({ worries, activeWorry: keepActive(selectedWorries(worries, get().concerns), active, get().showAll) });
+      },
+      addConcern: (text) => {
+        const list = get().concerns;
+        if (!text.trim() || list.length >= MAX_CONCERNS) return;
+        set({ concerns: [...list, newConcern(text)] });
+      },
+      setConcernKind: (id, kind) => {
+        const concerns = get().concerns.map((c) => (c.id === id ? { ...c, kind } : c));
+        set({ concerns, activeWorry: keepActive(selectedWorries(get().worries, concerns), get().activeWorry, get().showAll) });
+      },
+      removeConcern: (id) => {
+        const concerns = get().concerns.filter((c) => c.id !== id);
+        set({ concerns, activeWorry: keepActive(selectedWorries(get().worries, concerns), get().activeWorry, get().showAll) });
       },
       setActiveWorry: (activeWorry) => set({ activeWorry, selectedPath: null }),
       toggleLever: (id) => {
@@ -197,6 +219,7 @@ export const useStore = create<Store>()(
       partialize: (s) => ({
         inputs: s.inputs,
         room: s.room,
+        fieldOther: s.fieldOther,
         confBefore: s.confBefore,
         theme: s.theme,
         set: s.set,
@@ -206,6 +229,13 @@ export const useStore = create<Store>()(
     },
   ),
 );
+
+function keepActive(selected: Scenario, active: WorryId | 'all' | null, showAll: boolean): WorryId | 'all' | null {
+  if (active === 'all') return Object.keys(selected).length > 1 && showAll ? active : null;
+  return active && !selected[active] ? null : active;
+}
+
+export { selectedWorries };
 
 export function currentScenario(worries: Scenario, active: WorryId | 'all' | null): Scenario {
   if (active === 'all') return worries;

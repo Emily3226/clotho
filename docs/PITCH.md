@@ -11,23 +11,23 @@ Numbers below are what the app shows with the default seed and the Middle return
 Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some student debt. We ask what worries her before anything else." Tap **AI changes my job**, then **Show my thousand futures**.
 
 **0:30 Today, and what's within reach (20 s)**
-"Every line is one version of her life: same choices, different luck. **378 of 1,000** are in control today, and **794 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, **924** of her futures get harder, and saving part of every raise protects **802** of them." Drag the dial from $40 to $150 a month: "**378 → 676**. Same luck, her choice." Tap **Back to $40**.
+"Every line is one version of her life: same choices, different luck. **599 of 1,000** are in control today, and **921 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, she stays in control in **83** instead of **599**, and saving part of every raise brings that back up to **409**." Drag the dial from $40 to $150 a month: "**599 → 907**. Same luck, her choice." Tap **Back to $40**.
 
-Don't tap **Show** on the AI card on stage: for Maya it puts the headline at 0 in control.
+Tapping **Show** on the AI card puts that worry on the river and the headline at **83**; leave it for questions. **Why 599?** under the play button shows the working if a judge asks.
 
 **0:50 Play one life (10 s)**
 Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
 
 **1:00 One habit, the rescue (20 s)**
-"What helps most?". Tap the **?** on **Save part of every raise**: "Each raise sends 1% more to savings, so it never feels like a cut." Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **73**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+465** futures rescued, **378 → 794**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
+"What helps most?". Tap the **?** on **Save part of every raise**: "Each raise sends 1% more to savings, so it never feels like a cut." Switch on **Automate $25 a month**: "Twenty-five dollars a month rescues **114**, lit up, same luck." Switch it off and switch on **Save part of every raise**: "**+363** futures rescued, **599 → 921**, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
 **1:20 Pick one, and come back (15 s)**
-"Pick one to try". Pick the habit, "Add a monthly reminder", move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **378**. Keeping it up points to **795**, and she's kept it 3 months in a row."
+"Pick one to try". Pick the habit, "Add a monthly reminder", move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **599**. Keeping it up points to **924**, and she's kept it 3 months in a row."
 
 **1:35 Proof and what's next (15 s)**
 "We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** set a reminder." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan."
 
-**Optional, if there's time (10 s):** on Your futures, **Switch to Priya**: same age, health student in Halifax, living with family: **869**.
+**Optional, if there's time (10 s):** on Your futures, **Switch to Priya**: same age, health student in Halifax, living with family: **938**.
 
 **Backup:** if anything misbehaves, reload; inputs are kept. Have the recorded demo video ready.
 
@@ -46,7 +46,7 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 |---|---|
 | "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The first question after confidence is "What worries you most?". The first result answers it: each worry is sized on a card, next to the habit that protects the most. |
 | "helps Gen Z take meaningful action" | One step, a monthly reminder, a message ready for HR, and a monthly check-in that shows progress. |
-| "motivation" | The first headline: "378 in control today, 794 within reach with one habit". Then "+465 futures rescued", and at the check-in "You started at 378. Keeping it up points to 795", with a streak. |
+| "motivation" | The first headline: "599 in control today, 921 within reach with one habit". Then "+363 futures rescued", and at the check-in "You started at 599. Keeping it up points to 924", with a streak. |
 | "visualization" | The river: 1,000 lives, a middle line, milestones at 35, 45 and 65. |
 | "behavioral nudges" | The three behaviours the research measured: joining the plan, taking the match, automatic contributions. One step only; "make it automatic" checklist. |
 | "education" | A "?" on every habit (what a TFSA is, how matching works), a plain sentence under every result number, the short-term and long-term explainer, the Assumptions panel. |
@@ -57,6 +57,9 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 | Research: short-term and long-term saving together | Cushion and workplace plan fill side by side; raiding retirement savings in a bad year is modelled and the cushion habit addresses it. |
 
 ## Hard questions
+
+**Where does the headline number come from?**
+Tap **Why 599?** under the play button. Each future gets four checks (bad years, 6 months saved by 35, a year by 45, work optional by 65); in control means all four. For Maya, 401 miss at least one: 334 because work isn't optional by 65, 102 on the 35 check, 91 on a bad year, 19 on the 45 check. It is counted from the same 1,000 lives on screen, not a score.
 
 **Where do your return assumptions come from?**
 They are labelled illustrative, and they are conservative: 5% real for stocks with 17% volatility and a crash regime, 1% real for bonds, 0.75% fees, a glide path from 80/20 to 40/60. They sit in the range of the FP Canada projection guidelines. Every one is in the Assumptions panel with its source and date, and the published limits (TFSA, FHSA, RRSP, CPP, OAS) link to government pages. Change a number in one file and the whole tool follows.

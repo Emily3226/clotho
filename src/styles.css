@@ -1492,4 +1492,56 @@ details.why summary {
   font-size: 0.92rem;
   color: var(--muted);
   max-width: 46ch;
+.why-status,
+.why-bars {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+.why-status li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.why-status .status-line {
+  position: relative;
+  top: -4px;
+}
+.why-status small {
+  color: var(--muted);
+  font-size: inherit;
+}
+.why-bars li {
+  display: grid;
+  gap: 3px;
+}
+.why-bars i {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* Typed worries: what each one is tested as, with the choices tucked away. */
+.tested-as summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.92rem;
+  padding: 4px 0;
+}
+.tested-as summary::-webkit-details-marker {
+  display: none;
+}
+.tested-as summary .link {
+  margin-left: 6px;
+}
+.tested-as[open] summary .link {
+  display: none;
+}
+.concerns {
+  margin: 4px 0 8px;
 }
