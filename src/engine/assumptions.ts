@@ -1,0 +1,200 @@
+// Every constant and model parameter used by the engine.
+// "official" entries are published figures; "illustrative" entries are
+// modelling assumptions, not facts and not forecasts.
+
+export type AssumptionKind = 'official' | 'illustrative';
+
+export interface Assumption {
+  key: string;
+  label: string;
+  display: string;
+  kind: AssumptionKind;
+  source: string;
+  sourceLabel: string;
+  asOf: string;
+  note?: string;
+}
+
+const CRA_LIMITS =
+  'https://www.canada.ca/en/revenue-agency/services/tax/registered-plans-administrators/pspa/mp-rrsp-dpsp-tfsa-limits-ympe.html';
+const TFSA_URL =
+  'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/tax-free-savings-account/contributing/calculate-room.html';
+const FHSA_URL =
+  'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/first-home-savings-account/contributing-your-fhsa.html';
+const CPP_URL = 'https://www.canada.ca/en/services/benefits/publicpensions/cpp/cpp-benefit/amount.html';
+const OAS_URL =
+  'https://www.canada.ca/en/services/benefits/publicpensions/cpp/old-age-security/benefit-amount.html';
+const TAX_URL =
+  'https://www.canada.ca/en/revenue-agency/services/tax/individuals/frequently-asked-questions-individuals/canadian-income-tax-rates-individuals-current-previous-years.html';
+const FP_URL = 'https://www.fpcanada.ca/planners/projection-assumption-guidelines';
+const STATCAN_URL = 'https://www150.statcan.gc.ca/n1/en/subjects/labour';
+const EI_URL = 'https://www.canada.ca/en/services/benefits/ei/ei-regular-benefit/benefit-amount.html';
+
+export const A = {
+  paths: 1000,
+  endAge: 70,
+  retireAge: 65,
+  paycheques: 26,
+
+  tfsaAnnual: 7000,
+  fhsaAnnual: 8000,
+  fhsaLifetime: 40000,
+  rrspRate: 0.18,
+  rrspMax: 33810,
+  cppMaxMonthly: 1507.65,
+  ympe: 74600,
+  oasMonthly: 742,
+  cppFullYears: 39,
+  careerStartAge: 22,
+
+  stockMean: 0.05,
+  stockVol: 0.17,
+  crashChance: 0.05,
+  crashMean: -0.25,
+  crashVol: 0.08,
+  bondMean: 0.01,
+  bondVol: 0.06,
+  stockShareEarly: 0.8,
+  stockShareLate: 0.4,
+  glideStartAge: 40,
+  glideEndAge: 65,
+  fees: 0.0075,
+  cushionReturn: 0.005,
+  taxableDrag: 0.005,
+
+  wageNoise: 0.02,
+  jobLossYoung: 0.05,
+  jobLossLater: 0.035,
+  jobLossAgeSplit: 30,
+  spellMedianMonths: 4,
+  spellSigma: 0.6,
+  spellCapMonths: 18,
+  joblessIncomeShare: 0.45,
+  returnPayCut: 0.05,
+  raiseSpentShare: 0.5,
+
+  withdrawalRate: 0.04,
+  workplaceRetirementTax: 0.15,
+  raidTax: 0.3,
+  workOptionalShare: 0.7,
+  tightGap: 0.2,
+  roomMonths35: 6,
+  roomMonths45: 12,
+  downPaymentShare: 0.1,
+  debtYears: 10,
+  inflationForDebt: 0.02,
+  defaultMatchPct: 4,
+  raisesStep: 0.03,
+  raisesCapPoints: 15,
+  cushionTopUp: 40,
+  waitingYears: 5,
+} as const;
+
+// Real wage growth by age band: [upper age (exclusive), yearly growth].
+export const WAGE_GROWTH: ReadonlyArray<readonly [number, number]> = [
+  [30, 0.03],
+  [40, 0.015],
+  [50, 0.005],
+  [200, 0],
+];
+
+// Approximate effective tax rate, single Ontario earner: [income, rate].
+export const TAX_TABLE: ReadonlyArray<readonly [number, number]> = [
+  [0, 0.0],
+  [15000, 0.03],
+  [30000, 0.12],
+  [50000, 0.18],
+  [75000, 0.23],
+  [100000, 0.27],
+  [150000, 0.32],
+  [200000, 0.36],
+];
+
+export function taxRate(income: number): number {
+  const t = TAX_TABLE;
+  if (income <= t[0][0]) return t[0][1];
+  for (let i = 1; i < t.length; i++) {
+    if (income <= t[i][0]) {
+      const [x0, y0] = t[i - 1];
+      const [x1, y1] = t[i];
+      return y0 + ((y1 - y0) * (income - x0)) / (x1 - x0);
+    }
+  }
+  return t[t.length - 1][1];
+}
+
+export function takeHome(income: number): number {
+  return income * (1 - taxRate(income));
+}
+
+// Approximate tax saved on one more dollar put into the workplace plan.
+export function marginalRate(income: number): number {
+  const step = 500;
+  const m = (income * taxRate(income) - (income - step) * taxRate(income - step)) / step;
+  return Math.min(0.5, Math.max(0, m));
+}
+
+export function wageGrowthAt(age: number): number {
+  for (const [upper, g] of WAGE_GROWTH) if (age < upper) return g;
+  return 0;
+}
+
+export function stockShareAt(age: number): number {
+  if (age <= A.glideStartAge) return A.stockShareEarly;
+  if (age >= A.glideEndAge) return A.stockShareLate;
+  const f = (age - A.glideStartAge) / (A.glideEndAge - A.glideStartAge);
+  return A.stockShareEarly + f * (A.stockShareLate - A.stockShareEarly);
+}
+
+const official = (
+  key: string,
+  label: string,
+  display: string,
+  source: string,
+  sourceLabel: string,
+  note?: string,
+): Assumption => ({ key, label, display, kind: 'official', source, sourceLabel, asOf: '2026', note });
+
+const illustrative = (
+  key: string,
+  label: string,
+  display: string,
+  source: string,
+  sourceLabel: string,
+  note?: string,
+): Assumption => ({ key, label, display, kind: 'illustrative', source, sourceLabel, asOf: '2026', note });
+
+export const ASSUMPTIONS: Assumption[] = [
+  official('tfsaAnnual', 'TFSA yearly limit', '$7,000', TFSA_URL, 'Canada Revenue Agency', 'Room is $7,000 for each year since age 18, less what is used.'),
+  official('fhsa', 'FHSA limits', '$8,000 a year, $40,000 lifetime', FHSA_URL, 'Canada Revenue Agency', 'Used only when a home goal is set.'),
+  official('rrsp', 'RRSP limit', '18% of last year’s earned income, up to $33,810', CRA_LIMITS, 'Canada Revenue Agency', 'Applied to the workplace plan, employee and employer amounts together.'),
+  official('cpp', 'CPP maximum at 65', '$1,507.65 a month', CPP_URL, 'Government of Canada', 'Simple estimate: maximum × (career average income ÷ YMPE, up to 1) × (years worked ÷ 39, up to 1).'),
+  official('ympe', 'Year’s maximum pensionable earnings (YMPE)', '$74,600', CRA_LIMITS, 'Canada Revenue Agency'),
+  official('oas', 'Old Age Security, ages 65 to 74', 'about $742 a month', OAS_URL, 'Government of Canada', 'Simple estimate: paid in full from 65.'),
+  official('paycheques', 'Paycheques a year', '26', 'https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/payroll.html', 'Common biweekly pay schedule'),
+
+  illustrative('stocks', 'Stocks', '5.0% average real return, 17% volatility', FP_URL, 'In the range of FP Canada projection guidelines', 'A 5% chance each year of a fall drawn around −25%; ordinary years are re-centred so the long-run average stays 5.0%.'),
+  illustrative('bonds', 'Bonds', '1.0% average real return, 6% volatility', FP_URL, 'In the range of FP Canada projection guidelines'),
+  illustrative('mix', 'Investment mix', '80% stocks until 40, gliding to 40% at 65', FP_URL, 'A typical target-date glide path'),
+  illustrative('fees', 'Investment fees', '0.75% a year', FP_URL, 'Illustrative'),
+  illustrative('cushionReturn', 'Cushion return', '+0.5% a year after inflation', FP_URL, 'Illustrative, short-term savings'),
+  illustrative('taxableDrag', 'Tax drag outside registered accounts', '0.5% a year', FP_URL, 'Illustrative'),
+  illustrative('wages', 'Real wage growth', '+3% a year to 30, +1.5% to 40, +0.5% to 50, then flat; ±2% yearly noise', STATCAN_URL, 'Illustrative, shaped like Statistics Canada age-earnings profiles'),
+  illustrative('jobLoss', 'Job loss', '5% a year under 30, 3.5% after', STATCAN_URL, 'Illustrative, in the range of Statistics Canada layoff rates', 'Time out of work has a median of 4 months, capped at 18. Pay on return is 5% lower.'),
+  illustrative('jobless', 'Income while out of work', '45% of previous pay', EI_URL, 'Illustrative; EI replaces up to 55% of insured earnings'),
+  illustrative('tax', 'Income tax', 'about 12% at $30k, 18% at $50k, 23% at $75k, 27% at $100k, 32% at $150k, 36% at $200k', TAX_URL, 'Approximate effective rates, single Ontario earner', 'Interpolated between points. Workplace-plan contributions lower taxable income at the approximate marginal rate.'),
+  illustrative('spending', 'Spending', 'Take-home pay minus saving; rises by half of each raise', FP_URL, 'Illustrative behaviour rule'),
+  illustrative('withdrawal', 'Sustainable income from savings', '4% a year of long-term savings', FP_URL, 'A common rule of thumb', 'Workplace-plan income is taxed at 15%.'),
+  illustrative('raid', 'Emergency withdrawal from the workplace plan', '30% lost to tax; the room is gone', 'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/making-withdrawals/tax-rates-on-withdrawals.html', 'Based on RRSP withholding rates'),
+  illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of recent spending', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 50. Before 65, savings must also bridge the years until public pensions start.'),
+  illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
+  illustrative('home', 'Home down payment', '10% of the price', 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html', 'Illustrative; minimums vary by price'),
+  illustrative('debt', 'Student debt', 'Paid over 10 years; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative'),
+  illustrative('levers', 'Habits', 'Save-a-raise: +1 point of pay for each 3% real raise, up to 15 points. Cushion first: $40 a paycheque while the cushion is filling. Cost of waiting: 5 years.', FP_URL, 'Illustrative'),
+];
+
+export const LIMITATIONS: string[] = [
+  'The parameters are illustrative, not forecasts. A thousand runs of luck show a range of what could happen, not what will.',
+  'Taxes, CPP and OAS are simplified. The tool uses approximate tax rates and simple pension estimates.',
+  'One set of life events cannot cover everyone. There are no partners, children, inheritances or moves between provinces.',
+];

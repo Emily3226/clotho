@@ -1,0 +1,448 @@
+import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
+import { drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
+import type { Inputs, Levers, PathEvent, PathResult, Scenario, SimOptions, Status, Summary } from './types';
+import { SEV_INDEX, WORRY } from './worries';
+
+// Ordinary-year stock mean, re-centred so the long-run average stays at stockMean
+// once the crash regime is included.
+const STOCK_NORMAL_MEAN = (A.stockMean - A.crashChance * A.crashMean) / (1 - A.crashChance);
+
+function amortise(balance: number, rate: number, years: number): number {
+  if (balance <= 0) return 0;
+  if (rate <= 0) return balance / years;
+  return (balance * rate) / (1 - Math.pow(1 + rate, -years));
+}
+
+export function homeGoalFor(inputs: Inputs, scenario: Scenario): { price: number; byAge: number } | null {
+  if (inputs.home) return inputs.home;
+  if (scenario.home) {
+    return {
+      price: WORRY.home.defaultPrice,
+      byAge: Math.max(inputs.age + WORRY.home.defaultYears, WORRY.home.minAge),
+    };
+  }
+  return null;
+}
+
+export function simulate(
+  inputs: Inputs,
+  scenario: Scenario,
+  levers: Levers,
+  seed: number,
+  opts: SimOptions = {},
+): PathResult[] {
+  const paths = opts.paths ?? A.paths;
+  const detail = opts.detail ?? true;
+  const calm = !!opts.calm;
+  const draws = drawsFor(seed, paths);
+  const age = inputs.age;
+  const N = A.endAge - age;
+  const income = inputs.income;
+
+  const sAi = scenario.ai ? SEV_INDEX[scenario.ai] : -1;
+  const sRec = scenario.recession ? SEV_INDEX[scenario.recession] : -1;
+  const sCost = scenario.costs ? SEV_INDEX[scenario.costs] : -1;
+  const sHome = scenario.home ? SEV_INDEX[scenario.home] : -1;
+  const sWorld = scenario.world ? SEV_INDEX[scenario.world] : -1;
+  const sPen = scenario.pensions ? SEV_INDEX[scenario.pensions] : -1;
+
+  const pensionFactor = sPen >= 0 ? WORRY.pensions.paid[sPen] : 1;
+  const worldDrag = sWorld >= 0 ? WORRY.world.returns[sWorld] : 0;
+  const worldChance = sWorld >= 0 ? WORRY.world.chance[sWorld] : 0;
+  const homeGoal = homeGoalFor(inputs, scenario);
+  const homeFaster = sHome >= 0 ? WORRY.home.faster[sHome] : 0;
+
+  const planPct = inputs.plan === 'yes' ? inputs.employeePct / 100 : 0;
+  const matchPct =
+    inputs.plan === 'yes' ? inputs.matchPct / 100 : inputs.plan === 'unsure' ? A.defaultMatchPct / 100 : 0;
+  const matchOn = levers.match && inputs.plan !== 'no';
+  const empPct = matchOn ? Math.max(planPct, matchPct) : planPct;
+  const matchExtra = empPct - planPct;
+  const employerActive = inputs.plan === 'yes' || (inputs.plan === 'unsure' && matchOn);
+
+  const nth0 = takeHome(income);
+  const saving0 = Math.min(
+    inputs.perPaycheque * A.paycheques + planPct * income * (1 - marginalRate(income)),
+    0.6 * nth0,
+  );
+  const spend0 = nth0 - saving0;
+  const cushionShare = inputs.cushionMonths / 12;
+  const debtRate = inputs.debt ? Math.max(0, inputs.debt.rate / 100 - A.inflationForDebt) : 0;
+  const debtPay = inputs.debt ? amortise(inputs.debt.balance, debtRate, A.debtYears) : 0;
+
+  const out: PathResult[] = new Array(paths);
+  const ring = new Float64Array(5);
+
+  for (let i = 0; i < paths; i++) {
+    const base = i * PER_PATH;
+    const events: PathEvent[] = [];
+    const balances = detail ? new Float32Array(N + 1) : null;
+    const crashYear = Math.min(WORRY.recession.window - 1, Math.floor(draws[base + PER_PATH - 1] * WORRY.recession.window));
+
+    let trend = 1;
+    let plainTrend = 1;
+    let level = 1;
+    let tfsaRoom = A.tfsaAnnual * Math.max(0, age - 18);
+    let fhsaLife = 0;
+    let spendBase = spend0;
+
+    let cushion = Math.min(inputs.saved, cushionShare * spend0);
+    let rest = inputs.saved - cushion;
+    let tfsa = Math.min(rest, tfsaRoom);
+    tfsaRoom -= tfsa;
+    rest -= tfsa;
+    let taxable = rest;
+    let fhsa = 0;
+    let workplace = 0;
+
+    let carry = 0;
+    let raisePts = 0;
+    let lastStepPay = 1;
+    let prevNth = nth0;
+    let prevGross = income;
+    let prevYearIncome = income;
+    let costFactor = 1;
+    let debtBal = inputs.debt ? inputs.debt.balance : 0;
+    let dropDebtPay = false;
+
+    let woAge: number | null = null;
+    let ratio65 = 0;
+    let retired = false;
+    let withdraw = 0;
+    let lastSpend = spend0;
+    let ringN = 0;
+    let earnedSum = 0;
+    let yearsWorked = 0;
+
+    let shockProof = true;
+    let room35 = false;
+    let room45 = false;
+    let bought = false;
+    let cushionFullSeen = cushion >= cushionShare * spend0 - 1 && cushionShare > 0 && inputs.saved > 0;
+
+    let minTfsaRoom = tfsaRoom;
+    let maxFhsaYear = 0;
+    let maxRrspOver = 0;
+    let minBalance = 0;
+    let final = 0;
+
+    for (let t = 0; t <= N; t++) {
+      const a = age + t;
+      const flex = tfsa + fhsa + taxable;
+      const total = cushion + flex + workplace;
+      if (balances) balances[t] = total;
+      final = total;
+
+      if (a === 35) {
+        room35 = cushion + flex >= (A.roomMonths35 / 12) * lastSpend - 1;
+        if (detail && room35) events.push({ age: a, type: 'room', value: A.roomMonths35 });
+      }
+      if (a === 45) {
+        room45 = cushion + flex >= (A.roomMonths45 / 12) * lastSpend - 1;
+        if (detail && room45) events.push({ age: a, type: 'room', value: A.roomMonths45 });
+      }
+
+      if (a >= 50 && !retired) {
+        let avgSpend = lastSpend;
+        if (ringN > 0) {
+          const n = Math.min(ringN, 5);
+          let s = 0;
+          for (let k = 0; k < n; k++) s += ring[k];
+          avgSpend = s / n;
+        }
+        const cppYears = Math.min(1, (Math.max(0, age - A.careerStartAge) + yearsWorked) / A.cppFullYears);
+        const avgInc = yearsWorked > 0 ? earnedSum / yearsWorked : income;
+        const pens =
+          (A.cppMaxMonthly * 12 * Math.min(1, avgInc / A.ympe) * cppYears + A.oasMonthly * 12) * pensionFactor;
+        const bridge = a < A.retireAge ? pens * (A.retireAge - a) : 0;
+        const usable = Math.max(0, flex + (1 - A.workplaceRetirementTax) * workplace - bridge);
+        const ratio = (A.withdrawalRate * usable + pens) / Math.max(1, avgSpend);
+        if (a === A.retireAge) ratio65 = ratio;
+        if (ratio >= A.workOptionalShare && woAge === null) {
+          woAge = a;
+          if (detail) events.push({ age: a, type: 'optional' });
+        }
+        if (a >= A.retireAge && woAge !== null) {
+          retired = true;
+          withdraw = A.withdrawalRate * (flex + workplace);
+        }
+      }
+      if (t === N) break;
+
+      // Investment returns for the year.
+      const o = base + t * STREAMS;
+      let rs: number;
+      let rb: number;
+      if (calm) {
+        rs = A.stockMean;
+        rb = A.bondMean;
+      } else {
+        if (draws[o + S_CRASH_U] < A.crashChance) {
+          rs = Math.min(-0.05, Math.max(-0.6, A.crashMean + A.crashVol * draws[o + S_CRASH_Z]));
+        } else {
+          rs = Math.max(-0.6, STOCK_NORMAL_MEAN + A.stockVol * draws[o + S_STOCK]);
+        }
+        rb = A.bondMean + A.bondVol * draws[o + S_BOND];
+        if (sRec >= 0 && t === crashYear) rs = Math.min(rs, WORRY.recession.crash[sRec]);
+      }
+      rs -= worldDrag;
+      rb -= worldDrag;
+      const w = stockShareAt(a);
+      const r = w * rs + (1 - w) * rb - A.fees;
+      cushion *= 1 + A.cushionReturn;
+      tfsa *= 1 + r;
+      fhsa *= 1 + r;
+      workplace *= 1 + r;
+      taxable *= 1 + r - A.taxableDrag;
+      tfsaRoom += A.tfsaAnnual;
+      if (detail && rs <= -0.15) events.push({ age: a, type: 'crash', value: Math.round(-rs * 100) });
+
+      if (retired) {
+        const pots = tfsa + fhsa + taxable + workplace;
+        if (pots > 0) {
+          const k = 1 - Math.min(pots, withdraw) / pots;
+          tfsa *= k;
+          fhsa *= k;
+          taxable *= k;
+          workplace *= k;
+        }
+        continue;
+      }
+
+      // Pay.
+      if (t > 0) {
+        const g = wageGrowthAt(a - 1);
+        plainTrend *= 1 + g;
+        trend *= 1 + g - (sAi >= 0 && t <= WORRY.ai.years ? WORRY.ai.wageDrag[sAi] : 0);
+      }
+      const gross = income * trend * level * (1 + (calm ? 0 : A.wageNoise * draws[o + S_WAGE]));
+      const nth = takeHome(gross);
+      if (t > 0) spendBase += A.raiseSpentShare * (nth - prevNth);
+      if (dropDebtPay) {
+        spendBase -= debtPay;
+        dropDebtPay = false;
+      }
+      prevNth = nth;
+      if (spendBase > nth) spendBase = nth;
+      if (detail && t > 0 && gross / prevGross > 1.055) {
+        events.push({ age: a, type: 'raise', value: Math.round((gross / prevGross - 1) * 100) });
+      }
+      prevGross = gross;
+
+      if (debtBal > 0) {
+        debtBal = debtBal * (1 + debtRate) - debtPay;
+        if (debtBal <= 1) {
+          debtBal = 0;
+          dropDebtPay = true;
+          if (detail) events.push({ age: a + 1, type: 'debtFree' });
+        }
+      }
+
+      if (sCost >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + WORRY.costs.extra[sCost] * WORRY.costs.essentialsShare;
+      let spend = Math.min(spendBase * costFactor, nth);
+      const target = cushionShare * spend;
+
+      // A plan dollar costs less than a dollar of take-home pay.
+      const relief = empPct > 0 ? 1 - marginalRate(gross) : 1;
+      const delayed = t < levers.delay;
+      const pay = trend * level;
+      if (delayed) {
+        spend = nth;
+        lastStepPay = pay;
+      } else {
+        if (levers.raises) {
+          while (pay >= lastStepPay * (1 + A.raisesStep) * 0.9999 && raisePts < A.raisesCapPoints) {
+            raisePts++;
+            lastStepPay *= 1 + A.raisesStep;
+          }
+        }
+        let extra = levers.auto * A.paycheques + (matchExtra * relief + raisePts / 100) * gross;
+        if (levers.cushion && cushion < target) extra += A.cushionTopUp * A.paycheques;
+        if (extra > 0) spend = Math.max(spend - extra, Math.min(spend, 0.4 * nth));
+      }
+
+      // Job loss.
+      let months = carry;
+      carry = 0;
+      let scar = false;
+      if (!calm && months === 0) {
+        let p = a < A.jobLossAgeSplit ? A.jobLossYoung : A.jobLossLater;
+        const aiHit = sAi >= 0 && a < WORRY.ai.untilAge;
+        if (aiHit) p *= WORRY.ai.jobMult[sAi];
+        if (sRec >= 0 && t >= crashYear && t < crashYear + WORRY.recession.jobYears) p *= WORRY.recession.jobMult[sRec];
+        if (draws[o + S_JOB_U] < Math.min(p, 0.9)) {
+          months = Math.min(
+            A.spellCapMonths,
+            A.spellMedianMonths * Math.exp(A.spellSigma * draws[o + S_SPELL]) * (aiHit ? WORRY.ai.spellMult[sAi] : 1),
+          );
+          scar = true;
+          if (detail) events.push({ age: a, type: 'job', value: Math.max(1, Math.round(months)) });
+        }
+      }
+      if (months > 12) {
+        carry = months - 12;
+        months = 12;
+      }
+      const share = (12 - months) / 12;
+      const yearIncome = gross * share + A.joblessIncomeShare * gross * (1 - share);
+      const th = months > 0 ? takeHome(yearIncome) : nth;
+
+      let free = th - spend;
+      if (worldChance > 0 && !calm && draws[o + S_COST_U] < worldChance) {
+        free -= (WORRY.world.months / 12) * spend;
+        if (detail) events.push({ age: a, type: 'cost' });
+      }
+
+      if (free > 0) {
+        // Workplace plan first, then the cushion, then long-term savings.
+        if (!delayed && empPct > 0) {
+          let we = Math.min(empPct * gross * share, free / relief);
+          let er = employerActive ? Math.min(we, matchPct * gross * share) : 0;
+          const room = Math.min(A.rrspRate * prevYearIncome, A.rrspMax);
+          if (we + er > room) {
+            const k = room / (we + er);
+            we *= k;
+            er *= k;
+          }
+          if (we + er - room > maxRrspOver) maxRrspOver = we + er - room;
+          workplace += we + er;
+          free -= we * relief;
+        }
+        const toCushion = Math.min(free, Math.max(0, target - cushion));
+        cushion += toCushion;
+        free -= toCushion;
+        if (homeGoal && !bought && fhsaLife < A.fhsaLifetime) {
+          const x = Math.min(free, A.fhsaAnnual, A.fhsaLifetime - fhsaLife);
+          fhsa += x;
+          fhsaLife += x;
+          free -= x;
+          if (x > maxFhsaYear) maxFhsaYear = x;
+        }
+        const x = Math.min(free, tfsaRoom);
+        tfsa += x;
+        tfsaRoom -= x;
+        taxable += free - x;
+      } else if (free < -0.5) {
+        let need = -free;
+        const c = Math.min(cushion, need);
+        cushion -= c;
+        need -= c;
+        if (detail && c > 50) events.push({ age: a, type: 'cushion' });
+        if (need > 0.5) {
+          const x = Math.min(taxable, need);
+          taxable -= x;
+          need -= x;
+          const y = Math.min(tfsa, need);
+          tfsa -= y;
+          tfsaRoom += y;
+          need -= y;
+          const z = Math.min(fhsa, need);
+          fhsa -= z;
+          need -= z;
+          if (detail && x + y + z > 50) events.push({ age: a, type: 'flex' });
+        }
+        if (need > 0.5 && workplace > 0) {
+          const g = Math.min(workplace, need / (1 - A.raidTax));
+          workplace -= g;
+          need -= g * (1 - A.raidTax);
+          shockProof = false;
+          if (detail) events.push({ age: a, type: 'raid' });
+        }
+        if (need > 0.5) {
+          shockProof = false;
+          if (detail) events.push({ age: a, type: 'short' });
+        }
+      }
+
+      if (!cushionFullSeen && target > 0 && cushion >= target - 1) {
+        cushionFullSeen = true;
+        if (detail) events.push({ age: a + 1, type: 'cushionFull' });
+      }
+
+      if (homeGoal && !bought && a + 1 <= homeGoal.byAge) {
+        const price =
+          homeGoal.price * (sHome >= 0 ? plainTrend * wageGrowthFactor(a) * Math.pow(1 + homeFaster, t + 1) : 1);
+        const down = A.downPaymentShare * price;
+        if (fhsa + taxable + tfsa >= down) {
+          let need = down;
+          const x = Math.min(fhsa, need);
+          fhsa -= x;
+          need -= x;
+          const y = Math.min(taxable, need);
+          taxable -= y;
+          need -= y;
+          tfsa -= need;
+          tfsaRoom += need;
+          bought = true;
+          if (detail) events.push({ age: a + 1, type: 'home' });
+        }
+      }
+
+      if (tfsaRoom < minTfsaRoom) minTfsaRoom = tfsaRoom;
+      const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
+      if (lowest < minBalance) minBalance = lowest;
+
+      lastSpend = spend;
+      ring[ringN % 5] = spend;
+      ringN++;
+      earnedSum += yearIncome;
+      yearsWorked++;
+      prevYearIncome = yearIncome;
+      if (scar) level *= 1 - A.returnPayCut;
+    }
+
+    const wo65 = woAge !== null && woAge <= A.retireAge;
+    const homeMs = homeGoal ? bought : null;
+    const misses = (shockProof ? 0 : 1) + (room35 ? 0 : 1) + (room45 ? 0 : 1) + (homeMs === false ? 1 : 0);
+    let status: Status;
+    if (wo65) status = misses === 0 ? 0 : misses === 1 ? 1 : 2;
+    else status = ratio65 >= A.workOptionalShare - A.tightGap ? 2 : 3;
+
+    out[i] = {
+      index: i,
+      status,
+      milestones: { shockProof, room35, room45, home: homeMs, workOptional65: wo65 },
+      workOptionalAge: woAge,
+      ratio65,
+      final,
+      balances,
+      events,
+      peakTfsaOver: Math.max(0, -minTfsaRoom),
+      peakFhsaLifetime: fhsaLife,
+      peakFhsaYear: maxFhsaYear,
+      peakRrspOver: maxRrspOver,
+      minBalance,
+    };
+  }
+  return out;
+}
+
+function wageGrowthFactor(age: number): number {
+  return 1 + wageGrowthAt(age);
+}
+
+export function summarise(paths: PathResult[]): Summary {
+  const counts: [number, number, number, number] = [0, 0, 0, 0];
+  const ms = { shockProof: 0, room35: 0, room45: 0, home: 0, workOptional65: 0 };
+  let hasHome = false;
+  const ages: number[] = [];
+  for (const p of paths) {
+    counts[p.status]++;
+    if (p.milestones.shockProof) ms.shockProof++;
+    if (p.milestones.room35) ms.room35++;
+    if (p.milestones.room45) ms.room45++;
+    if (p.milestones.home !== null) {
+      hasHome = true;
+      if (p.milestones.home) ms.home++;
+    }
+    if (p.milestones.workOptional65) ms.workOptional65++;
+    ages.push(p.workOptionalAge ?? Infinity);
+  }
+  ages.sort((x, y) => x - y);
+  const med = ages[Math.floor((ages.length - 1) / 2)];
+  return {
+    counts,
+    medianWorkOptionalAge: Number.isFinite(med) ? med : null,
+    milestoneCounts: { ...ms, home: hasHome ? ms.home : null },
+  };
+}
