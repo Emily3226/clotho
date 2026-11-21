@@ -56,6 +56,25 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 | Research: flexibility and control beat a distant retirement date | Milestones are shock-proof, room to move at 35 and 45, and "work becomes optional". |
 | Research: short-term and long-term saving together | Cushion and workplace plan fill side by side; raiding retirement savings in a bad year is modelled and the cushion habit addresses it. |
 
+## Canada Life's message checklist → Clotho
+
+Canada Life's *Gen Z workplace savings communications guide* (Gen Z Workplace Savings Toolkit, August 2026) ends with a 10-item checklist that employers should run every Gen Z savings message through. We ran Clotho through it.
+
+| Their checklist item | Where Clotho does it |
+|---|---|
+| Acknowledge uncertainty in a realistic, authentic way. | The first question is "What worries you most?", and that worry is tested on the same 1,000 lives, not waved away. |
+| Avoid fear-based, apocalyptic or manipulative language. | A count ("599 of 1,000"), never a warning. No red, no alarms. The worst case is there if you ask, never forced. |
+| Frame saving as control, flexibility or resilience. | Checks at 35 and 45, not only 65, and "What if there's no 65?" shows what is yours to use at 35, 40 or 50. |
+| Connect to an immediate moment or decision. | **Partly.** The student who finishes this year, the first full-time job, a home or goal they named, and the monthly check-in. Raise or bonus season is next. |
+| Give one clear next step. | "Pick one to try" ends on a single "Do it now" step. |
+| Make the action feel small enough to start now. | Automate $25 a month; saving part of every raise costs nothing today. |
+| Explain the benefit in plain language. | "+363 futures rescued", with a plain sentence under every number and a "?" on every habit. |
+| Avoid judgment about choices or priorities. | "Not yet" at the check-in gets "No problem. Life gets busy." and a smaller version, not guilt. |
+| Use trusted channels; make reliable information easy to find. | **Partly.** Every assumption in one panel with its source. The trusted channel is the workplace plan itself, which is the pilot we want. |
+| Support action, not just awareness. | A monthly reminder, a ready message for HR, and a check-in that tracks whether they did it. |
+
+Why it matters: Canada Life's 2024 claims data shows Gen Z withdrawing from RRSPs 12% more than Gen Y and 42% more than Gen X at the same age. Starting to save is half the problem; keeping it invested is the other half. Clotho models an emergency withdrawal from the workplace plan (30% lost to tax, the room gone) and the cushion habit is there to make it less likely.
+
 ## Hard questions
 
 **Where does the headline number come from?**
