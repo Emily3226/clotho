@@ -1,14 +1,15 @@
 import { useEffect, useRef } from 'react';
 import type { Analysis } from './engine/analyse';
 import type { EngineRequest } from './engine/worker';
-import { STEP, currentScenario, useStore } from './store';
+import { STEP, currentScenario, selectedWorries, useStore } from './store';
 
 // Keeps the analysis in the store in step with the inputs, worries and levers.
 export function useEngine(): void {
   const worker = useRef<Worker | null>(null);
   const latest = useRef(0);
   const inputs = useStore((s) => s.inputs);
-  const worries = useStore((s) => s.worries);
+  const chips = useStore((s) => s.worries);
+  const concerns = useStore((s) => s.concerns);
   const activeWorry = useStore((s) => s.activeWorry);
   const showAll = useStore((s) => s.showAll);
   const levers = useStore((s) => s.levers);
@@ -46,6 +47,7 @@ export function useEngine(): void {
 
   useEffect(() => {
     if (!active || !worker.current) return;
+    const worries = selectedWorries(chips, concerns);
     const id = ++latest.current;
     const req: EngineRequest = {
       id,
@@ -61,5 +63,5 @@ export function useEngine(): void {
     // A short wait so dragging the dial sends only the latest value.
     const t = setTimeout(() => worker.current?.postMessage(req), 60);
     return () => clearTimeout(t);
-  }, [active, inputs, worries, activeWorry, levers, seed, set, showAll]);
+  }, [active, inputs, chips, concerns, activeWorry, levers, seed, set, showAll]);
 }
