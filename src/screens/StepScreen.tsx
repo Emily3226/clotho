@@ -4,15 +4,11 @@ import { AnimatedNumber } from '../components/bits';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
+import { CANADA_LIFE_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, yearFromToday, type Outcome } from '../lib/doNow';
 import { buildIcs, nextFriday } from '../lib/ics';
+import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
 import { ConfidenceSlider } from './Intro';
-
-const CHECKLIST = [
-  'Pick the day: the same day your pay arrives.',
-  'Set it up once, in your bank app or with HR.',
-  'Leave it alone. We’ll check in once a month.',
-];
 
 interface CardData {
   step: string;
@@ -101,12 +97,14 @@ export function StepScreen() {
   const reminderAdded = useStore((s) => s.reminderAdded);
   const hrCopied = useStore((s) => s.hrCopied);
   const testLog = useStore((s) => s.testLog);
+  const outcome = useStore((s) => s.outcome);
+  const commitment = useStore((s) => s.commitment);
   const setState = useStore((s) => s.setState);
   const setStep = useStore((s) => s.setStep);
   const restart = useStore((s) => s.restart);
   const [payday, setPayday] = useState(nextFriday());
+  const [raiseDay, setRaiseDay] = useState(yearFromToday());
   const [copied, setCopied] = useState(false);
-  const [done, setDone] = useState<boolean[]>([false, false, false]);
   const [conf, setConf] = useState(confAfter ?? confBefore ?? 5);
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -117,20 +115,38 @@ export function StepScreen() {
 
   useEffect(() => {
     if (canvas.current && copy && pick && confAfter !== null) {
-      drawCard(canvas.current, { step: copy.title, room: roomLabels, rescued: pick.rescued, confBefore, confAfter });
+      drawCard(canvas.current, { step: copy.title + outcomeSuffix(outcome), room: roomLabels, rescued: pick.rescued, confBefore, confAfter });
     }
-  }, [copy, pick, confBefore, confAfter, roomLabels]);
+  }, [copy, pick, confBefore, confAfter, roomLabels, outcome]);
 
   if (!a) return <section className="narrow"><p className="lede">Working out your futures…</p></section>;
 
   const lines = pick ? planLines(pick.id, inputs, a.yearlyMatch) : null;
+  const now = pick ? doNow(pick.id, inputs) : null;
   const showHR = pick?.id === 'match';
+  const noPlan = !isStudent(inputs.stage) && inputs.plan === 'no';
 
+  // Monthly on payday, or once on the likely date of the next raise.
   const reminder = () => {
-    if (!copy || !lines) return;
-    const ics = buildIcs(payday, `${APP_NAME}: ${copy.title}`, `${lines[0]} ${lines[1]} Then open ${APP_NAME} for your 30-second check-in.`, new Date(), true);
-    download('my-monthly-step.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    if (!copy || !lines || !now) return;
+    const raise = now.kind === 'raise';
+    const ics = buildIcs(
+      raise ? raiseDay : payday,
+      `${APP_NAME}: ${copy.title}`,
+      `${lines[0]} ${lines[1]} Then open ${APP_NAME} for your 30-second check-in.`,
+      new Date(),
+      !raise,
+    );
+    download(raise ? 'my-next-raise.ics' : 'my-monthly-step.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
     setState({ reminderAdded: true });
+  };
+  // Saying "I set it up" starts the first month today, at the check-in too.
+  const pickOutcome = (o: Outcome) => {
+    const next = outcome === o ? null : o;
+    setState({ outcome: next });
+    if (commitment && pick && commitment.lever === pick.id && commitment.streak === 0) {
+      setState({ commitment: { ...commitment, outcome: next, lastCheckISO: next === 'done' ? new Date().toISOString() : null } });
+    }
   };
   const copyHR = async () => {
     try {
@@ -156,6 +172,8 @@ export function StepScreen() {
     else saveImage();
   };
   const finish = () => {
+    // Read from the store, not this render: the outcome may have just changed.
+    const outcome = useStore.getState().outcome;
     setState({ confAfter: conf });
     if (pick) {
       setState({
@@ -165,7 +183,8 @@ export function StepScreen() {
           startInControl: a.baseSummary.counts[0],
           startInputs: inputs,
           streak: 0,
-          lastCheckISO: null,
+          lastCheckISO: outcome === 'done' ? new Date().toISOString() : null,
+          outcome,
         },
       });
     }
@@ -182,15 +201,14 @@ export function StepScreen() {
             lever: pick?.id ?? '',
             reminder: reminderAdded,
             hrCopied,
+            outcome,
           },
         ],
       });
     }
   };
   const exportCsv = () => {
-    const head = 'at,stage,field,confBefore,confAfter,lever,reminder,hrCopied';
-    const rows = testLog.map((r) => [r.at, r.stage, r.field, r.confBefore ?? '', r.confAfter ?? '', r.lever, r.reminder, r.hrCopied].join(','));
-    download('user-test-results.csv', new Blob([[head, ...rows].join('\n') + '\n'], { type: 'text/csv' }));
+    download('user-test-results.csv', new Blob([testCsv(testLog)], { type: 'text/csv' }));
   };
 
   return (
@@ -202,7 +220,7 @@ export function StepScreen() {
           const c = leverCopy(r.id, inputs);
           const on = r.id === pick?.id;
           return (
-            <button type="button" key={r.id} role="radio" aria-checked={on} className={`card choice${on ? ' on' : ''}`} onClick={() => setState({ chosen: r.id })}>
+            <button type="button" key={r.id} role="radio" aria-checked={on} className={`card choice${on ? ' on' : ''}`} onClick={() => setState({ chosen: r.id, outcome: null })}>
               <b>{c.title}</b>
               <span>{leverCostLine(r)}</span>
               <span className="effect">Rescues {num(r.rescued)} futures</span>
@@ -211,38 +229,63 @@ export function StepScreen() {
         })}
       </div>
 
-      {pick && copy && lines && (
+      {pick && copy && lines && now && (
         <div className="card plan-card">
+          <p className="eyebrow">Do it now</p>
           <h2>{copy.title}</h2>
-          <p>{lines[0]}</p>
-          <p>{lines[1]}</p>
-          <div className="row">
-            <label htmlFor="payday">Next payday</label>
-            <input id="payday" type="date" value={payday} onChange={(e) => setPayday(e.target.value || nextFriday())} />
-            <button type="button" className="secondary" onClick={reminder}>
-              {reminderAdded ? 'Reminder downloaded' : 'Add a monthly reminder'}
-            </button>
-          </div>
+          <ol className="do-steps">
+            {now.steps.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ol>
           {showHR && (
             <div className="hr">
               <blockquote>{HR_MESSAGE}</blockquote>
-              <button type="button" className="secondary" onClick={copyHR}>
-                {copied ? 'Copied' : 'Copy message'}
-              </button>
+              <div className="row">
+                <a className="primary button-link" href={hrMailto(HR_MESSAGE)} onClick={() => setState({ hrCopied: true })}>
+                  Open it as an email
+                </a>
+                <button type="button" className="secondary" onClick={copyHR}>
+                  {copied ? 'Copied' : 'Copy message'}
+                </button>
+              </div>
               <span className="sr-only" aria-live="polite">{copied ? 'Message copied' : ''}</span>
+              <p className="hint">{CANADA_LIFE_NOTE}</p>
             </div>
           )}
-          <h3>Make it automatic</h3>
-          <ul className="checklist">
-            {CHECKLIST.map((item, i) => (
-              <li key={item}>
-                <label className="check">
-                  <input type="checkbox" checked={done[i]} onChange={() => setDone(done.map((d, k) => (k === i ? !d : d)))} />
-                  {item}
-                </label>
-              </li>
-            ))}
-          </ul>
+          {now.kind === 'raise' && (
+            <div className="row">
+              <label htmlFor="raise-day">Next raise or review, roughly</label>
+              <input id="raise-day" type="date" value={raiseDay} onChange={(e) => setRaiseDay(e.target.value || yearFromToday())} />
+              <button type="button" className="secondary" onClick={reminder}>
+                {reminderAdded ? 'Reminder downloaded' : 'Add the reminder'}
+              </button>
+            </div>
+          )}
+          {noPlan && now.kind === 'bank' && <p className="hint">{NO_PLAN_NOTE}</p>}
+
+          <div className="outcomes" role="group" aria-labelledby="did-it">
+            <p className="q-label" id="did-it">
+              Did you do it?
+            </p>
+            <div className="row">
+              {now.outcomes.map((o) => (
+                <button type="button" key={o} className="secondary" aria-pressed={outcome === o} onClick={() => pickOutcome(o)}>
+                  {outcomeLabel(o, now.kind)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {outcome === 'notyet' && now.kind !== 'raise' && (
+            <div className="row">
+              <label htmlFor="payday">No problem. Remind me on payday</label>
+              <input id="payday" type="date" value={payday} onChange={(e) => setPayday(e.target.value || nextFriday())} />
+              <button type="button" className="secondary" onClick={reminder}>
+                {reminderAdded ? 'Reminder downloaded' : 'Add a monthly reminder'}
+              </button>
+            </div>
+          )}
+          {(outcome === 'done' || outcome === 'sent') && <p className="did-it">Done. That’s the hard part.</p>}
         </div>
       )}
 
@@ -283,7 +326,8 @@ export function StepScreen() {
             </p>
           )}
           <p>
-            <b>My one step:</b> {copy.title.charAt(0).toLowerCase() + copy.title.slice(1)}.
+            <b>My one step:</b> {copy.title.charAt(0).toLowerCase() + copy.title.slice(1)}
+            {outcomeSuffix(outcome)}.
           </p>
           <div className="row">
             <button type="button" className="secondary" onClick={share}>
