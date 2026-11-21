@@ -13,7 +13,7 @@ Tap **Maya, 20**. "Maya is an arts student in Toronto, renting, with some studen
 **0:30 Today, and what's within reach (20 s)**
 "Every line is one version of her life: same choices, different luck. **599 of 1,000** are in control today, and **921 are within reach with one habit**." Point at the worry card: "Her worry, sized: if AI changes her job, she stays in control in **83** of her futures instead of **599**, and saving part of every raise brings that back up to **409**." Drag the dial from $40 to $150 a month: "**599 → 907**. Same luck, her choice." Tap **Back to $40**.
 
-Don't tap **Show** on the AI card on stage: for Maya it puts the headline at 0 in control.
+Tapping **Show** on the AI card puts that worry on the river and the headline at **83**; leave it for questions. **Why 599?** under the play button shows the working if a judge asks.
 
 **0:50 Play one life (10 s)**
 Tap **▶ Play one of your lives**. Let one life draw across the river with its events popping up. "This is the unknown, made explorable."
