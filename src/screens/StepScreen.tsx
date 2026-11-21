@@ -4,7 +4,7 @@ import { AnimatedNumber } from '../components/bits';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
-import { PLAN_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, testSummary, yearFromToday, type Outcome } from '../lib/doNow';
+import { CANADA_LIFE_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, testSummary, yearFromToday, type Outcome } from '../lib/doNow';
 import { buildIcs, nextFriday } from '../lib/ics';
 import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
@@ -266,7 +266,7 @@ export function StepScreen() {
                 </button>
               </div>
               <span className="sr-only" aria-live="polite">{copied ? 'Message copied' : ''}</span>
-              <p className="hint">{PLAN_NOTE}</p>
+              <p className="hint">{CANADA_LIFE_NOTE}</p>
             </div>
           )}
           {now.kind === 'raise' && (

@@ -82,9 +82,11 @@ export function hrMailto(message: string): string {
   return `mailto:?subject=${encodeURIComponent(HR_SUBJECT)}&body=${encodeURIComponent(message)}`;
 }
 
-// No product or provider is ever named.
-export const PLAN_NOTE =
-  'If you have a plan at work, your plan’s website shows what you contribute. Changes to what comes off your pay usually go through HR.';
+// For people whose plan is with Canada Life. Taken from Canada Life's own
+// member guides: the online service is "My Canada Life at Work", it has a
+// Contributions page, and payroll changes go through the employer.
+export const CANADA_LIFE_NOTE =
+  'If your workplace plan is with Canada Life, you can see it in My Canada Life at Work, under Contributions. Changes to what comes off your pay usually go through HR.';
 
 export const NO_PLAN_NOTE = 'No savings plan at work? Ask your employer whether they offer one. Many match what you put in.';
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Engine, rescueOf } from './analyse';
 import { PERSONAS } from './personas';
 import { simulate, summarise } from './simulate';
-import { NO_LEVERS, leverOnly, type Scenario } from './types';
+import { NO_LEVERS, leverOnly, type Scenario, type WorryId } from './types';
 
 const SEED = 2026;
 const worries: Scenario = { ai: 'moderate', costs: 'moderate' };
@@ -53,6 +53,45 @@ describe('does the best step still hold', () => {
     const cautious = e.analyse(maya, {}, {}, NO_LEVERS, SEED, 'cautious', false, true).summary.counts[0];
     expect(cautious).toBe(new Engine().analyse(maya, {}, {}, NO_LEVERS, SEED, 'cautious').summary.counts[0]);
     expect(e.analyse(maya, {}, {}, NO_LEVERS, SEED, 'middle').summary.counts[0]).toBe(middle);
+  });
+});
+
+describe('does it hold, with a worry showing on the river', () => {
+  it('always agrees with the list under it', () => {
+    for (const p of PERSONAS) {
+      for (const w of ['ai', 'costs'] as WorryId[]) {
+        const shown: Scenario = { [w]: 'moderate' };
+        const a = new Engine().analyse(p.inputs, { ai: 'moderate', costs: 'moderate' }, shown, NO_LEVERS, SEED, 'middle', false, true);
+        if (!a.holds) continue;
+        expect(a.holds.lever).toBe(a.ranking[0].id);
+        expect(a.holds.rescued).toBe(a.ranking[0].rescued);
+      }
+    }
+  }, 30000);
+
+  it('skips the worry already showing and tests the others on top of it', () => {
+    const maya = PERSONAS[0].inputs;
+    const selected: Scenario = { ai: 'moderate', costs: 'moderate' };
+    const h = new Engine().analyse(maya, selected, { ai: 'moderate' }, NO_LEVERS, SEED, 'middle', false, true).holds!;
+    expect(h.tests.map((t) => `${t.kind}:${t.id}`)).toEqual(['market:cautious', 'market:hopeful', 'worry:costs']);
+    const costs = h.tests[2];
+    expect(costs.onTop).toBe(true);
+    expect(h.tests[0].onTop).toBe(false);
+    const both: Scenario = { ai: 'moderate', costs: 'moderate' };
+    const direct = rescueOf(simulate(maya, both, NO_LEVERS, SEED, { detail: false }), simulate(maya, both, leverOnly(h.lever), SEED, { detail: false })).total;
+    expect(costs.rescued).toBe(direct);
+  });
+
+  it('runs the market tests under the worry too', () => {
+    const maya = PERSONAS[0].inputs;
+    const shown: Scenario = { ai: 'moderate' };
+    const h = new Engine().analyse(maya, shown, shown, NO_LEVERS, SEED, 'middle', false, true).holds!;
+    const direct = rescueOf(
+      simulate(maya, shown, NO_LEVERS, SEED, { detail: false, set: 'cautious' }),
+      simulate(maya, shown, leverOnly(h.lever), SEED, { detail: false, set: 'cautious' }),
+    ).total;
+    expect(h.tests[0].rescued).toBe(direct);
+    expect(h.tests.some((t) => t.kind === 'worry')).toBe(false);
   });
 });
 

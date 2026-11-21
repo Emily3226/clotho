@@ -533,7 +533,11 @@ function HoldsCard({ a }: { a: Analysis }) {
   if (!h) return null;
   const n = h.tests.length;
   const worries = h.tests.some((t) => t.kind === 'worry');
-  const where = (t: HoldTest) => (t.kind === 'market' ? `${MARKET_SETS[t.id as AssumptionSetId].label} markets` : worryInfo(t.id as WorryId).ifClause);
+  const where = (t: HoldTest) => {
+    if (t.kind === 'market') return `${MARKET_SETS[t.id as AssumptionSetId].label} markets`;
+    const clause = worryInfo(t.id as WorryId).ifClause;
+    return t.onTop ? `Also ${lowerFirst(clause)}` : clause;
+  };
   return (
     <section className="card holds" aria-labelledby="holds-title">
       <h3 id="holds-title">Does it still hold?</h3>

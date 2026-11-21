@@ -73,6 +73,8 @@ export interface HoldTest {
   // The best step in that test, or null when no habit rescues anything there.
   top: LeverId | null;
   same: boolean;
+  // A worry tested on top of the one already showing.
+  onTop: boolean;
 }
 
 // Whether the best step is still the best step when the assumptions or the
@@ -340,17 +342,20 @@ export class Engine {
           })
           .sort(byRank);
       };
-      const first = rankIn({}, set)[0];
+      // The same worry the list is ranked under, so the two always agree.
+      const first = rankIn(scenario, set)[0];
+      const onTop = Object.keys(scenario).length > 0;
       if (first && first.rescued > 0) {
         const test = (kind: HoldTest['kind'], id: HoldTest['id'], s: Scenario, m: AssumptionSetId): HoldTest => {
           const rows = rankIn(s, m);
           const mine = rows.find((r) => r.id === first.id)!;
           const top = rows[0].rescued > 0 ? rows[0].id : null;
-          return { kind, id, rescued: mine.rescued, top, same: top === first.id };
+          return { kind, id, rescued: mine.rescued, top, same: top === first.id, onTop: kind === 'worry' && onTop };
         };
         const tests: HoldTest[] = [
-          ...MARKET_ORDER.filter((m) => m !== set).map((m) => test('market', m, {}, m)),
-          ...ids.map((id) => test('worry', id, { [id]: selected[id] }, set)),
+          ...MARKET_ORDER.filter((m) => m !== set).map((m) => test('market', m, scenario, m)),
+          // A worry already on the river isn't a new test; the others come on top of it.
+          ...ids.filter((id) => !scenario[id]).map((id) => test('worry', id, { ...scenario, [id]: selected[id] }, set)),
         ];
         holds = { lever: first.id, rescued: first.rescued, tests, held: tests.filter((t) => t.same).length };
       }
