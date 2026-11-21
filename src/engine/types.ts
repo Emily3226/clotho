@@ -127,6 +127,10 @@ export interface PathResult {
   at65: number;
   // At opts.cutAge: what is yours to use after tax, and spending so far.
   atCut?: { yours: number; lived: number };
+  // With a planned withdrawal: what came out of the workplace plan (before
+  // tax), the tax on it, and anything paid from elsewhere because the plan
+  // or the savings set aside fell short.
+  planned?: { fromPlan: number; tax: number; topUp: number };
   // Lost to tax by withdrawing from the workplace plan early.
   raidLost: number;
   // Total savings at 65, after the tax owed on the workplace plan.
@@ -160,4 +164,7 @@ export interface SimOptions {
   // Your own plan contributions go to a TFSA; the employer match stays in
   // the retirement plan (see keepReachable.ts).
   keepReachable?: boolean;
+  // Take money out for something you want, at an age, from one place (see
+  // plannedWithdrawal.ts). Off by default: without it nothing changes.
+  withdrawal?: { amount: number; age: number; from: 'plan' | 'reachable' | 'saveFirst' };
 }

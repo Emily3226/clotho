@@ -4,6 +4,7 @@ import { AnimatedNumber, ChipGroup, Explain, Switch, Term } from '../components/
 import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { KeepReachableCard } from '../components/KeepReachable';
+import { TakeMoneyOut } from '../components/TakeMoneyOut';
 import { River } from '../components/River';
 import { whyNot, type Analysis, type HoldTest, type WhyKey, type WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
@@ -460,6 +461,11 @@ function WhatIfPanel({ a }: { a: Analysis }) {
   const concerns = useStore((s) => s.concerns);
   const count = Object.keys(selectedWorries(worries, concerns)).length;
   const [no65, setNo65] = useState(false);
+  const [takeOut, setTakeOut] = useState(false);
+  // The habits switched on, or else the one ranked first, as in "no 65".
+  const levers = useStore((s) => s.levers);
+  const topId = a.ranking[0]?.rescued > 0 ? a.ranking[0].id : null;
+  const used = useMemo(() => (anyLever(levers) ? levers : topId ? leverOnly(topId) : NO_LEVERS), [levers, topId]);
   return (
     <section className="worries" aria-label="Worries">
       <h2 className="small-head">What if…</h2>
@@ -474,10 +480,15 @@ function WhatIfPanel({ a }: { a: Analysis }) {
           <span aria-hidden="true">{no65 ? '✓ ' : '+ '}</span>
           What if there’s no 65?
         </button>
+        <button type="button" className="chip" aria-pressed={takeOut} onClick={() => setTakeOut(!takeOut)}>
+          <span aria-hidden="true">{takeOut ? '✓ ' : '+ '}</span>
+          What if I take money out for something I want?
+        </button>
       </div>
       <ConcernEditor />
       <div className="stack">
         {no65 && <NoSixtyFive a={a} />}
+        {takeOut && <TakeMoneyOut levers={used} />}
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
         ))}
