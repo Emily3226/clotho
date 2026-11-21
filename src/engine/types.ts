@@ -122,6 +122,10 @@ export interface PathResult {
   at65: number;
   // At opts.cutAge: what is yours to use after tax, and spending so far.
   atCut?: { yours: number; lived: number };
+  // Lost to tax by withdrawing from the workplace plan early.
+  raidLost: number;
+  // Total savings at 65, after the tax owed on the workplace plan.
+  at65Net: number;
   balances: Float32Array | null;
   events: PathEvent[];
   // diagnostics used by tests
@@ -148,4 +152,7 @@ export interface SimOptions {
   set?: AssumptionSetId;
   // Also record what is yours to use at this age (see noSixtyFive.ts).
   cutAge?: number;
+  // Your own plan contributions go to a TFSA; the employer match stays in
+  // the retirement plan (see keepReachable.ts).
+  keepReachable?: boolean;
 }

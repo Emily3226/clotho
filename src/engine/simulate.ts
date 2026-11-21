@@ -151,6 +151,10 @@ export function simulate(
     let yearsWorked = 0;
 
     let shockProof = true;
+    // Lost to tax by taking money out of the workplace plan early.
+    let raidLost = 0;
+    // Savings at 65 after the tax still owed on the retirement plan.
+    let at65Net = 0;
     let room35 = false;
     let room45 = false;
     let bought = false;
@@ -189,7 +193,10 @@ export function simulate(
         trace.target.push(cushionShare * lastSpend);
       }
 
-      if (a === A.retireAge) at65 = total;
+      if (a === A.retireAge) {
+        at65 = total;
+        at65Net = cushion + flex + (1 - A.workplaceRetirementTax) * workplace;
+      }
       if (a === opts.cutAge) atCut = { yours: cushion + flex + paidFor + (1 - A.raidTax) * workplace, lived };
       if (a === 35) {
         room35 = cushion + judged >= (A.roomMonths35 / 12) * lastSpend - 1;
@@ -439,7 +446,19 @@ export function simulate(
             er *= k;
           }
           if (we + er - room > maxRrspOver) maxRrspOver = we + er - room;
-          workplace += we + er;
+          if (opts.keepReachable) {
+            // Your own contributions stay within reach in a TFSA, with no tax
+            // break, so the same take-home pay buys a smaller contribution.
+            // The employer's match still goes to the retirement plan.
+            const own = we * relief;
+            const inTfsa = Math.min(own, tfsaRoom);
+            tfsa += inTfsa;
+            tfsaRoom -= inTfsa;
+            taxable += own - inTfsa;
+            workplace += er;
+          } else {
+            workplace += we + er;
+          }
           free -= we * relief;
         }
         const toCushion = Math.min(free, Math.max(0, target - cushion));
@@ -479,6 +498,7 @@ export function simulate(
           const g = Math.min(workplace, need / (1 - A.raidTax));
           workplace -= g;
           need -= g * (1 - A.raidTax);
+          raidLost += g * A.raidTax;
           shockProof = false;
           if (detail) events.push({ age: a, type: 'raid' });
         }
@@ -578,6 +598,8 @@ export function simulate(
       final,
       at65,
       atCut,
+      raidLost,
+      at65Net,
       balances,
       events,
       peakTfsaOver: Math.max(0, -minTfsaRoom),

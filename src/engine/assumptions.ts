@@ -33,6 +33,9 @@ const DISPLACED_URL = 'https://www150.statcan.gc.ca/n1/daily-quotidien/121129/dq
 // ADP Canada Pay Insights, August 2026, as reported by Benefits and Pensions Monitor.
 const JOB_CHANGE_URL =
   'https://www.benefitsandpensionsmonitor.com/news/industry-news/job-changers-pocket-56-pay-bump-while-stayers-settle-for-3/394104';
+// Canada Life's plan options: your contributions to shorter-term savings, the match to retirement.
+const FLEX_PLAN_URL =
+  'https://www.insurancebusinessmag.com/ca/news/group-benefits/canada-life-lets-gen-z-save-short-term-while-employer-match-stays-for-retirement-593079.aspx';
 const EI_URL = 'https://www.canada.ca/en/services/benefits/ei/ei-regular-benefit/benefit-amount.html';
 
 export const A = {
@@ -210,6 +213,7 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('adapt', 'Lifestyle adjusts', 'A quarter of a lasting gap is closed each year', FP_URL, 'Our assumption; no published figure', 'When pay stays below the career you planned, or costs run higher, people cut back, but not overnight: rent and bills are slow to change. At a quarter a year, about half the adjustment is made within 3 years and three quarters within 5. In the end spending moves by the same share of the gap that a raise adds to it (75% to 85%, by city), so a lasting pay cut squeezes saving but does not end it. After a step up, spending rises the same way. Trimming never lowers the work-optional and room-to-move targets, which stay set by the lifestyle you planned; spending more after a step up raises them.'),
   illustrative('withdrawal', 'Sustainable income from savings', '4% a year of long-term savings', FP_URL, 'A common rule of thumb', 'Workplace-plan income is taxed at 15%.'),
   illustrative('noSixtyFive', 'What if there’s no 65?', 'What is yours to use at 35, 40 or 50, with a habit and without it', FP_URL, 'Our own comparison on the same 1,000 lives', 'Counts the cushion, long-term savings, what was paid toward a home or goals, and the workplace plan after the 30% lost on an early withdrawal. Some workplace plans limit withdrawals. Compared with the spending the habit cost up to that age.'),
+  illustrative('keepReachable', 'Keep yours reachable', 'Your own contributions go to a TFSA; the employer match stays in the retirement plan', FLEX_PLAN_URL, 'Plan design announced by Canada Life, October 2026; the comparison is ours', 'Same take-home pay and same 1,000 lives. A TFSA has no tax break going in, so the contribution is smaller, but it can be withdrawn without tax. Savings at 65 are compared after the 15% tax on retirement-plan income. Money in a TFSA counts as within reach for the room-to-move checks. Not every plan offers this.'),
   illustrative('raid', 'Emergency withdrawal from the workplace plan', '30% lost to tax; the room is gone', 'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/making-withdrawals/tax-rates-on-withdrawals.html', 'Based on RRSP withholding rates'),
   illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of the spending you’re used to', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 30. Before 65, savings must first stand in for public pensions until they start, so early freedom takes a lot more.'),
   illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
