@@ -52,6 +52,7 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
 export function leverCostLine(row: LeverRow): string {
   if (row.id === 'raises') return '$0 today, then 1 point of pay each time you get a 3% raise';
   if (row.id === 'cushion') return `${money(row.costPerPay)} a paycheque, only while the cushion fills`;
+  if (row.askHR) return `$0 to ask. The full match would take about ${money(row.costPerPay)} a paycheque`;
   if (row.id === 'match') return `About ${money(row.costPerPay)} less take-home a paycheque`;
   return `${money(row.costPerPay)} a paycheque`;
 }
@@ -71,7 +72,7 @@ const EVENT_TEXT: Record<PathEvent['type'], (v?: number) => string> = {
   short: () => 'savings ran out for a while',
   crash: (v) => `markets fell ${v}%`,
   cost: () => 'a surprise cost landed',
-  raise: (v) => `a ${v}% raise`,
+  raise: (v) => `pay rose ${v}%`,
   cushionFull: () => 'the cushion was full',
   home: () => 'bought a home',
   debtFree: () => 'student debt paid off',
@@ -105,7 +106,10 @@ export function pathFacts(p: PathLite) {
   return {
     status: STATUS_LABELS[p.status],
     savedAt70: Math.round(p.final / 1000) * 1000,
+    savedAtAge: 70,
     workOptionalAge: p.workOptionalAge,
+    timesOutOfWork: p.events.filter((e) => e.type === 'job').length,
+    laterTimesOutOfWork: Math.max(0, p.events.filter((e) => e.type === 'job').length - 1),
     events: p.events.map((e) => ({ age: e.age, what: EVENT_TEXT[e.type](e.value) })),
   };
 }

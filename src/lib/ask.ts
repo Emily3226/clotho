@@ -56,6 +56,7 @@ export function ask(question: string, paths: PathLite[]): AskResult {
     whatHappens: topic.phrase,
     ofThoseInControlOrMostlyThere: ok,
     ofThoseWorkOptionalBy70: optional,
+    workOptionalByAge: 70,
     medianWorkOptionalAge: median < 99 ? median : null,
   };
   if (topic.type === 'optional') {
