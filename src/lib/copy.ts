@@ -60,7 +60,7 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
 }
 
 export function leverCostLine(row: LeverRow): string {
-  if (row.id === 'raises') return '$0 today, then 1 point of each raise';
+  if (row.id === 'raises') return '$0 today, then 1% of your pay at each raise';
   if (row.id === 'cushion') return `${money(row.costPerMonth)} a month, only while the cushion fills`;
   if (row.askHR) return `No extra cost to ask. The full match would take about ${money(row.costPerMonth)} a month`;
   if (row.id === 'match') return `About ${money(row.costPerMonth)} less take-home a month`;
@@ -273,7 +273,7 @@ export function planLines(id: LeverId, inputs: Inputs, yearlyMatch: number): [st
             `If it does, sign up for the full match. That could be about ${money(yearlyMatch)} a year your employer adds.`,
           ]
         : [
-            `Raise your plan contribution to ${inputs.matchPct}% of pay, so you get the whole match.`,
+            `Ask to save ${inputs.matchPct}% of each paycheque in your workplace plan, so your employer adds the most it will.`,
             `Your employer then adds about ${money(yearlyMatch)} a year. You set it once with HR or in your plan account.`,
           ];
     case 'auto25':

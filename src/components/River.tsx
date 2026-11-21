@@ -498,7 +498,7 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     if (!analysis) return 'Working out your thousand futures.';
     const c = analysis.summary.counts;
     const at = (arr: Float32Array) => moneyRound(arr[Math.min(analysis.years, Math.max(0, 65 - analysis.startAge))]);
-    return `Of your 1,000 futures: ${num(c[0])} in control, ${num(c[1])} mostly there, ${num(c[2])} tight, ${num(c[3])} off track. At 65, the middle future has about ${at(analysis.band.p50)} saved, and half of all futures fall between ${at(analysis.band.p25)} and ${at(analysis.band.p75)}.`;
+    return `Of your 1,000 futures: ${num(c[0])} in control, ${num(c[1])} mostly there, ${num(c[2])} tight, ${num(c[3])} not there yet. At 65, the middle future has about ${at(analysis.band.p50)} saved, and half of all futures fall between ${at(analysis.band.p25)} and ${at(analysis.band.p75)}.`;
   }, [analysis]);
 
   const tip = hover && analysis ? analysis.paths[hover.index] : null;

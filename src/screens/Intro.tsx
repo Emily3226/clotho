@@ -82,7 +82,7 @@ export function ConfidenceSlider({ id, value, onChange }: { id: string; value: n
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <div className="scale" aria-hidden="true">
-        <span>1 · lost</span>
+        <span>1 · not sure where I stand</span>
         <span>10 · I’ve got this</span>
       </div>
     </div>

@@ -1532,6 +1532,8 @@ details.why summary {
   color: var(--muted);
   font-size: 0.9rem;
   margin-top: 2px;
+}
+
 /* Do it now, on Pick one. */
 .do-steps {
   margin: 0;
@@ -1569,4 +1571,31 @@ details.why summary {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Taking money out for something you want. */
+.pay-ways {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.pay-ways li {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.pay-ways .nums {
+  display: block;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The benefit of the next step, just above it. */
+.next-why {
+  margin: 18px 0 -16px;
 }

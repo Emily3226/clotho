@@ -185,7 +185,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           <Field id="saved" label="Saved so far" value={inputs.saved} min={0} max={100000} step={500} prefix="$" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })} />
           {!isStudent(inputs.stage) && (
             <fieldset className="q">
-              <legend>Savings plan with matching at work?</legend>
+              <legend>Does your job add money when you save?</legend>
               <Segmented
                 label="Workplace savings plan"
                 value={inputs.plan}
@@ -200,8 +200,8 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           )}
           {inputs.plan === 'yes' && !isStudent(inputs.stage) && (
             <div className="fields two">
-              <Field id="emp" label="You put in" value={inputs.employeePct} min={0} max={15} step={0.5} suffix="%" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, employeePct: Math.min(30, v) } })} />
-              <Field id="match" label="Employer matches up to" value={inputs.matchPct} min={0} max={10} step={0.5} suffix="%" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, matchPct: Math.min(20, v) } })} />
+              <Field id="emp" label="You save from each paycheque" value={inputs.employeePct} min={0} max={15} step={0.5} suffix="% of pay" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, employeePct: Math.min(30, v) } })} />
+              <Field id="match" label="Your employer adds, up to" value={inputs.matchPct} min={0} max={10} step={0.5} suffix="% of pay" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, matchPct: Math.min(20, v) } })} />
             </div>
           )}
           {home && (

@@ -169,6 +169,9 @@ export function simulate(
     let paidFor = 0;
     let lived = 0;
     let atCut: PathResult['atCut'];
+    // A planned withdrawal (opt-in): money set aside for it, and what it took.
+    let pot = 0;
+    let withdrawn: PathResult['planned'];
     const goalsReached = goals.map(() => false);
     let cushionFullSeen = cushion >= cushionShare * spendStart - 1 && cushionShare > 0 && inputs.saved > 0;
 
@@ -450,6 +453,15 @@ export function simulate(
         if (detail) events.push({ age: a, type: 'cost' });
       }
 
+      // Saving up first for a planned withdrawal: an even amount each year
+      // until the age chosen, kept in short-term savings.
+      const pw = opts.withdrawal;
+      if (pw && pw.from === 'saveFirst' && pw.amount > 0 && a + 1 <= pw.age) {
+        const perYear = pw.amount / Math.max(1, pw.age - age);
+        pot = pot * (1 + A.cushionReturn) + perYear;
+        free -= perYear;
+      }
+
       if (free > 0) {
         // Workplace plan first, then the cushion, then long-term savings.
         if (!delayed && empPct > 0) {
@@ -572,6 +584,63 @@ export function simulate(
         }
       }
 
+      // The planned withdrawal itself, at the age chosen. Each way ends with
+      // the same amount in hand; whatever its first source can't cover comes
+      // from reachable savings, then the plan.
+      if (pw && pw.amount > 0 && a + 1 === pw.age) {
+        let need = pw.amount;
+        let fromPlan = 0;
+        let tax = 0;
+        const fromReachable = () => {
+          const c = Math.min(cushion, need);
+          cushion -= c;
+          need -= c;
+          const x = Math.min(taxable, need);
+          taxable -= x;
+          need -= x;
+          const y = Math.min(tfsa, need);
+          tfsa -= y;
+          tfsaRoom += y;
+          need -= y;
+        };
+        const fromThePlan = () => {
+          // Added to this year's income and taxed at the marginal rate, so
+          // more has to come out than ends up in hand.
+          const m = marginalRate(yearIncome);
+          const g = Math.min(workplace, need / (1 - m));
+          workplace -= g;
+          fromPlan += g;
+          tax += g * m;
+          need -= g * (1 - m);
+        };
+        let topUp = 0;
+        if (pw.from === 'plan') {
+          fromThePlan();
+          const before = need;
+          fromReachable();
+          topUp = before - need;
+        } else if (pw.from === 'reachable') {
+          fromReachable();
+          const before = need;
+          fromThePlan();
+          topUp = before - need;
+        } else {
+          const p = Math.min(pot, need);
+          pot -= p;
+          need -= p;
+          const before = need;
+          fromReachable();
+          fromThePlan();
+          topUp = before - need;
+        }
+        if (pot > 0) {
+          // Anything saved beyond the cost stays in short-term savings.
+          cushion += pot;
+          pot = 0;
+        }
+        withdrawn = { fromPlan, tax, topUp };
+      }
+
       lived += spend + lifeSpent - notSpent;
       if (tfsaRoom < minTfsaRoom) minTfsaRoom = tfsaRoom;
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
@@ -618,6 +687,7 @@ export function simulate(
       final,
       at65,
       atCut,
+      planned: withdrawn,
       raidLost,
       at65Net,
       balances,

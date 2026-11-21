@@ -77,7 +77,7 @@ docs/                    ASSUMPTIONS, PITCH, DEVPOST
 ## Choices made where the brief left room
 
 - The workplace-plan percentage is **on top of** the amount saved per paycheque (the form says so), and plan contributions get approximate tax relief.
-- A future that is work-optional by 65 but misses two or more other milestones is "Tight", not "Off track".
+- A future that is work-optional by 65 but misses two or more other milestones is "Tight", not "Not there yet".
 - "Back on track later" means work still becomes optional by 70. "Lifts back up" means the habit improves the status under the same worry.
 - "Everything keeps getting more expensive" applies to essentials, taken as half of spending. Applied to all spending it wiped out nearly every future for a low saver, which said more about the setting than about the person.
 - People keep working past 65 until work becomes optional or 70, so the work-optional age can move in both directions.
