@@ -6,6 +6,7 @@ import {
   NO_LEVERS,
   leverOnly,
   type AssumptionSetId,
+  type Goal,
   type Inputs,
   type LeverId,
   type Levers,
@@ -65,6 +66,7 @@ export interface Rescue {
 
 export interface Analysis {
   set: AssumptionSetId;
+  goals: Goal[];
   startAge: number;
   years: number;
   balances: Float32Array;
@@ -328,6 +330,8 @@ export class Engine {
 
     return {
       set,
+      // The goals these futures were run with, so event labels always match.
+      goals: inputs.goals ?? [],
       startAge: inputs.age,
       years,
       balances,

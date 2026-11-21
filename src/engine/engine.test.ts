@@ -445,6 +445,24 @@ describe('make it more you', () => {
     expect(story.some((e) => e.type === 'fulltime' && e.age === 22)).toBe(true);
   });
 
+  it('never makes a student look better for earning less', () => {
+    const maya = persona('maya').inputs;
+    const at = (income: number) => inControl({ ...maya, income });
+    // Below the support floor, income does not change the result.
+    expect(at(0)).toBe(at(A.studentSupportFloor));
+    expect(at(6000)).toBe(at(A.studentSupportFloor));
+  });
+
+  it('keeps loan payments going through a gig slow stretch', () => {
+    const sam = { ...persona('sam').inputs, debt: { balance: 15000, rate: 5 } };
+    for (const p of simulate(sam, {}, NO_LEVERS, SEED)) {
+      const dips = p.events.filter((e) => e.type === 'dip').length;
+      const free = p.events.find((e) => e.type === 'debtFree');
+      // Ten years of payments, never stretched by a slow stretch.
+      if (dips > 0 && !p.events.some((e) => e.type === 'job') && free) expect(free.age - sam.age).toBeLessThanOrEqual(A.debtYears);
+    }
+  });
+
   it('uses the Canadian minimum down payment', () => {
     expect(minDownPayment(400000)).toBe(20000);
     expect(minDownPayment(550000)).toBe(30000);

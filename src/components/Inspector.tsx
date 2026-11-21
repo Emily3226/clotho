@@ -21,7 +21,7 @@ export function Inspector({
   onClose: () => void;
 }) {
   const [without, setWithout] = useState(false);
-  const goals = useStore((s) => s.inputs.goals ?? []);
+  const goals = useStore((s) => s.analysis?.goals ?? []);
   const shown = without && plain ? plain : path;
   const rows = timeline(shown.events, goals);
   const { text, narrated } = useNarration('story', pathFacts(shown, goals), story(shown));

@@ -38,15 +38,20 @@ function bestMatch<T extends string>(text: string, table: Record<T, string[]>): 
   const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
   let best: T | null = null;
   let score = 0;
+  let tied = false;
   for (const key of Object.keys(table) as T[]) {
     const list = table[key];
     const hits = words.filter((w) => list.includes(w) || list.some((k) => k.length > 4 && w.startsWith(k))).length;
     if (hits > score) {
       best = key;
       score = hits;
+      tied = false;
+    } else if (hits > 0 && hits === score) {
+      tied = true;
     }
   }
-  return best;
+  // Two equally good matches: ask rather than let the table's order decide.
+  return tied ? null : best;
 }
 
 // Fast, offline. null when nothing fits: the person is asked what it would do.
@@ -72,7 +77,7 @@ type RealField = Exclude<FieldId, 'unsure'>;
 const FIELD_WORDS: Record<RealField, string[]> = {
   health: ['nurse', 'nursing', 'doctor', 'medicine', 'medical', 'dental', 'dentist', 'pharmacy', 'pharmacist', 'physio', 'physiotherapy', 'paramedic', 'health', 'healthcare', 'kinesiology', 'veterinary', 'vet', 'midwife', 'therapist', 'psw', 'caregiver'],
   trades: ['electrician', 'plumber', 'plumbing', 'carpenter', 'carpentry', 'welder', 'welding', 'mechanic', 'hvac', 'construction', 'trades', 'trade', 'apprentice', 'machinist', 'chef', 'cook', 'culinary', 'hairdresser', 'barber', 'trucker', 'trucking', 'driver', 'landscaping', 'roofer'],
-  engcs: ['engineer', 'engineering', 'software', 'developer', 'programmer', 'programming', 'coding', 'computer', 'tech', 'data', 'cyber', 'cybersecurity', 'robotics', 'ai', 'devops', 'hardware', 'electrical', 'mechanical', 'civil', 'aerospace'],
+  engcs: ['engineer', 'engineering', 'software', 'developer', 'programmer', 'programming', 'coding', 'computer', 'cyber', 'cybersecurity', 'robotics', 'devops', 'hardware', 'electrical', 'mechanical', 'civil', 'aerospace'],
   business: ['business', 'finance', 'accounting', 'accountant', 'marketing', 'sales', 'commerce', 'management', 'consulting', 'banking', 'economics', 'hr', 'logistics', 'insurance', 'entrepreneur', 'retail', 'hospitality', 'tourism', 'administration'],
   science: ['science', 'biology', 'chemistry', 'physics', 'math', 'mathematics', 'statistics', 'lab', 'research', 'environmental', 'geology', 'agriculture', 'forestry', 'neuroscience', 'astronomy'],
   social: ['teacher', 'teaching', 'education', 'law', 'lawyer', 'paralegal', 'psychology', 'sociology', 'social', 'politics', 'political', 'policy', 'government', 'nonprofit', 'counselling', 'counsellor', 'criminology', 'police', 'firefighter', 'military', 'childcare', 'ece', 'library'],

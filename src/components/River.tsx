@@ -77,7 +77,8 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
   const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
   const playRef = useRef<{ index: number; start: number; raf: number } | null>(null);
   const [caption, setCaption] = useState<{ age: number; text: string; kind: string; x: number; y: number } | null>(null);
-  const goals = useStore((s) => s.inputs.goals ?? []);
+  // Labels come from the goals this analysis was run with, not today's list.
+  const goals = analysis?.goals ?? [];
   const theme = useStore((s) => s.theme);
   const repPos = useRef(3);
 
