@@ -217,6 +217,35 @@ describe('worries', () => {
   });
 });
 
+describe('saving nothing', () => {
+  const inControl = (i: Inputs, l: Levers = NO_LEVERS) => summarise(simulate(i, {}, l, SEED, { detail: false })).counts[0];
+
+  it('is almost never in control, for anyone', () => {
+    for (const p of PERSONAS) expect(inControl({ ...p.inputs, monthly: 0, plan: 'no', employeePct: 0 })).toBeLessThanOrEqual(10);
+  });
+
+  it('gets better with every step up the dial', () => {
+    for (const p of PERSONAS) {
+      let last = -1;
+      for (const monthly of [0, 10, 20, 30, 40, 50, 75, 100, 150, 300]) {
+        const n = inControl({ ...p.inputs, monthly });
+        expect(n).toBeGreaterThanOrEqual(last);
+        last = n;
+      }
+    }
+  });
+
+  it('gives a habit the same effect as setting that amount aside yourself', () => {
+    const maya = { ...persona('maya').inputs, monthly: 0 };
+    expect(Math.abs(inControl(maya, leverOnly('auto25')) - inControl({ ...maya, monthly: 25 }))).toBeLessThanOrEqual(5);
+  });
+
+  it('leaves anyone already saving 2% of take-home exactly where they were', () => {
+    expect(inControl(persona('maya').inputs)).toBe(599);
+    expect(inControl(persona('priya').inputs)).toBe(938);
+  });
+});
+
 describe('why this number', () => {
   it('explains every future that is not in control by a check it misses', () => {
     for (const persona of PERSONAS) {
