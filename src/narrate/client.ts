@@ -39,7 +39,14 @@ export async function narrate(kind: NarrateKind, facts: unknown, question = ''):
 
 // Asks the server to sort a goal into a kind. Null on any failure: the
 // offline word match stands.
-async function classify(type: 'goal' | 'worry' | 'field', text: string): Promise<string | null> {
+export type SortType = 'goal' | 'worry' | 'field' | 'stage' | 'city' | 'living';
+
+// The server answers with one word from a fixed list. Callers check it.
+export async function classifyAnswer(type: SortType, text: string): Promise<string | null> {
+  return classify(type, text);
+}
+
+async function classify(type: SortType, text: string): Promise<string | null> {
   try {
     const res = await fetch('/api/classify', {
       method: 'POST',
@@ -67,6 +74,24 @@ export async function classifyWorry(text: string): Promise<WorryId | null> {
 export async function classifyField(text: string): Promise<FieldId | null> {
   const kind = await classify('field', text);
   return kind !== 'unsure' && FIELDS.some((f) => f.id === kind) ? (kind as FieldId) : null;
+}
+
+// Whether Gemini can be reached at all, asked once per visit. The hosted static
+// site has no server, so this is false there and the keyword match stands.
+let aiCheck: Promise<boolean> | null = null;
+export function useAiAvailable(): boolean {
+  const [there, setThere] = useState(false);
+  useEffect(() => {
+    let live = true;
+    aiCheck = aiCheck ?? narrationAvailable();
+    void aiCheck.then((v) => {
+      if (live) setThere(v);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return there;
 }
 
 export async function narrationAvailable(): Promise<boolean> {

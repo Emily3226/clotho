@@ -31,7 +31,14 @@ export const S_WAGE = 4; // normal
 export const S_JOB_U = 5; // uniform
 export const S_SPELL = 6; // normal
 export const S_COST_U = 7; // uniform
-export const PER_PATH = MAX_YEARS * STREAMS + 1; // + one uniform for the recession year
+// After the yearly streams: one uniform for the recession year, one normal for
+// the first full-time salary, then a uniform and a normal per year for career
+// moves. They come last so that adding them left every earlier draw as it was.
+export const D_RECESSION = MAX_YEARS * STREAMS;
+export const D_FIRST_PAY = D_RECESSION + 1;
+export const D_MOVE_U = D_FIRST_PAY + 1;
+export const D_MOVE_Z = D_MOVE_U + MAX_YEARS;
+export const PER_PATH = D_MOVE_Z + MAX_YEARS;
 
 function normal(rng: () => number): number {
   const u = Math.max(rng(), 1e-12);
@@ -59,7 +66,10 @@ export function drawsFor(seed: number, paths: number): Float64Array {
       out[o++] = normal(rng);
       out[o++] = rng();
     }
-    out[o] = rng();
+    out[o++] = rng();
+    out[o++] = normal(rng);
+    for (let y = 0; y < MAX_YEARS; y++) out[o++] = rng();
+    for (let y = 0; y < MAX_YEARS; y++) out[o++] = normal(rng);
   }
   if (cache.size > 4) cache.clear();
   cache.set(key, out);

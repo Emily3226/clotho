@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { APP_NAME, LIVE_URL } from '../config';
 import { AnimatedNumber } from '../components/bits';
+import { CanadaLifeNext } from '../components/CanadaLifeNext';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
@@ -314,7 +315,7 @@ export function StepScreen() {
       {pick && (
         <>
           <h2 className="h-sub">
-            <label htmlFor="conf-after">How do you feel now?</label>
+            <label htmlFor="conf-after">How do you feel about your financial future now?</label>
           </h2>
           <ConfidenceSlider id="conf-after" value={conf} onChange={setConf} />
           {confAfter === null || confAfter !== conf ? (
@@ -361,6 +362,7 @@ export function StepScreen() {
           </div>
         </div>
       )}
+      {confAfter !== null && pick && <CanadaLifeNext />}
       <canvas ref={canvas} className="sr-only" aria-hidden="true" />
 
       {testMode() && (

@@ -196,7 +196,7 @@ describe('worries', () => {
   }, 30000);
 
   it('sizes the step up so good and bad luck at work cancel out on average, as the Assumptions panel says', () => {
-    const good = A.stepUpChance * A.stepUpRaise;
+    const good = ((A.moveChanceUnder30 + A.moveChanceTo45) / 2) * A.moveMean;
     const bad = A.jobLossYoung * A.returnPayCut;
     expect(Math.abs(good - bad)).toBeLessThan(0.0005);
     // Three years of adjusting covers about half the gap, five about three quarters.
@@ -206,7 +206,7 @@ describe('worries', () => {
 
   it('gives careers good luck as well as bad, with the same luck under every habit', () => {
     const maya = PERSONAS[0].inputs;
-    const big = (paths: PathResult[]) => paths.map((p) => p.events.filter((e) => e.type === 'raise' && (e.value ?? 0) >= 8 && e.age < A.stepUpUntilAge + 1).map((e) => e.age).join(','));
+    const big = (paths: PathResult[]) => paths.map((p) => p.events.filter((e) => e.type === 'move' && (e.value ?? 0) >= 8).map((e) => e.age).join(','));
     const plain = simulate(maya, {}, NO_LEVERS, SEED);
     const lucky = big(plain).filter((x) => x !== '').length;
     // About 6 in 10 lives get at least one step up in 22 working years at 4% a year;
@@ -241,8 +241,8 @@ describe('saving nothing', () => {
   });
 
   it('leaves anyone already saving 2% of take-home exactly where they were', () => {
-    expect(inControl(persona('maya').inputs)).toBe(599);
-    expect(inControl(persona('priya').inputs)).toBe(938);
+    expect(inControl(persona('maya').inputs)).toBe(518);
+    expect(inControl(persona('priya').inputs)).toBe(942);
   });
 });
 

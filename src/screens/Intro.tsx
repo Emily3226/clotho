@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TAGLINE } from '../config';
 import { AboutYou } from '../components/AboutYou';
 import { ChipGroup } from '../components/bits';
+import { ConcernEditor } from '../components/ConcernEditor';
 import { WORRIES } from '../engine/worries';
 import type { WorryId } from '../engine/types';
 import { LandingRiver } from '../components/LandingRiver';
@@ -17,7 +18,7 @@ export function Landing() {
   const usePersona = (id: string) => {
     const p = PERSONAS.find((x) => x.id === id)!;
     restart();
-    setState({ inputs: p.inputs, room: p.room, personaId: p.id, incomeEdited: true, fieldOther: null });
+    setState({ inputs: p.inputs, room: p.room, personaId: p.id, incomeEdited: true, fieldOther: null, others: {} });
     // Prefilled, so it's one tap to the results, but confidence is still asked.
     setStep(STEP.about);
   };
@@ -97,22 +98,25 @@ export function About() {
   const worries = useStore((s) => s.worries);
   const toggleWorry = useStore((s) => s.toggleWorry);
   const [conf, setConf] = useState(before ?? 5);
+  const concerns = useStore((s) => s.concerns);
+  const [otherWorry, setOtherWorry] = useState(concerns.length > 0);
   return (
     <section className="narrow about-screen">
       <h1 className="h-question">Tap what fits.</h1>
       <div className="card intake">
         <div className="q">
           <label className="q-label" htmlFor="conf-before">
-            How do you feel about money?
+            How do you feel about your financial future?
           </label>
           <ConfidenceSlider id="conf-before" value={conf} onChange={setConf} />
         </div>
-        <ChipGroup<WorryId>
+        <ChipGroup<WorryId | 'other'>
           legend="What worries you most?"
-          options={WORRIES.map((w) => ({ value: w.id, label: w.label }))}
-          selected={(v) => !!worries[v]}
-          onPick={(v) => toggleWorry(v)}
+          options={[...WORRIES.map((w) => ({ value: w.id as WorryId | 'other', label: w.label })), { value: 'other', label: 'Other' }]}
+          selected={(v) => (v === 'other' ? otherWorry : !!worries[v])}
+          onPick={(v) => (v === 'other' ? setOtherWorry(!otherWorry) : toggleWorry(v))}
         />
+        {otherWorry && <ConcernEditor inline />}
         <AboutYou />
       </div>
       <div className="nav">
@@ -129,7 +133,7 @@ export function About() {
             setStep(STEP.futures);
           }}
         >
-          Show my thousand futures
+          See my 1,000 futures
         </button>
       </div>
     </section>

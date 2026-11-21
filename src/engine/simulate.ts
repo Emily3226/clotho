@@ -1,7 +1,8 @@
 import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
 import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor, homePriceFor, isStudent, minDownPayment } from './profile';
-import { drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
+import { D_FIRST_PAY, D_MOVE_U, D_MOVE_Z, D_RECESSION, drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
 import { hasLife, LIFE, lifeCost, lifeEvents, lifestyleShare, lifeWork, normaliseLife } from './lifePlan';
+import type { WayId } from './types';
 import type { Inputs, Levers, PathEvent, PathResult, Scenario, SimOptions, Status, Summary } from './types';
 import { SEV_INDEX, WORRY } from './worries';
 
@@ -100,6 +101,11 @@ export function simulate(
   const debtPay = inputs.debt ? amortise(inputs.debt.balance, debtRate, A.debtYears) : 0;
 
   const life = hasLife(inputs.life) ? normaliseLife(inputs.life, age) : null;
+  const way = (id: WayId) => !!opts.ways?.includes(id);
+  const fees = way('fees') ? A.lowerFees : A.fees;
+  // The salary a first full-time job centres on, for anyone not in one yet.
+  const typicalFirst = fieldSalaryFor('first', inputs.field);
+  const fullTimeChance = inputs.stage === 'part' ? A.fullTimeChancePart : gig ? A.fullTimeChanceGig : 0;
 
   const out: PathResult[] = new Array(paths);
   const ring = new Float64Array(5);
@@ -108,13 +114,22 @@ export function simulate(
     const base = i * PER_PATH;
     const events: PathEvent[] = [];
     const balances = detail ? new Float32Array(N + 1) : null;
-    const crashYear = Math.min(WORRY.recession.window - 1, Math.floor(draws[base + PER_PATH - 1] * WORRY.recession.window));
+    const crashYear = Math.min(WORRY.recession.window - 1, Math.floor(draws[base + D_RECESSION] * WORRY.recession.window));
 
     let trend = 1;
     let plainTrend = 1;
     let level = 1;
     // Steps up at work (a promotion, a better job).
-    let boost = 1;
+    let boost = way('earn') ? 1 + A.askForMore : 1;
+    // This life's first full-time salary, against the typical one.
+    const z0 = draws[base + D_FIRST_PAY];
+    const firstPay = calm
+      ? 1
+      : Math.min(A.firstPayMax, Math.max(A.firstPayMin, Math.exp(A.firstPaySpread * z0 - (A.firstPaySpread * A.firstPaySpread) / 2)));
+    let hasFullTime = fullTimeChance === 0;
+    // Lifestyle is set by the job someone actually lands, not the typical one.
+    let landed = 1;
+    let movedLastYear = false;
     // How far lifestyle has adjusted to pay or costs that differ from the plan.
     let trim = 0;
     let at65 = 0;
@@ -270,7 +285,7 @@ export function simulate(
       rs -= worldDrag;
       rb -= worldDrag;
       const w = stockShareAt(a);
-      const r = w * rs + (1 - w) * rb - A.fees;
+      const r = w * rs + (1 - w) * rb - fees;
       cushion *= 1 + A.cushionReturn;
       tfsa *= 1 + r;
       parked *= 1 + r;
@@ -302,6 +317,8 @@ export function simulate(
       if (student && a === finishAge) {
         plainAtFinish = plainTrend;
         debtStarted = true;
+        boost *= firstPay;
+        landed = firstPay;
       }
       // Full-time pay starts at the field salary in today's dollars. Dividing
       // by the plain trend removes ordinary growth during school but keeps any
@@ -311,7 +328,7 @@ export function simulate(
       const nth = takeHome(gross);
       // Lifestyle follows the expected career, not each year's luck: a layoff,
       // a pay cut or a slower career squeezes saving, not spending.
-      const expectedPay = inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend;
+      const expectedPay = landed * (inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend);
       const chosenPace = lifestyleShare(life, a);
       const expectedNth = takeHome(expectedPay * chosenPace);
       // Starting full-time work lifts lifestyle like a raise, even when it
@@ -321,11 +338,12 @@ export function simulate(
       if (t > 0 || startsFullTime) spendBase += raiseSpent * (expectedNth - prevNth);
       prevNth = expectedNth;
       if (detail && startsFullTime) {
-        events.push({ age: a, type: 'fulltime' });
-      } else if (detail && t > 0 && gross / prevGross > 1.055) {
+        events.push({ age: a, type: 'fulltime', value: Math.round(gross / 1000) });
+      } else if (detail && t > 0 && !movedLastYear && gross / prevGross > 1.055) {
         events.push({ age: a, type: 'raise', value: Math.round((gross / prevGross - 1) * 100) });
       }
       prevGross = gross;
+      movedLastYear = false;
 
       if (sCost >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + WORRY.costs.extra[sCost] * WORRY.costs.essentialsShare;
       // Rents follow home prices: housing, about 30% of spending, rises with them.
@@ -493,11 +511,22 @@ export function simulate(
         cushion += toCushion;
         free -= toCushion;
         if (homeGoal && !bought && fhsaLife < A.fhsaLifetime) {
-          const x = Math.min(free, A.fhsaAnnual, A.fhsaLifetime - fhsaLife);
+          // With the deduction used, the refund goes in too, within the limits.
+          const lift = way('fhsa') ? 1 + marginalRate(gross) : 1;
+          const x = Math.min(free * lift, A.fhsaAnnual, A.fhsaLifetime - fhsaLife);
           fhsa += x;
           fhsaLife += x;
-          free -= x;
+          free -= x / lift;
           if (x > maxFhsaYear) maxFhsaYear = x;
+        }
+        // An RRSP: the tax refund goes back in, so a dollar of pay buys more.
+        if (way('refund') && free > 0) {
+          const mr = marginalRate(gross);
+          const used = !delayed && empPct > 0 ? Math.min(empPct * gross * share * workShare * 2, A.rrspMax) : 0;
+          const left = Math.max(0, Math.min(A.rrspRate * prevYearIncome, A.rrspMax) - used);
+          const inPlan = Math.min(free * (1 + mr), left);
+          workplace += inPlan;
+          free -= inPlan / (1 + mr);
         }
         const x = Math.min(free, tfsaRoom);
         tfsa += x;
@@ -660,8 +689,27 @@ export function simulate(
       if (scar) level *= 1 - A.returnPayCut;
       // Good luck uses the far end of the same draw as job loss, so a path
       // keeps its luck in every scenario and with every habit.
-      if (!calm && !inSchool && months === 0 && a < A.stepUpUntilAge && draws[o + S_JOB_U] > 1 - A.stepUpChance) {
-        boost *= 1 + A.stepUpRaise;
+      if (!calm && !inSchool && months === 0) {
+        const u = draws[base + D_MOVE_U + t];
+        if (!hasFullTime && a < A.fullTimeUntilAge && u < fullTimeChance) {
+          // Part-time or gig work to a full-time role: pay moves to around
+          // the typical salary for the field, up or down.
+          hasFullTime = true;
+          const target = typicalFirst * firstPay;
+          const now = payBase * level;
+          boost *= target / Math.max(1, now);
+          landed *= target / Math.max(1, now);
+          movedLastYear = true;
+          if (detail) events.push({ age: a + 1, type: 'fulltime', value: Math.round(target / 1000) });
+        } else if (hasFullTime || student) {
+          const chance = a < A.jobLossAgeSplit ? A.moveChanceUnder30 : a < 45 ? A.moveChanceTo45 : a < A.retireAge ? A.moveChanceLater : 0;
+          if (u < chance) {
+            const change = Math.min(A.moveMax, Math.max(A.moveMin, A.moveMean + A.moveSpread * draws[base + D_MOVE_Z + t]));
+            boost *= 1 + change;
+            movedLastYear = true;
+            if (detail) events.push({ age: a + 1, type: 'move', value: Math.round(change * 100) });
+          }
+        }
       }
     }
 

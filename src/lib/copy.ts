@@ -70,7 +70,8 @@ export function leverCostLine(row: LeverRow): string {
 const EVENT_TEXT: Record<PathEvent['type'], (v?: number) => string> = {
   job: (v) => `out of work for ${v === 1 ? '1 month' : `${v} months`}`,
   dip: (v) => `a slow stretch of gig work for ${v} months`,
-  fulltime: () => 'started full-time work',
+  fulltime: (v) => (v ? `started a full-time job at about $${v}k` : 'started full-time work'),
+  move: (v) => (v === undefined || v === 0 ? 'changed jobs at about the same pay' : v > 0 ? `changed jobs, pay up ${v}%` : `changed jobs, pay down ${-v}%`),
   cushion: () => 'used the cushion',
   flex: () => 'drew on long-term savings',
   raid: () => 'had to dip into retirement savings',
@@ -115,7 +116,11 @@ export function timeline(events: PathEvent[], goals: Goal[] = []): TimelineRow[]
     .sort((a, b) => a[0] - b[0])
     .map(([age, list]) => {
       const text = list.map((e) => (e.type === 'goal' ? goalText(e, goals, true) : EVENT_TEXT[e.type](e.value))).join(', ');
-      const kind = list.some((e) => HARD.includes(e.type)) ? 'hard' : list.some((e) => GOOD.includes(e.type)) ? 'good' : 'plain';
+      const kind = list.some((e) => HARD.includes(e.type) || (e.type === 'move' && (e.value ?? 0) < 0))
+        ? 'hard'
+        : list.some((e) => GOOD.includes(e.type) || (e.type === 'move' && (e.value ?? 0) > 0))
+          ? 'good'
+          : 'plain';
       return { age, text: text.charAt(0).toUpperCase() + text.slice(1) + '.', kind };
     });
 }

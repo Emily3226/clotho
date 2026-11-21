@@ -94,6 +94,26 @@ const SORTERS: Record<string, { kinds: string[]; prompt: string }> = {
       'Reply with the single word only, lower case, nothing else.',
   },
 };
+SORTERS.stage = {
+  kinds: ['student', 'coop', 'part', 'first', 'gig', 'full', 'other'],
+  prompt:
+    "Sort a young person's work situation into exactly one group. student: in school without a work term. coop: co-op or internship. " +
+    'part: part-time or casual work. first: first full-time job or entry level. gig: contract, freelance or self-employed. ' +
+    'full: established full-time job. other: none of these. Reply with the single word only, lower case, nothing else.',
+};
+SORTERS.city = {
+  kinds: ['major', 'big', 'small', 'other'],
+  prompt:
+    'Sort a place in Canada by size and cost. major: Toronto or Vancouver and their suburbs. big: another metro area over about 400,000 people. ' +
+    'small: any smaller city, town or rural area, such as Thunder Bay or Kingston. other: not a place in Canada. Reply with the single word only, lower case, nothing else.',
+};
+SORTERS.living = {
+  kinds: ['family', 'renting', 'own', 'other'],
+  prompt:
+    "Sort a person's living situation into exactly one group. family: living with family without paying full rent. " +
+    'renting: paying rent, including with roommates or in residence. own: owns their home. other: none of these. ' +
+    'Reply with the single word only, lower case, nothing else.',
+};
 app.post('/api/classify', async (req, res) => {
   const text = typeof req.body?.text === 'string' ? req.body.text.slice(0, 80) : '';
   if (!key) return void res.status(503).json({ error: 'not configured' });

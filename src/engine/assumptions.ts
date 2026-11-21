@@ -31,6 +31,7 @@ const STATCAN_URL = 'https://www150.statcan.gc.ca/n1/en/subjects/labour';
 // Statistics Canada, The Daily, 29 Nov 2012: earnings losses of displaced workers.
 const DISPLACED_URL = 'https://www150.statcan.gc.ca/n1/daily-quotidien/121129/dq121129c-eng.htm';
 // ADP Canada Pay Insights, August 2026, as reported by Benefits and Pensions Monitor.
+const STATCAN_GRAD_PAGE = 'https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3710028401';
 const JOB_CHANGE_URL =
   'https://www.benefitsandpensionsmonitor.com/news/industry-news/job-changers-pocket-56-pay-bump-while-stayers-settle-for-3/394104';
 // Canada Life's plan options: your contributions to shorter-term savings, the match to retirement.
@@ -69,9 +70,26 @@ export const A = {
   jobLossYoung: 0.05,
   jobLossLater: 0.035,
   // Good luck at work: a step up in pay that lasts.
-  stepUpChance: 0.04,
-  stepUpRaise: 0.06,
-  stepUpUntilAge: 45,
+  // Changing jobs or roles: how often, and what it does to pay. Moves can go
+  // either way. The average gain is the premium job-changers get over stayers.
+  moveChanceUnder30: 0.12,
+  moveChanceTo45: 0.06,
+  moveChanceLater: 0.02,
+  moveMean: 0.03,
+  moveSpread: 0.09,
+  moveMin: -0.25,
+  moveMax: 0.35,
+  // The first full-time salary varies around the typical one for the field.
+  firstPaySpread: 0.22,
+  firstPayMin: 0.6,
+  firstPayMax: 1.7,
+  // Part-time and gig workers: the yearly chance of landing a full-time role.
+  fullTimeChancePart: 0.25,
+  fullTimeChanceGig: 0.1,
+  fullTimeUntilAge: 45,
+  // "More ways": lower fees, and asking for more pay once.
+  lowerFees: 0.0025,
+  askForMore: 0.05,
   // Share of a lasting gap between plan and life that lifestyle closes each year.
   adaptSpeed: 0.25,
   // Regular saving, as a share of take-home pay, at which someone keeps the
@@ -198,7 +216,10 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('wages', 'Real wage growth', '+2.5% to +3.5% a year to 30 (by field), +1.5% to 40, +0.5% to 50, then flat; ±2% yearly noise', STATCAN_URL, 'Illustrative, shaped like Statistics Canada age-earnings profiles'),
   illustrative('jobLoss', 'Job loss', '5% a year under 30, 3.5% after', STATCAN_URL, 'Illustrative, in the range of Statistics Canada layoff rates', 'Time out of work has a median of 4 months, capped at 18. No layoffs while in school.'),
   illustrative('scar', 'Pay after a layoff', '5% lower on return, and it stays lower', DISPLACED_URL, 'Illustrative, at the mild end of Statistics Canada findings', 'Statistics Canada found that workers laid off in the early 2000s earned 2% to 15% less five years later, and those laid off in the early 1990s 15% to 30% less. The tool uses 5% for everyone, so it leans mild.'),
-  illustrative('stepUp', 'A step up at work', 'A 4% chance each year before 45 of a lasting 6% rise in pay', JOB_CHANGE_URL, 'Illustrative: size in line with ADP Canada pay data, chance set to balance layoffs', 'A bigger promotion or a better job, on top of ordinary raises, which are already in wage growth. The size follows what is measured: in ADP Canada payroll data for August 2026, people who changed jobs saw total pay grow 9.6% in a year, against 4.4% for those who stayed, a gap of about 5 points (2.6 points on base pay alone). The chance is then set so good and bad luck cancel out on average: a 4% chance of +6% adds about 0.24% a year, and a 5% chance of a layoff with a 5% lasting cut takes away about 0.25%. Spending follows a step up like any raise.'),
+  illustrative('careerMoves', 'Changing jobs or roles', 'A 12% chance a year under 30, 6% to 45, 2% after. Pay changes by about +3% on average, and can go either way (\u221225% to +35%)', JOB_CHANGE_URL, 'Average gain from ADP Canada: job-changers 6.0% vs stayers 3.0%, October 2026. How often and how widely are our assumptions', 'On top of ordinary raises, which are already in wage growth.'),
+  illustrative('firstPay', 'First full-time salary', 'Varies around the typical salary for your field, from about 40% below to 70% above', STATCAN_GRAD_PAGE, 'Centre from Statistics Canada graduate earnings; the spread is our assumption', 'Every future lands a different first job, so students and co-op workers do not all start at the same pay.'),
+  illustrative('fullTime', 'Moving from part-time or gig work', 'A 25% chance a year of a full-time role from part-time, 10% from gig work, until 45', STATCAN_GRAD_PAGE, 'Our assumption', 'Pay then moves to around the typical salary for your field, which can be higher or lower than now.'),
+  illustrative('ways', 'More ways to get ahead', 'RRSP refund reinvested, FHSA deduction, fees of 0.25% instead of 0.75%, and asking once for 5% more pay', FP_URL, 'Our own comparison on the same 1,000 lives', 'Each is tested alone, at no extra monthly cost. Tax savings use the approximate marginal rate.'),
   illustrative('gig', 'Gig or contract work', 'Income noise ±12% a year; an 8% chance each year of a 3-month slow stretch at half pay', STATCAN_URL, 'Illustrative', 'Replaces layoffs for gig and contract workers.'),
   illustrative('student', 'Students and co-op', 'Part-time or co-op pay until school ends, then full-time pay for the chosen field', STATCAN_URL, 'Illustrative', 'Full-time work starts at the later of 23 or two years from now, unless you say when you finish. While in school, pay below $12,000 a year is topped up to $12,000 (family, loans or bursaries), so a lower income never makes the future look better.'),
   illustrative('jobless', 'Income while out of work', '45% of previous pay', EI_URL, 'Illustrative; EI replaces up to 55% of insured earnings'),

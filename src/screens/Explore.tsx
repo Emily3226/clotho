@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedNumber, ChipGroup, Explain, Switch, Term } from '../components/bits';
+import { ConcernEditor } from '../components/ConcernEditor';
+import { MoreWays } from '../components/MoreWays';
 import { AboutYou } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { KeepReachableCard } from '../components/KeepReachable';
@@ -10,13 +12,12 @@ import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { MARKET_SETS } from '../engine/profile';
 import { LEVER_IDS, NO_LEVERS, STATUS_LABELS, leverOnly, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
-import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
 import { WORRIES, worryInfo } from '../engine/worries';
 import { cutAgesFor, defaultCutAge, type CutShort } from '../engine/noSixtyFive';
 import type { CutShortRequest } from '../engine/noSixtyFive.worker';
 import { leverCopy, leverCostLine, noSixtyFiveAnswer, worryAnswer, worryTitle } from '../lib/copy';
 import { money, num } from '../lib/format';
-import { classifyWorry, useNarration } from '../narrate/client';
+import { useNarration } from '../narrate/client';
 import { STEP, anyLever, currentScenario, leverIsOn, selectedWorries, useStore } from '../store';
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
@@ -323,75 +324,6 @@ function WorryCardView({ card }: { card: WorryCard }) {
   );
 }
 
-// A worry in the person's own words. It is matched to one of the what-ifs
-// the simulation can run, and they can change what it is tested as.
-function ConcernEditor() {
-  const concerns = useStore((s) => s.concerns);
-  const add = useStore((s) => s.addConcern);
-  const setKind = useStore((s) => s.setConcernKind);
-  const remove = useStore((s) => s.removeConcern);
-  const aiOn = useStore((s) => s.aiOn);
-  const [text, setText] = useState('');
-  // Tucked away until asked for, unless they already typed one.
-  const [startOpen] = useState(concerns.length > 0);
-  return (
-    <details className="drawer concerns-drawer" open={startOpen}>
-      <summary>Something else on your mind?</summary>
-    <div className="goals concerns">
-      {concerns.map((c) => (
-        <div className="home-q goal" key={c.id}>
-          <div className="goal-head">
-            <b>{c.label}</b>
-            <button type="button" className="link" onClick={() => remove(c.id)} aria-label={`Remove ${c.label}`}>
-              Remove
-            </button>
-          </div>
-          {c.kind ? (
-            // Matched: one line, with the choices tucked away until asked for.
-            <details className="tested-as">
-              <summary>
-                Tested as: {effectLabel(c.kind)} <span className="link">Change</span>
-              </summary>
-              <ChipGroup legend={`Tested as (${c.label})`} label="Test it as" selected={(v) => v === c.kind} options={CONCERN_EFFECTS.map((e) => ({ value: e.kind, label: e.label }))} onPick={(v) => setKind(c.id, v)} />
-            </details>
-          ) : (
-            <ChipGroup legend={`What would it mostly do? (${c.label})`} label="What would it mostly do?" selected={() => false} options={CONCERN_EFFECTS.map((e) => ({ value: e.kind, label: e.label }))} onPick={(v) => setKind(c.id, v)} />
-          )}
-          {!c.kind && <p className="hint">Pick the closest one and it joins the cards below.</p>}
-        </div>
-      ))}
-      {concerns.length < MAX_CONCERNS && (
-        <form
-          className="goal-add"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const added = add(text);
-            setText('');
-            // Keywords first; with AI wording on, Gemini sorts what they miss.
-            if (added && !added.kind && aiOn) {
-              void classifyWorry(added.label).then((kind) => {
-                if (kind && useStore.getState().concerns.some((c) => c.id === added.id && !c.kind)) setKind(added.id, kind);
-              });
-            }
-          }}
-        >
-          <label className="q-label" htmlFor="concern-text">
-            {concerns.length ? 'Anything else?' : 'In your own words'}
-          </label>
-          <div className="goal-row">
-            <input id="concern-text" value={text} maxLength={60} autoComplete="off" placeholder="My parents need care, rent keeps rising…" onChange={(e) => setText(e.target.value)} />
-            <button type="submit" className="secondary" disabled={!text.trim()}>
-              Add
-            </button>
-          </div>
-          <p className="hint">{aiOn ? 'With AI wording on, what you type is sent to sort it.' : 'Stays on this device.'} We test it as the closest what-if, and you can change which one.</p>
-        </form>
-      )}
-    </div>
-    </details>
-  );
-}
-
 // Why save if there may be no 65? The same lives, stopped early: what the
 // best step leaves you to use then, against what it cost along the way.
 function NoSixtyFive({ a }: { a: Analysis }) {
@@ -600,6 +532,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
           Starting {A.waitingYears} years later: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
         </p>
       )}
+      <MoreWays />
       <HoldsCard a={a} />
       <KeepReachableCard />
     </>
@@ -652,7 +585,6 @@ export function Explore() {
     <section className="explore">
       <div className="stage">
         <Headline a={a} />
-        {step === STEP.futures && <SaveDial />}
         <River
           analysis={a}
           mask={mask}
@@ -664,6 +596,7 @@ export function Explore() {
         <Legend a={a} />
       </div>
       <div className="side">
+        {step === STEP.futures && <SaveDial />}
         {path && selected !== null && (
           <Inspector key={selected} index={selected} path={path} plain={plain} onAnother={showAnother} onClose={() => setState({ selectedPath: null })} />
         )}
