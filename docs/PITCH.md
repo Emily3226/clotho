@@ -53,7 +53,7 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 | "turns uncertainty into confidence" | Confidence is asked before and after, and shown side by side. |
 | "the future is still worth planning for" | A worry is never the end of the story: with AI changing her job, Maya stays in control in 83 futures, and one habit brings that back to 409. The all-at-once case stays hard for low savers, and we show it rather than hide it. |
 | Research: fear-based messaging backfires | No red, no alarms, no shaming words. The worst case is offered, never forced. |
-| Research: flexibility and control beat a distant retirement date | Milestones are shock-proof, room to move at 35 and 45, and "work becomes optional". |
+| Research: flexibility and control beat a distant retirement date | Milestones are "got through bad years", room to move at 35 and 45, and "work becomes optional". |
 | Research: short-term and long-term saving together | Cushion and workplace plan fill side by side; raiding retirement savings in a bad year is modelled and the cushion habit addresses it. **Keep yours reachable?** tests Canada Life's own design: your contributions within reach, the match kept for retirement. |
 
 ## Canada Life's message checklist → Clotho

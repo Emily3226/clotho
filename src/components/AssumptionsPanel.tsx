@@ -210,11 +210,11 @@ export function AssumptionsPanel() {
 
         <h3>How a future is judged</h3>
         <ul className="limits">
-          <li><b>Shock-proof:</b> never had to dip into the workplace plan and never ended a year short.</li>
+          <li><b>Got through bad years:</b> never had to dip into the workplace plan and never ended a year short.</li>
           <li><b>Room to move:</b> the cushion plus reachable long-term savings cover 6 months of spending at 35 and 12 months at 45.</li>
           <li><b>Home</b> (only if set): the down payment is reached by the target age.</li>
           <li><b>Work-optional by 65:</b> income from savings and public pensions covers 70% of the spending you’re used to.</li>
-          <li><b>In control</b> means all of these. <b>Mostly there</b> means work-optional with one other missed. <b>Tight</b> means work-optional with two or more missed, or missing work-optional by less than 20 points. <b>Off track</b> is the rest.</li>
+          <li><b>In control</b> means all of these. <b>Mostly there</b> means work-optional with one other missed. <b>Tight</b> means work-optional with two or more missed, or missing work-optional by less than 20 points. <b>Not there yet</b> is the rest.</li>
           <li>A habit <b>rescues</b> a future when, with the same luck, that future moves up to in control or mostly there.</li>
         </ul>
 

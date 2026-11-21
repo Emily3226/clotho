@@ -102,12 +102,20 @@ function Headline({ a }: { a: Analysis | null }) {
       </p>
       {activeWorry && <p className="context">{activeWorry === 'all' ? 'If all of it happens at once' : worryInfo(activeWorry).ifClause}</p>}
       {a && <RangeLine a={a} />}
-      {best && best.inControl > now && (
+      {best && best.rescued > 0 && (best.inControl - now) * 2 >= best.rescued && (
         <p className="reach">
           <strong>
             <AnimatedNumber value={best.inControl} />
           </strong>{' '}
           within reach with one habit: {lowerFirst(leverCopy(best.id, inputs).noun)}
+        </p>
+      )}
+      {best && best.rescued > 0 && (best.inControl - now) * 2 < best.rescued && (
+        <p className="reach">
+          <strong>
+            <AnimatedNumber value={best.rescued} />
+          </strong>{' '}
+          of your futures move up with one habit: {lowerFirst(leverCopy(best.id, inputs).noun)}
         </p>
       )}
     </div>
@@ -385,7 +393,7 @@ function ConcernEditor() {
               Add
             </button>
           </div>
-          <p className="hint">{aiOn ? 'With AI wording on, what you type is sent to sort it.' : 'Stays on this device.'} It is tested as the closest what-if, which you can change.</p>
+          <p className="hint">{aiOn ? 'With AI wording on, what you type is sent to sort it.' : 'Stays on this device.'} We test it as the closest what-if, and you can change which one.</p>
         </form>
       )}
     </div>
@@ -555,7 +563,7 @@ function HoldsCard({ a }: { a: Analysis }) {
       <p className="answer">
         {leverCopy(h.lever, inputs).noun} is ranked first below: it rescues <strong>{num(h.rescued)}</strong> of your futures.{' '}
         {h.held === n ? (
-          <>It stays first in <strong>all {num(n)}</strong> tests.</>
+          <>It stays first in <strong>{n === 2 ? 'both' : `all ${num(n)}`}</strong> tests.</>
         ) : (
           <>
             It stays first in <strong>{num(h.held)} of {num(n)}</strong> tests.
@@ -624,9 +632,11 @@ function HabitsPanel({ a }: { a: Analysis }) {
           );
         })}
       </ol>
-      <p className="hint waiting-line">
-        Wait {A.waitingYears} years: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
-      </p>
+      {a.waiting.inControl !== now && (
+        <p className="hint waiting-line">
+          Starting {A.waitingYears} years later: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
+        </p>
+      )}
       <KeepReachableCard />
       <details className="drawer">
         <summary>Short and long term, together</summary>
@@ -638,6 +648,10 @@ function HabitsPanel({ a }: { a: Analysis }) {
 
 
 const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'What helps most?', [STEP.habits]: 'Pick one to try' };
+const NEXT_WHY: Record<number, string> = {
+  [STEP.futures]: 'Next: the one habit that moves the most of your futures.',
+  [STEP.habits]: 'Next: pick one and set it up in a few minutes.',
+};
 
 export function Explore() {
   const step = useStore((s) => s.step);
@@ -708,6 +722,7 @@ export function Explore() {
         )}
         {a && step === STEP.futures && <FuturesPanel a={a} />}
         {a && step === STEP.habits && <HabitsPanel a={a} />}
+        {NEXT_WHY[step] && <p className="hint next-why">{NEXT_WHY[step]}</p>}
         <div className="nav">
           <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.about : step - 1)}>
             Back

@@ -102,9 +102,9 @@ export interface PathEvent {
   value?: number;
 }
 
-// 0 In control, 1 Mostly there, 2 Tight, 3 Off track
+// 0 In control, 1 Mostly there, 2 Tight, 3 Not there yet
 export type Status = 0 | 1 | 2 | 3;
-export const STATUS_LABELS = ['In control', 'Mostly there', 'Tight', 'Off track'] as const;
+export const STATUS_LABELS = ['In control', 'Mostly there', 'Tight', 'Not there yet'] as const;
 
 export interface Milestones {
   shockProof: boolean;
