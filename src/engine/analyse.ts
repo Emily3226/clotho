@@ -1,5 +1,5 @@
 import { A, marginalRate } from './assumptions';
-import { fieldSalaryFor } from './profile';
+import { fieldSalaryFor, isStudent } from './profile';
 import { simulate, summarise } from './simulate';
 import {
   LEVER_IDS,
@@ -106,7 +106,7 @@ export function leverCost(id: LeverId, inputs: Inputs): { perMonth: number; late
     case 'auto100':
       return { perMonth: 100, later: false };
     case 'raises':
-      return { perMonth: (0.01 * (inputs.stage === 'student' ? fieldSalaryFor('first', inputs.field) : inputs.income)) / 12, later: true };
+      return { perMonth: (0.01 * (isStudent(inputs.stage) ? fieldSalaryFor('first', inputs.field) : inputs.income)) / 12, later: true };
     case 'cushion':
       return { perMonth: A.cushionTopUp, later: false };
   }

@@ -18,10 +18,16 @@ export interface StageInfo {
 
 export const STAGES: StageInfo[] = [
   { id: 'student', label: 'Student', income: 18000, saved: 1500, monthly: 50, plan: 'no', employeePct: 0, matchPct: 0 },
+  { id: 'coop', label: 'Co-op or internship', income: 28000, saved: 3000, monthly: 150, plan: 'no', employeePct: 0, matchPct: 0 },
+  { id: 'part', label: 'Part-time', income: 24000, saved: 1500, monthly: 50, plan: 'no', employeePct: 0, matchPct: 0 },
   { id: 'first', label: 'First job', income: 52000, saved: 2000, monthly: 150, plan: 'unsure', employeePct: 0, matchPct: 4 },
   { id: 'gig', label: 'Gig or contract', income: 38000, saved: 3000, monthly: 100, plan: 'no', employeePct: 0, matchPct: 0 },
   { id: 'full', label: 'Full-time', income: 68000, saved: 8000, monthly: 300, plan: 'yes', employeePct: 3, matchPct: 4 },
 ];
+
+// Still in school: co-op and internship terms pay more than a part-time job,
+// but full-time pay only starts once school ends.
+export const isStudent = (stage: Stage): boolean => stage === 'student' || stage === 'coop';
 
 export const stageInfo = (id: Stage): StageInfo => STAGES.find((s) => s.id === id)!;
 

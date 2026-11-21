@@ -8,11 +8,11 @@ import type { Analysis, WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
-import { LEVER_IDS, STATUS_LABELS, type LeverId, type WorryId } from '../engine/types';
-import { WORRIES, worryInfo } from '../engine/worries';
-import { ageShift, leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
+import { LEVER_IDS, STATUS_LABELS, type LeverId } from '../engine/types';
+import { WORRIES } from '../engine/worries';
+import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
-import { narrationAvailable, useNarration } from '../narrate/client';
+import { useNarration } from '../narrate/client';
 import { STEP, anyLever, leverIsOn, useStore } from '../store';
 
 function onLevers(): LeverId[] {
@@ -21,7 +21,6 @@ function onLevers(): LeverId[] {
 }
 
 function Headline({ a }: { a: Analysis | null }) {
-  const step = useStore((s) => s.step);
   const levers = useStore((s) => s.levers);
   const activeWorry = useStore((s) => s.activeWorry);
   const inputs = useStore((s) => s.inputs);
@@ -33,20 +32,19 @@ function Headline({ a }: { a: Analysis | null }) {
     return (
       <div className="headline">
         <p className="count" aria-live="polite">
-          {subject} {ids.length === 1 ? 'rescues' : 'rescue'}{' '}
           <strong>
-            <AnimatedNumber value={a.rescue.total} />
+            +<AnimatedNumber value={a.rescue.total} />
           </strong>{' '}
-          of your futures{activeWorry ? `, ${worryTitle(activeWorry).toLowerCase()} included` : ''}.
+          futures rescued
         </p>
         <p className="context">
-          In control in <span className="was">{num(a.scenarioSummary.counts[0])}</span>
+          {subject}{activeWorry ? ` · ${worryTitle(activeWorry)}` : ''} · <span className="was">{num(a.scenarioSummary.counts[0])}</span>
           <span aria-hidden="true"> → </span>
           <span className="sr-only"> then </span>
           <b>
             <AnimatedNumber value={now} />
           </b>{' '}
-          of 1,000 · {num(a.rescue.toControl)} move to in control, {num(a.rescue.toMostly)} to mostly there
+          in control
         </p>
       </div>
     );
@@ -55,7 +53,6 @@ function Headline({ a }: { a: Analysis | null }) {
   return (
     <div className="headline">
       <p className="count" aria-live="polite">
-        You’re in control in{' '}
         <strong>
           {before !== null && before !== now && (
             <>
@@ -66,11 +63,9 @@ function Headline({ a }: { a: Analysis | null }) {
           )}
           <AnimatedNumber value={now} />
         </strong>{' '}
-        of your 1,000 futures.
+        of 1,000 futures in control
       </p>
-      <p className="context">
-        {activeWorry ? `What if: ${worryTitle(activeWorry)}` : step === STEP.habits ? 'Switch on a habit to see which futures it rescues.' : 'Same you, a thousand different runs of luck.'}
-      </p>
+      {activeWorry && <p className="context">What if: {worryTitle(activeWorry)}</p>}
     </div>
   );
 }
@@ -86,7 +81,7 @@ function SaveDial() {
   return (
     <div className="dial">
       <div className="dial-top">
-        <label htmlFor="dial">What if you set aside</label>
+        <label htmlFor="dial">Set aside</label>
         <span className="dial-amount">
           <AnimatedNumber value={monthly} duration={200} prefix="$" />
           <small> a month</small>
@@ -118,9 +113,7 @@ function SaveDial() {
             <>
               {num(first!.inControl)} → <b>{num(now)}</b> in control
             </>
-          ) : (
-            'Drag it. Watch your lives move.'
-          )}
+          ) : null}
         </span>
       </div>
     </div>
@@ -179,18 +172,16 @@ function FuturesPanel({ a }: { a: Analysis }) {
   const setState = useStore((s) => s.setState);
   return (
     <>
-      <p className="lede">Each line is one life to 70. Tap one to read it.</p>
       <Milestones a={a} />
       <CompareCard />
       <details className="drawer live-answers">
         <summary>Change your answers</summary>
-        <p className={`note-line${computing ? ' busy' : ''}`} aria-live="polite">
-          {note ?? 'Tap an answer and watch the river move.'}
+        <p className={`note-line${computing ? ' busy' : ''}${note ? '' : ' empty'}`} aria-live="polite">
+          {note}
         </p>
         <AboutYou live />
       </details>
       <p className="hint">
-        In today’s dollars.{' '}
         <button type="button" className="link" onClick={() => setState({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
           {seed === DEFAULT_SEED ? 'New run of luck' : 'First run of luck'}
         </button>
@@ -221,12 +212,8 @@ function WorryCardView({ card }: { card: WorryCard }) {
           answer.parts.map((p, i) => (typeof p === 'string' ? <span key={i}>{p}</span> : <strong key={i}>{p.strong}</strong>))
         )}
       </p>
-      <details className="why">
-        <summary>What changes</summary>
-        <p className="hint">{card.id === 'all' ? 'Every worry you picked, in the same life.' : `A what-if, not a forecast: ${worryInfo(card.id as WorryId).changes[1].toLowerCase()}.`}</p>
-      </details>
       <button type="button" className="secondary" aria-pressed={on} onClick={() => setActive(on ? null : card.id)}>
-        {on ? 'Shown in the river' : 'Show in the river'}
+        {on ? 'Showing' : 'Show'}
       </button>
     </article>
   );
@@ -241,7 +228,6 @@ function WhatIfPanel({ a }: { a: Analysis }) {
   const count = Object.keys(worries).length;
   return (
     <>
-      <p className="lede">Pick a worry. See its size, and what protects you.</p>
       <div className="chips">
         {WORRIES.map((w) => (
           <button type="button" key={w.id} className="chip" aria-pressed={!!worries[w.id]} onClick={() => toggle(w.id)}>
@@ -250,7 +236,6 @@ function WhatIfPanel({ a }: { a: Analysis }) {
           </button>
         ))}
       </div>
-      {a.cards.length === 0 && <p className="hint">Or skip this.</p>}
       <div className="stack">
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
@@ -280,7 +265,6 @@ function Together() {
   const max = Math.max(1, ...rows.map((r) => Math.max(r.cushion, r.long, r.target)));
   return (
     <section className="card together">
-      <p className="hint">You don’t have to choose. Five steady years, side by side.</p>
       <div className="bars" role="img" aria-label={`After 5 steady years: cushion ${money(rows[4].cushion)}, long-term savings ${money(rows[4].long)}.`}>
         {rows.map((r) => (
           <div key={r.year} className="bar-col">
@@ -307,7 +291,6 @@ function HabitsPanel({ a }: { a: Analysis }) {
   const now = a.summary.counts[0];
   return (
     <>
-      <p className="lede">Switch one on. The futures it rescues light up.</p>
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);
@@ -323,18 +306,13 @@ function HabitsPanel({ a }: { a: Analysis }) {
                 <p className="cost">{leverCostLine(row)}</p>
                 {row.id === 'match' && (
                   <p className="hint">
-                    {row.askHR ? 'If your plan has matching, that could be about ' : 'Money your employer adds: about '}
-                    <b>{money(row.yearlyMatch)} a year</b>.
+                    {row.askHR ? 'If matched: ' : 'Employer adds '}
+                    <b>~{money(row.yearlyMatch)}/yr</b>
                   </p>
                 )}
                 <p className="effect">
-                  Rescues <b>{num(row.rescued)}</b> futures
-                  {row.ageDelta !== null && row.ageDelta !== 0 && <span> · {ageShift(row.ageDelta)}</span>}
+                  <b>+{num(row.rescued)}</b> rescued
                 </p>
-                <details className="why">
-                  <summary>How it works</summary>
-                  <p className="hint">{copy.explain}</p>
-                </details>
               </div>
               <Switch checked={on} onChange={() => toggle(row.id)} label={copy.title} />
             </li>
@@ -342,39 +320,18 @@ function HabitsPanel({ a }: { a: Analysis }) {
         })}
       </ol>
       <p className="hint waiting-line">
-        Starting {A.waitingYears} years later: <b>{num(a.waiting.inControl)}</b> in control instead of <b>{num(now)}</b>.
+        Wait {A.waitingYears} years: <b>{num(a.waiting.inControl)}</b> instead of <b>{num(now)}</b>.
       </p>
       <details className="drawer">
-        <summary>Short-term and long-term, together</summary>
+        <summary>Short and long term, together</summary>
         <Together />
       </details>
     </>
   );
 }
 
-function AiToggle() {
-  const aiOn = useStore((s) => s.aiOn);
-  const setState = useStore((s) => s.setState);
-  const [note, setNote] = useState('');
-  const change = async (on: boolean) => {
-    setNote('');
-    if (!on) return setState({ aiOn: false });
-    if (await narrationAvailable()) setState({ aiOn: true });
-    else setNote('AI narration isn’t set up here, so the built-in wording stays on. Nothing was sent.');
-  };
-  return (
-    <div className="ai-toggle">
-      <Switch checked={aiOn} onChange={change} label="AI narration" />
-      <p className="hint" aria-live="polite">
-        <b>AI wording {aiOn ? 'on' : 'off'}.</b>{' '}
-        {note || 'Sends anonymous counts and events, plus any goal you type, to be sorted. Numbers never change.'}
-      </p>
-    </div>
-  );
-}
 
 const NEXT_LABEL: Record<number, string> = { [STEP.futures]: 'What helps most?', [STEP.habits]: 'What if…', [STEP.whatIf]: 'Pick one to try' };
-const TITLES: Record<number, string> = { [STEP.futures]: 'Your thousand futures', [STEP.habits]: 'What helps most', [STEP.whatIf]: 'What if…' };
 
 export function Explore() {
   const step = useStore((s) => s.step);
@@ -412,7 +369,6 @@ export function Explore() {
   return (
     <section className="explore">
       <div className="stage">
-        <p className="eyebrow">{TITLES[step]}</p>
         <Headline a={a} />
         {step === STEP.futures && <SaveDial />}
         <River
@@ -445,7 +401,6 @@ export function Explore() {
         {a && step === STEP.futures && <FuturesPanel a={a} />}
         {a && step === STEP.habits && <HabitsPanel a={a} />}
         {a && step === STEP.whatIf && <WhatIfPanel a={a} />}
-        <AiToggle />
         <div className="nav">
           <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.about : step - 1)}>
             Back

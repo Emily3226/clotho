@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
-import { APP_NAME, DISCLAIMER } from './config';
+import { APP_NAME } from './config';
 import { Explore } from './screens/Explore';
 import { About, Landing } from './screens/Intro';
 import { Return } from './screens/Return';
@@ -8,7 +8,7 @@ import { StepScreen } from './screens/StepScreen';
 import { STEP, STEPS, useStore, type Theme } from './store';
 import { useEngine } from './useEngine';
 
-const NEXT_THEME: Record<Theme, Theme> = { auto: 'dark', dark: 'light', light: 'auto' };
+const NEXT_THEME: Record<Theme, Theme> = { dark: 'light', light: 'auto', auto: 'dark' };
 const THEME_LABEL: Record<Theme, string> = { auto: 'Auto', dark: 'Dark', light: 'Light' };
 
 export function App() {
@@ -78,14 +78,11 @@ export function App() {
         )}
       </main>
 
-      <footer className="foot">
-        <p>{DISCLAIMER} All amounts are in today’s dollars.</p>
-        <p>
-          <button type="button" className="link" onClick={() => setState({ showAssumptions: true })}>
-            Assumptions and sources
-          </button>
-        </p>
-      </footer>
+      {step === STEP.start && (
+        <footer className="foot">
+          <p>Educational, not financial advice. Today’s dollars.</p>
+        </footer>
+      )}
       <AssumptionsPanel />
     </>
   );

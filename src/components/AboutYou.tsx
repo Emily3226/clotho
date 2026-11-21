@@ -11,6 +11,7 @@ import {
   LIVING,
   STAGES,
   fieldSalaryFor,
+  isStudent,
   homePriceFor,
   inputsForStage,
   minDownPayment,
@@ -46,8 +47,8 @@ export function AboutYou({ live = false }: { live?: boolean }) {
       patch.income = income;
       patch.monthly = Math.round((inputs.monthly * income) / Math.max(1, inputs.income) / 5) * 5;
     }
-    const before = inputs.stage === 'student' ? fieldSalaryFor('first', inputs.field) : inputs.income;
-    const after = inputs.stage === 'student' ? fieldSalaryFor('first', field) : (patch.income ?? inputs.income);
+    const before = isStudent(inputs.stage) ? fieldSalaryFor('first', inputs.field) : inputs.income;
+    const after = isStudent(inputs.stage) ? fieldSalaryFor('first', field) : (patch.income ?? inputs.income);
     answer(label, patch, after > before ? 'Higher pay, but CPP and OAS cover less of it, so that lifestyle takes more saving.' : undefined);
   };
   const toggleRoom = (id: string) => {
@@ -83,49 +84,50 @@ export function AboutYou({ live = false }: { live?: boolean }) {
       </div>
 
       <ChipGroup legend="Right now" selected={(v) => v === inputs.stage} options={STAGES.map((s) => ({ value: s.id, label: s.label }))} onPick={setStage} />
-      {inputs.stage === 'student' && (
-        <ChipGroup legend="Finishing school" selected={(v) => v === finishValue} options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))} onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })} />
-      )}
-      <ChipGroup legend={inputs.stage === 'student' ? 'Studying' : 'Field'} selected={(v) => v === inputs.field} options={FIELDS.map((f) => ({ value: f.id, label: f.label }))} onPick={(v, l) => pickField(v, l)} />
+      <ChipGroup legend={isStudent(inputs.stage) ? 'Studying' : 'Field'} selected={(v) => v === inputs.field} options={FIELDS.map((f) => ({ value: f.id, label: f.label }))} onPick={(v, l) => pickField(v, l)} />
       <ChipGroup legend="Where" selected={(v) => v === inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(l, { city: v })} />
-      <ChipGroup         legend="Living"
-        selected={(v) => v === inputs.living}
-        options={LIVING.map((l) => ({ value: l.id, label: l.label }))}
-        onPick={(v, l) => answer(l, { living: v, ...(v === 'family' ? { moveOutAge: Math.max(inputs.age + 1, inputs.moveOutAge) } : {}) })}
-      />
-      <ChipGroup         legend="Student debt"
-        selected={(v) => v === debtValue}
-        options={DEBT_CHIPS.map((d) => ({ value: d.id, label: d.label }))}
-        onPick={(v, l) => {
-          const chip = DEBT_CHIPS.find((d) => d.id === v)!;
-          answer(`Debt: ${l.toLowerCase()}`, { debt: chip.balance ? { balance: chip.balance, rate: 5 } : null });
-        }}
-      />
-
-      <ChipGroup legend="You want room for" options={ROOM_FOR.map((r) => ({ value: r.id, label: r.label }))} selected={(v) => room.includes(v)} onPick={(v) => toggleRoom(v)} />
-      {home && (
-        <div className="home-q">
-          <ChipGroup<HomeType>             legend="What kind of home?"
-            selected={(v) => v === homeType}
-            options={HOME_TYPES.map((h) => ({ value: h.id, label: h.label }))}
-            onPick={(v, l) => answer(`A ${l.toLowerCase()}`, { home: { ...home, type: v } })}
-          />
-          <ChipGroup legend="When?" selected={(v) => v === homeWhen} options={HOME_WHEN.map((w) => ({ value: w.age, label: w.label }))} onPick={(v, l) => answer(`Home ${l.toLowerCase()}`, { home: { ...home, byAge: Math.max(v, inputs.age + 1) } })} />
-          {price > 0 && (
-            <p className="hint">
-              About {money(price)} where you live. Minimum down payment {money(minDownPayment(price))}.
-            </p>
-          )}
-        </div>
-      )}
-      <GoalsEditor answer={answer} />
 
       <details className="drawer">
-        <summary>Exact numbers (optional)</summary>
+        <summary>More (optional)</summary>
         <div className="fields">
+          {isStudent(inputs.stage) && (
+            <ChipGroup legend="Finishing school" selected={(v) => v === finishValue} options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))} onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })} />
+          )}
+          <ChipGroup legend="You want room for" options={ROOM_FOR.map((r) => ({ value: r.id, label: r.label }))} selected={(v) => room.includes(v)} onPick={(v) => toggleRoom(v)} />
+          {home && (
+            <div className="home-q">
+              <ChipGroup<HomeType>             legend="What kind of home?"
+                selected={(v) => v === homeType}
+                options={HOME_TYPES.map((h) => ({ value: h.id, label: h.label }))}
+                onPick={(v, l) => answer(`A ${l.toLowerCase()}`, { home: { ...home, type: v } })}
+              />
+              <ChipGroup legend="When?" selected={(v) => v === homeWhen} options={HOME_WHEN.map((w) => ({ value: w.age, label: w.label }))} onPick={(v, l) => answer(`Home ${l.toLowerCase()}`, { home: { ...home, byAge: Math.max(v, inputs.age + 1) } })} />
+              {price > 0 && (
+                <p className="hint">
+                  ~{money(price)} · {money(minDownPayment(price))} down
+                </p>
+              )}
+            </div>
+          )}
+          <ChipGroup
+            legend="Living"
+            selected={(v) => v === inputs.living}
+            options={LIVING.map((l) => ({ value: l.id, label: l.label }))}
+            onPick={(v, l) => answer(l, { living: v, ...(v === 'family' ? { moveOutAge: Math.max(inputs.age + 1, inputs.moveOutAge) } : {}) })}
+          />
+          <ChipGroup
+            legend="Student debt"
+            selected={(v) => v === debtValue}
+            options={DEBT_CHIPS.map((d) => ({ value: d.id, label: d.label }))}
+            onPick={(v, l) => {
+              const chip = DEBT_CHIPS.find((d) => d.id === v)!;
+              answer(`Debt: ${l.toLowerCase()}`, { debt: chip.balance ? { balance: chip.balance, rate: 5 } : null });
+            }}
+          />
+          <GoalsEditor answer={answer} />
           <Field
             id="income"
-            label={inputs.stage === 'student' ? 'Income now (part-time is fine)' : 'Income before tax'}
+            label={isStudent(inputs.stage) ? 'Income now (part-time is fine)' : 'Income before tax'}
             value={inputs.income}
             min={0}
             max={200000}
@@ -134,7 +136,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
             onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, income: v }, incomeEdited: true })}
           />
           <Field id="saved" label="Saved so far" value={inputs.saved} min={0} max={100000} step={500} prefix="$" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })} />
-          {inputs.stage !== 'student' && (
+          {!isStudent(inputs.stage) && (
             <fieldset className="q">
               <legend>Savings plan with matching at work?</legend>
               <Segmented
@@ -149,7 +151,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
               />
             </fieldset>
           )}
-          {inputs.plan === 'yes' && inputs.stage !== 'student' && (
+          {inputs.plan === 'yes' && !isStudent(inputs.stage) && (
             <div className="fields two">
               <Field id="emp" label="You put in" value={inputs.employeePct} min={0} max={15} step={0.5} suffix="%" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, employeePct: Math.min(30, v) } })} />
               <Field id="match" label="Employer matches up to" value={inputs.matchPct} min={0} max={10} step={0.5} suffix="%" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, matchPct: Math.min(20, v) } })} />
@@ -213,13 +215,13 @@ function GoalsEditor({ answer }: { answer: (label: string, patch: Partial<Inputs
             </div>
             <Field
               id={`cost-${g.id}`}
-              label="About how much will it cost?"
+              label="Cost"
               value={g.cost}
               min={500}
               max={100000}
               step={500}
               prefix="$"
-              hint={kind.typical ? `Typical for ${kind.name}: about ${money(kind.typical)}. Change it if you know better.` : 'Your best guess is fine.'}
+              hint={kind.typical ? `Typical: ~${money(kind.typical)}` : undefined}
               onChange={(v) => update(g.id, { cost: Math.max(0, Math.round(v)) }, `${g.label} at ${money(v)}`)}
             />
             <ChipGroup
@@ -229,8 +231,7 @@ function GoalsEditor({ answer }: { answer: (label: string, patch: Partial<Inputs
               onPick={(v, l) => update(g.id, { byAge: inputs.age + v }, `${g.label} ${l.toLowerCase()}`)}
             />
             <p className="hint">
-              That’s about <b>{money(Math.ceil(g.cost / Math.max(1, years * 12) / 5) * 5)} a month</b> for {years === 1 ? '1 year' : `${years} years`}, after
-              your cushion is full. You set aside {money(inputs.monthly)}.
+              ≈ <b>{money(Math.ceil(g.cost / Math.max(1, years * 12) / 5) * 5)}/mo</b> for {years === 1 ? '1 year' : `${years} years`}
             </p>
           </div>
         );
@@ -238,7 +239,7 @@ function GoalsEditor({ answer }: { answer: (label: string, patch: Partial<Inputs
       {goals.length < MAX_GOALS && (
         <form className="goal-add" onSubmit={add}>
           <label className="q-label" htmlFor="goal-text">
-            {goals.length ? 'Anything else?' : 'Anything else you want room for?'}
+            Anything else?
           </label>
           <div className="goal-row">
             <input
@@ -253,7 +254,6 @@ function GoalsEditor({ answer }: { answer: (label: string, patch: Partial<Inputs
               {busy ? 'Adding…' : 'Add'}
             </button>
           </div>
-          {aiOn && <p className="hint">With AI wording on, what you type is sent to sort it. Amounts never come from AI.</p>}
         </form>
       )}
     </div>
@@ -271,7 +271,7 @@ export function CompareCard() {
   return (
     <div className="card compare">
       <p>
-        <b>Same age, different life:</b> {other.line.charAt(0).toLowerCase() + other.line.slice(1)}.
+        <b>Same age, different life.</b>
       </p>
       <button
         type="button"

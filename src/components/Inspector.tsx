@@ -58,13 +58,8 @@ export function Inspector({
           </button>
         </div>
       )}
-      {plain && (
-        <p className="hint">
-          Same life, same luck.{' '}
-          {changed
-            ? `Without the habit it ends ${STATUS_LABELS[plain.status as 0 | 1 | 2 | 3].toLowerCase()}; with it, ${STATUS_LABELS[path.status as 0 | 1 | 2 | 3].toLowerCase()}.`
-            : 'The habit doesn’t change how this one ends, but it changes the savings along the way.'}
-        </p>
+      {plain && changed && (
+        <p className="hint">Same luck. Without it: {STATUS_LABELS[plain.status as 0 | 1 | 2 | 3].toLowerCase()}.</p>
       )}
       <p className="story">
         {text}
@@ -81,7 +76,7 @@ export function Inspector({
           ))}
       </ul>
       <ol className="timeline">
-        {rows.length === 0 && <li className="plain">A quiet life: no layoffs, no big market falls.</li>}
+        {rows.length === 0 && <li className="plain">A quiet life.</li>}
         {rows.map((r) => (
           <li key={r.age} className={r.kind}>
             <b>{r.age}</b>
