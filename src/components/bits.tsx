@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { num, reducedMotion } from '../lib/format';
 
 // A number that visibly moves from its old value to its new one.
@@ -163,14 +163,17 @@ export function ChipGroup<T extends string | number>({
   selected,
   onPick,
 }: {
-  // Names the group, and must be unique on the page.
+  // Names the group for screen readers.
   legend: string;
-  // Shown instead of the legend when several groups ask the same question.
+  // Shown instead of the legend when several groups ask the same question;
+  // the legend still names the group, so each one stays distinct.
   label?: string;
   options: { value: T; label: string }[];
   selected: (value: T) => boolean;
   onPick: (value: T, label: string) => void;
 }) {
+  // A generated id: legends contain spaces, which aria-labelledby would split.
+  const labelId = useId();
   const first = Math.max(0, options.findIndex((o) => selected(o.value)));
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('button[data-chip]'));
@@ -191,10 +194,10 @@ export function ChipGroup<T extends string | number>({
   };
   return (
     <div className="q">
-      <span className="q-label" id={`q-${legend}`}>
+      <span className="q-label" id={labelId}>
         {label ?? legend}
       </span>
-      <div className="chips" role="group" aria-labelledby={`q-${legend}`} onKeyDown={onKeyDown}>
+      <div className="chips" role="group" {...(label ? { 'aria-label': legend } : { 'aria-labelledby': labelId })} onKeyDown={onKeyDown}>
         {options.map((o, i) => {
           const on = selected(o.value);
           return (

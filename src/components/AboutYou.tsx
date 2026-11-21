@@ -94,7 +94,12 @@ export function AboutYou({ live = false }: { live?: boolean }) {
         selected={(v) => (v === 'other' ? fieldOther !== null : fieldOther === null && v === inputs.field)}
         options={[...FIELDS.map((f) => ({ value: f.id as FieldId | 'other', label: f.label })), { value: 'other', label: 'Other' }]}
         onPick={(v, l) => {
-          if (v === 'other') return setState({ fieldOther: fieldOther ?? '' });
+          // Until a field is typed, use the middle figure rather than the last chip.
+          if (v === 'other') {
+            setState({ fieldOther: fieldOther ?? '' });
+            if (fieldOther === null && inputs.field !== 'unsure') pickField('unsure', 'Other field');
+            return;
+          }
           setState({ fieldOther: null });
           pickField(v, l);
         }}
@@ -150,11 +155,12 @@ export function AboutYou({ live = false }: { live?: boolean }) {
               id="debt-amount"
               label="About how much student debt?"
               value={inputs.debt.balance}
-              min={0}
+              // At least $500, so the field never vanishes mid-drag; "None" clears the debt.
+              min={500}
               max={150000}
               step={500}
               prefix="$"
-              onChange={(v) => answer(`Debt: ${money(v)}`, { debt: v > 0 ? { balance: Math.round(v), rate: inputs.debt?.rate ?? 5 } : null })}
+              onChange={(v) => answer(`Debt: ${money(v)}`, { debt: { balance: Math.round(v), rate: inputs.debt?.rate ?? 5 } })}
             />
           )}
           <GoalsEditor answer={answer} />

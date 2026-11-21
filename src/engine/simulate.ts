@@ -38,12 +38,15 @@ export function simulate(
   const draws = drawsFor(seed, paths);
   const age = inputs.age;
   const N = A.endAge - age;
-  const income = inputs.income;
   const mk = MARKET_SETS[opts.set ?? 'middle'];
   // Ordinary-year stock mean, re-centred so the long-run average stays at the
   // set's mean once the crash regime is included.
   const stockNormalMean = (mk.stockMean - mk.crashChance * A.crashMean) / (1 - mk.crashChance);
   const student = isStudent(inputs.stage);
+  // A student still has to live: pay below the floor is topped up (family,
+  // loans, bursaries), so entering less income never makes a future look
+  // better by anchoring lifestyle at almost nothing.
+  const income = student ? Math.max(inputs.income, A.studentSupportFloor) : inputs.income;
   const gig = inputs.stage === 'gig';
   const finishAge = student ? Math.max(age, inputs.finishAge) : age;
   const fullIncome = student ? fieldSalaryFor('first', inputs.field) : income;
@@ -83,6 +86,9 @@ export function simulate(
     0.6 * nth0,
   );
   const spend0 = nth0 - saving0;
+  // The cushion is sized to the spending of the first year. For a student who
+  // finishes school this year, that is already the full-time lifestyle.
+  const spendStart = student && finishAge <= age ? spend0 + raiseSpent * Math.max(0, takeHome(fullIncome) - nth0) : spend0;
   const cushionShare = inputs.cushionMonths / 12;
   const debtRate = inputs.debt ? Math.max(0, inputs.debt.rate / 100 - A.inflationForDebt) : 0;
   const debtPay = inputs.debt ? amortise(inputs.debt.balance, debtRate, A.debtYears) : 0;
@@ -108,7 +114,7 @@ export function simulate(
     let fhsaLife = 0;
     let spendBase = spend0;
 
-    let cushion = Math.min(inputs.saved, cushionShare * spend0);
+    let cushion = Math.min(inputs.saved, cushionShare * spendStart);
     let rest = inputs.saved - cushion;
     let tfsa = Math.min(rest, tfsaRoom);
     tfsaRoom -= tfsa;
@@ -147,7 +153,7 @@ export function simulate(
     // Counted back when judging the other milestones (see below).
     let parked = 0;
     const goalsReached = goals.map(() => false);
-    let cushionFullSeen = cushion >= cushionShare * spend0 - 1 && cushionShare > 0 && inputs.saved > 0;
+    let cushionFullSeen = cushion >= cushionShare * spendStart - 1 && cushionShare > 0 && inputs.saved > 0;
 
     const trace = opts.trace ? { cushion: [] as number[], plan: [] as number[], flex: [] as number[], target: [] as number[] } : undefined;
     let minTfsaRoom = tfsaRoom;
@@ -339,6 +345,8 @@ export function simulate(
       carry = 0;
       let scar = false;
       let jobless: number = A.joblessIncomeShare;
+      // A gig slow stretch is still work: loan payments carry on.
+      let dip = false;
       if (!calm && months === 0 && !inSchool) {
         const aiHit = sAi >= 0 && a < WORRY.ai.untilAge;
         const recHit = sRec >= 0 && t >= crashYear && t < crashYear + WORRY.recession.jobYears;
@@ -350,6 +358,7 @@ export function simulate(
           if (draws[o + S_JOB_U] < Math.min(p, 0.9)) {
             months = GIG.dipMonths;
             jobless = GIG.dipIncomeShare;
+            dip = true;
             if (detail) events.push({ age: a, type: 'dip', value: months });
           }
         } else {
@@ -374,14 +383,14 @@ export function simulate(
       const yearIncome = gross * share + jobless * gross * (1 - share);
       const th = months > 0 ? takeHome(yearIncome) : nth;
 
-      // Student debt. In a year with time out of work, payments pause and the
+      // Student debt. In a year with time out of work (not a gig slow stretch), payments pause and the
       // balance waits (as under repayment assistance). Otherwise the payment
       // falls due and the balance only shrinks by what is paid: it comes out
       // of what would have been saved first, then out of spending (people
       // tighten their budget, up to a limit), and only what is left draws on
       // savings like any other cost.
       let debtDue = 0;
-      if (debtBal > 0 && debtStarted && months === 0) {
+      if (debtBal > 0 && debtStarted && (months === 0 || dip)) {
         debtDue = Math.min(debtPay, debtBal * (1 + debtRate));
         debtBal = debtBal * (1 + debtRate) - debtDue;
         if (debtBal <= 1) {

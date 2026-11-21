@@ -155,7 +155,8 @@ export const useStore = create<Store>()(
       testLog: [],
 
       setStep: (step) => {
-        set({ step, selectedPath: null, note: null });
+        // Leaving a screen stops any life being played back on the river.
+        set({ step, selectedPath: null, note: null, playing: null });
         window.scrollTo({ top: 0 });
       },
       setInputs: (patch) => set({ inputs: { ...get().inputs, ...patch } }),

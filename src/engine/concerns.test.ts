@@ -63,4 +63,11 @@ describe('a field in your own words', () => {
     expect(matchField('zxqv')).toBeNull();
     expect(matchField('')).toBeNull();
   });
+
+  it('asks rather than guessing on a tie, and ignores words too broad to place', () => {
+    expect(matchField('lab tech')).toBe('science');
+    expect(matchField('data entry clerk')).toBeNull();
+    expect(matchConcern('retirement income')).toBeNull();
+    expect(matchField('data science')).toBe('science');
+  });
 });

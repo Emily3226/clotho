@@ -47,7 +47,10 @@ export function useEngine(): void {
   }, []);
 
   useEffect(() => {
-    if (!active || !worker.current) return;
+    if (!active || !worker.current) {
+      if (useStore.getState().computing) useStore.getState().setState({ computing: false });
+      return;
+    }
     const worries = selectedWorries(chips, concerns);
     const id = ++latest.current;
     const req: EngineRequest = {
@@ -60,9 +63,13 @@ export function useEngine(): void {
       set,
       showAll,
     };
-    useStore.getState().setState({ computing: true });
-    // A short wait so dragging the dial sends only the latest value.
-    const t = setTimeout(() => worker.current?.postMessage(req), 60);
+    // A short wait so dragging the dial sends only the latest value. Busy is
+    // only set once the request is really sent, so a cancelled one (leaving
+    // the results within the wait) never leaves it stuck on.
+    const t = setTimeout(() => {
+      useStore.getState().setState({ computing: true });
+      worker.current?.postMessage(req);
+    }, 60);
     return () => clearTimeout(t);
   }, [active, inputs, chips, concerns, activeWorry, levers, seed, set, showAll]);
 }

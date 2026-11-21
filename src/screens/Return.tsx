@@ -36,16 +36,22 @@ export function Return() {
   const now = a?.summary.counts[0] ?? commitment.startInControl;
   const smaller = commitment.lever === 'auto100' ? 'auto50' : commitment.lever === 'auto50' ? 'auto25' : null;
   // One "Yes" per calendar month. The demo jump is the only way past it.
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const doneThisMonth = commitment.lastCheckISO?.slice(0, 7) === thisMonth;
-  const started = commitment.streak > 0;
+  // Months are counted in local time, so a check-in late on the last evening
+  // of a month still counts for that month.
+  const monthOf = (d: Date) => d.getFullYear() * 12 + d.getMonth();
+  const last = commitment.lastCheckISO ? monthOf(new Date(commitment.lastCheckISO)) : null;
+  const gap = last === null ? null : monthOf(new Date()) - last;
+  const doneThisMonth = gap === 0;
+  // A missed month ends the run: "in a row" means in a row.
+  const streak = gap !== null && gap <= 1 ? commitment.streak : 0;
+  const started = streak > 0;
 
   const yes = (months = 1) => {
     // Each month done adds what was set aside, plus the habit's amount.
     const extra = commitment.lever.startsWith('auto') ? Number(commitment.lever.slice(4)) : 0;
     const add = months * (inputs.monthly + extra);
     setState({
-      commitment: { ...commitment, streak: commitment.streak + months, lastCheckISO: new Date().toISOString() },
+      commitment: { ...commitment, streak: streak + months, lastCheckISO: new Date().toISOString() },
       inputs: { ...inputs, saved: Math.round(inputs.saved + add) },
     });
     setSaved(Math.round(inputs.saved + add));
@@ -68,7 +74,7 @@ export function Return() {
           </p>
           <p className="context">
             {copy.title} ·{' '}
-            {started ? `kept ${commitment.streak} ${commitment.streak === 1 ? 'month' : 'months'} in a row` : 'not started yet'}
+            {started ? `kept ${streak} ${streak === 1 ? 'month' : 'months'} in a row` : commitment.streak > 0 ? 'starting a new run this month' : 'not started yet'}
           </p>
         </div>
         <River analysis={a} mask={null} selected={null} onSelect={() => {}} />

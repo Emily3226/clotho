@@ -149,7 +149,7 @@ function Legend({ a }: { a: Analysis | null }) {
 
 function Milestones({ a }: { a: Analysis }) {
   const m = a.summary.milestoneCounts;
-  const goals = useStore((s) => s.inputs.goals ?? []);
+  const goals = a.goals;
   const items: [string, number | null, string][] = [
     // Each line finishes "In 849 of your 1,000 futures, …".
     ['Got through bad years', m.shockProof, 'every rough patch (a layoff, a market drop) was covered. You never ran out of money or had to touch your retirement savings.'],
