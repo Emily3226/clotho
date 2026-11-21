@@ -89,6 +89,11 @@ const EVENT_TEXT: Record<PathEvent['type'], (v?: number) => string> = {
   debtFree: () => 'student debt paid off',
   room: (v) => `${v} months of room to move saved`,
   optional: () => 'work became optional',
+  kid: (v) => (v === 1 ? 'had a first child' : `had child number ${v}`),
+  lifeBreak: (v) => `took ${v} months off`,
+  lifeSchool: (v) => `went back to school for ${v === 1 ? '1 year' : `${v} years`}`,
+  lifeCare: () => 'started caring for a parent',
+  lifeFourDay: () => 'moved to a four-day week',
 };
 
 export interface TimelineRow {
@@ -97,7 +102,7 @@ export interface TimelineRow {
   kind: 'good' | 'hard' | 'plain';
 }
 
-const GOOD: PathEvent['type'][] = ['fulltime', 'raise', 'cushionFull', 'home', 'goal', 'debtFree', 'room', 'optional'];
+const GOOD: PathEvent['type'][] = ['fulltime', 'raise', 'cushionFull', 'home', 'goal', 'debtFree', 'room', 'optional', 'kid', 'lifeBreak', 'lifeSchool', 'lifeCare', 'lifeFourDay'];
 const HARD: PathEvent['type'][] = ['job', 'dip', 'raid', 'short', 'crash', 'cost'];
 
 // Goals are shown in the person's own words on screen. Narration gets only
