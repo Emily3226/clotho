@@ -93,7 +93,7 @@ They are labelled illustrative, and they are conservative: 5% real for stocks wi
 No. It recommends no product, fund or provider, and it never says what to buy. The one company named is Canada Life, in a note telling people whose plan is already there where to find it. It shows scenarios and trade-offs for habits: join the plan, take the match, automate. The disclaimer is in the footer and in the Assumptions panel.
 
 **What if it tells someone they're doomed?**
-It can't say that. The first number is always today's, shown with what one habit puts within reach. Worries open as cards and only change the headline if you tap Show. The headline is a count of futures in control, the palette has no red, and the ranked habits always show the smallest step that helps. When the picture is hard, the screen answers with what moves it. The hard case ("everything at once") is there if you ask for it.
+It can't say that. The first number is always today's, shown with what one habit puts within reach. Worries open as cards and only change the headline if you tap Show. The ranked habits always show the step that rescues the most. When the picture is hard, the screen answers with what moves it. The hard case ("everything at once") is there if you ask for it.
 
 **Why would Gen Z open this twice?**
 The monthly reminder brings them back to a 30-second check-in: "Did you do it?", a streak, and the river moving from where they started. "Not yet" offers a smaller version instead of guilt. Inside a workplace plan, onboarding, raise season and enrolment windows are natural moments too.

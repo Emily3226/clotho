@@ -64,6 +64,28 @@ export interface Rescue {
   total: number;
 }
 
+// One test of the top habit: under another return setting, or under a worry.
+export interface HoldTest {
+  kind: 'market' | 'worry';
+  id: AssumptionSetId | WorryId;
+  // Futures the habit rescues in that test.
+  rescued: number;
+  // The best step in that test, or null when no habit rescues anything there.
+  top: LeverId | null;
+  same: boolean;
+  // A worry tested on top of the one already showing.
+  onTop: boolean;
+}
+
+// Whether the best step is still the best step when the assumptions or the
+// person's own worries change. This is the claim to defend, not the count.
+export interface Holds {
+  lever: LeverId;
+  rescued: number;
+  tests: HoldTest[];
+  held: number;
+}
+
 export interface Analysis {
   set: AssumptionSetId;
   goals: Goal[];
@@ -85,6 +107,11 @@ export interface Analysis {
   ranking: LeverRow[];
   waiting: { inControl: number; ageDelta: number | null };
   yearlyMatch: number;
+  // Only worked out when asked for (it takes extra runs).
+  holds: Holds | null;
+  // Futures in control for what is on screen, under each return setting.
+  // The count is one point in this range, not a forecast.
+  range: { low: number; high: number; bySet: Record<AssumptionSetId, number> };
 }
 
 export function leverAvailable(id: LeverId, inputs: Inputs): boolean {
@@ -178,6 +205,15 @@ function middle(paths: PathResult[]): number {
 
 const ageDelta = (a: number | null, b: number | null): number | null => (a === null || b === null ? null : a - b);
 
+const MARKET_ORDER: AssumptionSetId[] = ['cautious', 'middle', 'hopeful'];
+
+// The habit that rescues the most futures comes first, so the headline, the
+// list and the "does it hold" card all name the same step. Ties go to the
+// one that costs less.
+function byRank(x: { rescued: number; perDollar: number }, y: { rescued: number; perDollar: number }): number {
+  return y.rescued - x.rescued || y.perDollar - x.perDollar;
+}
+
 // Runs variants on demand and remembers them, so toggling a lever only
 // simulates what has not been seen yet.
 export class Engine {
@@ -185,8 +221,8 @@ export class Engine {
   private key = '';
 
   private run(inputs: Inputs, scenario: Scenario, levers: Levers, seed: number, detail: boolean, set: AssumptionSetId): PathResult[] {
-    const k = JSON.stringify([scenario, levers, detail]);
-    const hit = this.cache.get(k) ?? (detail ? undefined : this.cache.get(JSON.stringify([scenario, levers, true])));
+    const k = JSON.stringify([set, scenario, levers, detail]);
+    const hit = this.cache.get(k) ?? (detail ? undefined : this.cache.get(JSON.stringify([set, scenario, levers, true])));
     if (hit) return hit;
     const res = simulate(inputs, scenario, levers, seed, { detail, set });
     this.cache.set(k, res);
@@ -201,8 +237,9 @@ export class Engine {
     seed: number,
     set: AssumptionSetId = 'middle',
     showAll = false,
+    wantHolds = false,
   ): Analysis {
-    const key = JSON.stringify([inputs, seed, set]);
+    const key = JSON.stringify([inputs, seed]);
     if (key !== this.key) {
       this.cache.clear();
       this.key = key;
@@ -219,6 +256,10 @@ export class Engine {
     const summary = summarise(view);
     const n = view.length;
     const years = A.endAge - inputs.age;
+    const bySet = Object.fromEntries(
+      MARKET_ORDER.map((m) => [m, m === set ? summary.counts[0] : summarise(this.run(inputs, scenario, levers, seed, false, m)).counts[0]]),
+    ) as Record<AssumptionSetId, number>;
+    const range = { low: Math.min(...Object.values(bySet)), high: Math.max(...Object.values(bySet)), bySet };
 
     // Worry cards: each selected worry alone, then all together.
     const ids = Object.keys(selected) as WorryId[];
@@ -286,14 +327,39 @@ export class Engine {
         yearlyMatch: id === 'match' ? yearlyMatch : 0,
       };
     });
-    // No-extra-cost steps first, by futures rescued; then futures rescued per
-    // dollar of take-home pay given up each month.
-    ranking.sort(
-      (x, y) =>
-        Number(y.noExtraCost) - Number(x.noExtraCost) ||
-        (x.noExtraCost ? y.rescued - x.rescued : y.perDollar - x.perDollar) ||
-        y.rescued - x.rescued,
-    );
+    ranking.sort(byRank);
+
+    // Does the best step hold? Rank the habits again under the other return
+    // settings and under each selected worry, on the same 1,000 paths.
+    let holds: Holds | null = null;
+    if (wantHolds) {
+      const rankIn = (s: Scenario, m: AssumptionSetId) => {
+        const plain = this.run(inputs, s, NO_LEVERS, seed, false, m);
+        return available
+          .map((id) => {
+            const rescued = rescueOf(plain, this.run(inputs, s, leverOnly(id), seed, false, m)).total;
+            return { id, rescued, perDollar: rescued / Math.max(1, leverCost(id, inputs).perMonth) };
+          })
+          .sort(byRank);
+      };
+      // The same worry the list is ranked under, so the two always agree.
+      const first = rankIn(scenario, set)[0];
+      const onTop = Object.keys(scenario).length > 0;
+      if (first && first.rescued > 0) {
+        const test = (kind: HoldTest['kind'], id: HoldTest['id'], s: Scenario, m: AssumptionSetId): HoldTest => {
+          const rows = rankIn(s, m);
+          const mine = rows.find((r) => r.id === first.id)!;
+          const top = rows[0].rescued > 0 ? rows[0].id : null;
+          return { kind, id, rescued: mine.rescued, top, same: top === first.id, onTop: kind === 'worry' && onTop };
+        };
+        const tests: HoldTest[] = [
+          ...MARKET_ORDER.filter((m) => m !== set).map((m) => test('market', m, scenario, m)),
+          // A worry already on the river isn't a new test; the others come on top of it.
+          ...ids.filter((id) => !scenario[id]).map((id) => test('worry', id, { ...scenario, [id]: selected[id] }, set)),
+        ];
+        holds = { lever: first.id, rescued: first.rescued, tests, held: tests.filter((t) => t.same).length };
+      }
+    }
     const rescue = leversOn ? rescueOf(scen, view) : null;
     const plainPaths = leversOn ? scen.map(lite) : null;
 
@@ -348,6 +414,8 @@ export class Engine {
       ranking,
       waiting,
       yearlyMatch,
+      holds,
+      range,
     };
   }
 }

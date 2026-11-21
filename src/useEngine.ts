@@ -16,6 +16,8 @@ export function useEngine(): void {
   const seed = useStore((s) => s.seed);
   const set = useStore((s) => s.set);
   const active = useStore((s) => s.step >= STEP.futures);
+  // Not on the futures screen, where the dial needs every run to be quick.
+  const holds = useStore((s) => s.step >= STEP.habits);
 
   useEffect(() => {
     const w = new Worker(new URL('./engine/worker.ts', import.meta.url), { type: 'module' });
@@ -62,6 +64,7 @@ export function useEngine(): void {
       seed,
       set,
       showAll,
+      holds,
     };
     // A short wait so dragging the dial sends only the latest value. Busy is
     // only set once the request is really sent, so a cancelled one (leaving
@@ -71,5 +74,5 @@ export function useEngine(): void {
       worker.current?.postMessage(req);
     }, 60);
     return () => clearTimeout(t);
-  }, [active, inputs, chips, concerns, activeWorry, levers, seed, set, showAll]);
+  }, [active, inputs, chips, concerns, activeWorry, levers, seed, set, showAll, holds]);
 }

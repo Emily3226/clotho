@@ -1,6 +1,7 @@
 import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
 import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor, homePriceFor, isStudent, minDownPayment } from './profile';
 import { drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
+import { hasLife, LIFE, lifeCost, lifeEvents, lifestyleShare, lifeWork, normaliseLife } from './lifePlan';
 import type { Inputs, Levers, PathEvent, PathResult, Scenario, SimOptions, Status, Summary } from './types';
 import { SEV_INDEX, WORRY } from './worries';
 
@@ -97,6 +98,8 @@ export function simulate(
   const cushionShare = inputs.cushionMonths / 12;
   const debtRate = inputs.debt ? Math.max(0, inputs.debt.rate / 100 - A.inflationForDebt) : 0;
   const debtPay = inputs.debt ? amortise(inputs.debt.balance, debtRate, A.debtYears) : 0;
+
+  const life = hasLife(inputs.life) ? normaliseLife(inputs.life, age) : null;
 
   const out: PathResult[] = new Array(paths);
   const ring = new Float64Array(5);
@@ -306,7 +309,8 @@ export function simulate(
       // Lifestyle follows the expected career, not each year's luck: a layoff,
       // a pay cut or a slower career squeezes saving, not spending.
       const expectedPay = inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend;
-      const expectedNth = takeHome(expectedPay);
+      const chosenPace = lifestyleShare(life, a);
+      const expectedNth = takeHome(expectedPay * chosenPace);
       // Starting full-time work lifts lifestyle like a raise, even when it
       // happens this year (t = 0): otherwise spending stays at part-time level
       // for life and nearly all of the new pay is saved.
@@ -328,7 +332,7 @@ export function simulate(
       // higher, people trim; after a step up they spend more. It closes the
       // same share of the gap that a raise adds to spending, a bit each year.
       const planned = Math.max(0, expectedNth - spendBase);
-      const room = takeHome(payBase * level) - spendBase * costFactor;
+      const room = takeHome(payBase * level * chosenPace) - spendBase * costFactor;
       trim += A.adaptSpeed * (raiseSpent * (planned - room) - trim);
       const want = Math.max(0, spendBase * costFactor - trim);
       // What income could not cover this year. The work-optional and room
@@ -398,8 +402,12 @@ export function simulate(
         months = 12;
       }
       const share = (12 - months) / 12;
-      const yearIncome = gross * share + jobless * gross * (1 - share);
-      const th = months > 0 ? takeHome(yearIncome) : nth;
+      // The life someone chose: time away, shorter weeks, and what it costs.
+      const chosen = life ? lifeWork(life, a, gross, inputs.stage) : null;
+      const workShare = chosen?.workShare ?? 1;
+      const yearIncome = (gross * share + jobless * gross * (1 - share)) * workShare + (chosen?.benefit ?? 0);
+      const th = months > 0 || (chosen && (workShare < 1 || chosen.benefit > 0)) ? takeHome(yearIncome) : nth;
+      if (life && detail) for (const e of lifeEvents(life, a)) events.push({ age: a, ...e });
 
       // Student debt. In a year with time out of work (not a gig slow stretch), payments pause and the
       // balance waits (as under repayment assistance). Otherwise the payment
@@ -419,6 +427,7 @@ export function simulate(
 
       let free = th - spend;
       let notSpent = 0;
+      let lifeSpent = 0;
       // Living with family: the same lifestyle as renting, plus the rent not
       // paid, saved until moving out.
       if (a < moveOutAge) free += Math.min(city.moveOutCost, FAMILY_RENT_SHARE * th);
@@ -429,6 +438,13 @@ export function simulate(
         free -= debtDue - trimmed;
         notSpent += trimmed;
       }
+      if (life) {
+        const c = lifeCost(life, a, yearIncome, inSchool);
+        const budgeted = Math.min(LIFE.budgetShare * c, LIFE.trimShare * spend);
+        free -= c - budgeted;
+        // The chosen cost is lived; the part budgeted for replaces other spending.
+        lifeSpent = c - budgeted;
+      }
       if (worldChance > 0 && !calm && draws[o + S_COST_U] < worldChance) {
         free -= (WORRY.world.months / 12) * spend;
         if (detail) events.push({ age: a, type: 'cost' });
@@ -437,8 +453,8 @@ export function simulate(
       if (free > 0) {
         // Workplace plan first, then the cushion, then long-term savings.
         if (!delayed && empPct > 0) {
-          let we = Math.min(empPct * gross * share, free / relief);
-          let er = employerActive ? Math.min(we, matchPct * gross * share) : 0;
+          let we = Math.min(empPct * gross * share * workShare, free / relief);
+          let er = employerActive ? Math.min(we, matchPct * gross * share * workShare) : 0;
           const room = Math.min(A.rrspRate * prevYearIncome, A.rrspMax);
           if (we + er > room) {
             const k = room / (we + er);
@@ -494,7 +510,10 @@ export function simulate(
           need -= z;
           if (detail && x + y + z > 50) events.push({ age: a, type: 'flex' });
         }
-        if (need > 0.5 && workplace > 0) {
+        // Planned time away is lived within what's there: it doesn't raid the
+        // workplace plan or count as a shock. A layoff in the same year still does.
+        const plannedAway = !!chosen?.away && months === 0;
+        if (need > 0.5 && workplace > 0 && !plannedAway) {
           const g = Math.min(workplace, need / (1 - A.raidTax));
           workplace -= g;
           need -= g * (1 - A.raidTax);
@@ -502,9 +521,10 @@ export function simulate(
           shockProof = false;
           if (detail) events.push({ age: a, type: 'raid' });
         }
-        if (need > 0.5) {
+        // Whatever savings couldn't cover wasn't spent, planned or not.
+        if (need > 0.5) notSpent += need;
+        if (need > 0.5 && !plannedAway) {
           shockProof = false;
-          notSpent += need;
           if (detail) events.push({ age: a, type: 'short' });
         }
       }
@@ -552,7 +572,7 @@ export function simulate(
         }
       }
 
-      lived += spend - notSpent;
+      lived += spend + lifeSpent - notSpent;
       if (tfsaRoom < minTfsaRoom) minTfsaRoom = tfsaRoom;
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
       if (lowest < minBalance) minBalance = lowest;

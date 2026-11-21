@@ -12,6 +12,7 @@ export const STEPS = ['Start', 'About you', 'Your futures', 'What helps most', '
 export const STEP = { start: 0, about: 1, futures: 2, habits: 3, pick: 4, back: 5 } as const;
 
 export const ROOM_FOR = [
+  { id: 'kids', label: 'Kids' },
   { id: 'travel', label: 'Travel' },
   { id: 'career', label: 'Switching careers' },
   { id: 'home', label: 'A home' },
@@ -95,7 +96,7 @@ interface Store {
   setInputs: (patch: Partial<Inputs>) => void;
   toggleRoom: (id: string) => void;
   toggleWorry: (id: WorryId) => void;
-  addConcern: (text: string) => void;
+  addConcern: (text: string) => Concern | null;
   setConcernKind: (id: string, kind: WorryId) => void;
   removeConcern: (id: string) => void;
   setActiveWorry: (id: WorryId | 'all' | null) => void;
@@ -182,8 +183,10 @@ export const useStore = create<Store>()(
       },
       addConcern: (text) => {
         const list = get().concerns;
-        if (!text.trim() || list.length >= MAX_CONCERNS) return;
-        set({ concerns: [...list, newConcern(text)] });
+        if (!text.trim() || list.length >= MAX_CONCERNS) return null;
+        const concern = newConcern(text);
+        set({ concerns: [...list, concern] });
+        return concern;
       },
       setConcernKind: (id, kind) => {
         const concerns = get().concerns.map((c) => (c.id === id ? { ...c, kind } : c));

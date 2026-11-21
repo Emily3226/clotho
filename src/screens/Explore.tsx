@@ -5,18 +5,19 @@ import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { KeepReachableCard } from '../components/KeepReachable';
 import { River } from '../components/River';
-import { whyNot, type Analysis, type WhyKey, type WorryCard } from '../engine/analyse';
+import { whyNot, type Analysis, type HoldTest, type WhyKey, type WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
-import { LEVER_IDS, NO_LEVERS, STATUS_LABELS, leverOnly, type LeverId } from '../engine/types';
+import { MARKET_SETS } from '../engine/profile';
+import { LEVER_IDS, NO_LEVERS, STATUS_LABELS, leverOnly, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
 import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
 import { WORRIES, worryInfo } from '../engine/worries';
 import { cutAgesFor, defaultCutAge, type CutShort } from '../engine/noSixtyFive';
 import type { CutShortRequest } from '../engine/noSixtyFive.worker';
 import { leverCopy, leverCostLine, noSixtyFiveAnswer, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
-import { useNarration } from '../narrate/client';
+import { classifyWorry, useNarration } from '../narrate/client';
 import { STEP, anyLever, currentScenario, leverIsOn, selectedWorries, useStore } from '../store';
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
@@ -24,6 +25,27 @@ const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 function onLevers(): LeverId[] {
   const l = useStore.getState().levers;
   return LEVER_IDS.filter((id) => leverIsOn(l, id));
+}
+
+// The count is one point in a range: the same futures under cautious,
+// middle and hopeful returns. Shown with the headline so the number is never
+// read as a forecast.
+function RangeLine({ a, inControl = false }: { a: Analysis; inControl?: boolean }) {
+  const { low, high, bySet } = a.range;
+  if (high === 0) return null;
+  if (low === high) {
+    return <p className="range">The same under cautious, middle and hopeful markets.</p>;
+  }
+  return (
+    <p className="range">
+      <Term
+        explain={`Cautious markets: ${num(bySet.cautious)}. Middle: ${num(bySet.middle)}. Hopeful: ${num(bySet.hopeful)}. Same lives, same luck, different long-run returns. You are seeing ${MARKET_SETS[a.set].label.toLowerCase()}; change it under Assumptions.`}
+      >
+        {num(low)} to {num(high)}
+        {inControl ? ' in control,' : ''} depending on how markets do
+      </Term>
+    </p>
+  );
 }
 
 function Headline({ a }: { a: Analysis | null }) {
@@ -52,12 +74,16 @@ function Headline({ a }: { a: Analysis | null }) {
           </b>{' '}
           in control
         </p>
+        <p className="range">
+          {num(a.rescue.toControl)} now in control, {num(a.rescue.toMostly)} mostly there
+        </p>
+        <RangeLine a={a} inControl />
       </div>
     );
   }
   const before = a && activeWorry ? a.baseSummary.counts[0] : null;
-  // The single habit that leaves the most futures in control, same luck.
-  const best = a?.ranking.reduce<(typeof a.ranking)[number] | null>((b, r) => (!b || r.inControl > b.inControl ? r : b), null) ?? null;
+  // The habit ranked first: the same one the list and the card name.
+  const best = a?.ranking[0] ?? null;
   return (
     <div className="headline">
       <p className="count" aria-live="polite">
@@ -74,6 +100,7 @@ function Headline({ a }: { a: Analysis | null }) {
         of 1,000 futures in control{activeWorry ? '' : ' today'}
       </p>
       {activeWorry && <p className="context">{activeWorry === 'all' ? 'If all of it happens at once' : worryInfo(activeWorry).ifClause}</p>}
+      {a && <RangeLine a={a} />}
       {best && best.inControl > now && (
         <p className="reach">
           <strong>
@@ -307,6 +334,7 @@ function ConcernEditor() {
   const add = useStore((s) => s.addConcern);
   const setKind = useStore((s) => s.setConcernKind);
   const remove = useStore((s) => s.removeConcern);
+  const aiOn = useStore((s) => s.aiOn);
   const [text, setText] = useState('');
   return (
     <div className="goals concerns">
@@ -337,8 +365,14 @@ function ConcernEditor() {
           className="goal-add"
           onSubmit={(e) => {
             e.preventDefault();
-            add(text);
+            const added = add(text);
             setText('');
+            // Keywords first; with AI wording on, Gemini sorts what they miss.
+            if (added && !added.kind && aiOn) {
+              void classifyWorry(added.label).then((kind) => {
+                if (kind && useStore.getState().concerns.some((c) => c.id === added.id && !c.kind)) setKind(added.id, kind);
+              });
+            }
           }}
         >
           <label className="q-label" htmlFor="concern-text">
@@ -350,7 +384,7 @@ function ConcernEditor() {
               Add
             </button>
           </div>
-          <p className="hint">Stays on this device. It is tested as the closest what-if, which you can change.</p>
+          <p className="hint">{aiOn ? 'With AI wording on, what you type is sent to sort it.' : 'Stays on this device.'} It is tested as the closest what-if, which you can change.</p>
         </form>
       )}
     </div>
@@ -491,6 +525,54 @@ function Together() {
   );
 }
 
+// Is the best step still the best step when the return assumptions or the
+// person's own worries change? The answer a calculator cannot give.
+function HoldsCard({ a }: { a: Analysis }) {
+  const inputs = useStore((s) => s.inputs);
+  const h = a.holds;
+  if (!h) return null;
+  const n = h.tests.length;
+  const worries = h.tests.some((t) => t.kind === 'worry');
+  const where = (t: HoldTest) => {
+    if (t.kind === 'market') return `${MARKET_SETS[t.id as AssumptionSetId].label} markets`;
+    const clause = worryInfo(t.id as WorryId).ifClause;
+    return t.onTop ? `Also ${lowerFirst(clause)}` : clause;
+  };
+  return (
+    <section className="card holds" aria-labelledby="holds-title">
+      <h3 id="holds-title">Does it still hold?</h3>
+      <p className="answer">
+        {leverCopy(h.lever, inputs).noun} is ranked first below: it rescues <strong>{num(h.rescued)}</strong> of your futures.{' '}
+        {h.held === n ? (
+          <>It stays first in <strong>all {num(n)}</strong> tests.</>
+        ) : (
+          <>
+            It stays first in <strong>{num(h.held)} of {num(n)}</strong> tests.
+          </>
+        )}
+      </p>
+      <ul className="holds-list">
+        {h.tests.map((t) => (
+          <li key={`${t.kind}-${t.id}`} className={t.same ? 'yes' : 'no'}>
+            <span className="holds-mark" aria-hidden="true">
+              {t.same ? '✓' : '–'}
+            </span>
+            <span>
+              <b>{where(t)}:</b>{' '}
+              {t.same
+                ? `still first, rescues ${num(t.rescued)}.`
+                : t.top
+                  ? `${leverCopy(t.top, inputs).noun.toLowerCase()} ranks first there. This one rescues ${num(t.rescued)}.`
+                  : 'no single habit changes much there.'}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {!worries && <p className="hint">Pick a worry on the previous screen and it is tested here too.</p>}
+    </section>
+  );
+}
+
 function HabitsPanel({ a }: { a: Analysis }) {
   const inputs = useStore((s) => s.inputs);
   const levers = useStore((s) => s.levers);
@@ -498,6 +580,10 @@ function HabitsPanel({ a }: { a: Analysis }) {
   const now = a.summary.counts[0];
   return (
     <>
+      <HoldsCard a={a} />
+      {a.ranking.some((r) => r.askHR) && a.ranking[0] && !a.ranking[0].askHR && (
+        <p className="hint">Not sure about a match at work? Asking HR is free, so it’s worth doing either way.</p>
+      )}
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);
