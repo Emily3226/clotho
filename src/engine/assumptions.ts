@@ -71,8 +71,8 @@ export const A = {
   jobLossYoung: 0.05,
   jobLossLater: 0.035,
   // Good luck at work: a step up in pay that lasts.
-  stepUpChance: 0.02,
-  stepUpRaise: 0.12,
+  stepUpChance: 0.04,
+  stepUpRaise: 0.06,
   stepUpUntilAge: 45,
   // Share of a lasting gap between plan and life that lifestyle closes each year.
   adaptSpeed: 0.25,
@@ -194,7 +194,7 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('wages', 'Real wage growth', '+2.5% to +3.5% a year to 30 (by field), +1.5% to 40, +0.5% to 50, then flat; ±2% yearly noise', STATCAN_URL, 'Illustrative, shaped like Statistics Canada age-earnings profiles'),
   illustrative('jobLoss', 'Job loss', '5% a year under 30, 3.5% after', STATCAN_URL, 'Illustrative, in the range of Statistics Canada layoff rates', 'Time out of work has a median of 4 months, capped at 18. No layoffs while in school.'),
   illustrative('scar', 'Pay after a layoff', '5% lower on return, and it stays lower', DISPLACED_URL, 'Illustrative, at the mild end of Statistics Canada findings', 'Statistics Canada found that workers laid off in the early 2000s earned 2% to 15% less five years later, and those laid off in the early 1990s 15% to 30% less. The tool uses 5% for everyone, so it leans mild.'),
-  illustrative('stepUp', 'A step up at work', 'A 2% chance each year before 45 of a lasting 12% rise in pay', JOB_CHANGE_URL, 'Our assumption, sized to balance layoffs', 'A bigger promotion or a better job, on top of ordinary raises, which are already in wage growth. The size is not a measured figure. It is set so good and bad luck cancel out on average: a 2% chance of +12% adds about 0.24% a year, and a 5% chance of a layoff with a 5% lasting cut takes away about 0.25%. That moving up pays is measured: in ADP Canada payroll data for August 2026, people who changed jobs saw base pay grow 5.6% in a year, against 3.0% for those who stayed. Spending follows a step up like any raise.'),
+  illustrative('stepUp', 'A step up at work', 'A 4% chance each year before 45 of a lasting 6% rise in pay', JOB_CHANGE_URL, 'Illustrative: size in line with ADP Canada pay data, chance set to balance layoffs', 'A bigger promotion or a better job, on top of ordinary raises, which are already in wage growth. The size follows what is measured: in ADP Canada payroll data for August 2026, people who changed jobs saw total pay grow 9.6% in a year, against 4.4% for those who stayed, a gap of about 5 points (2.6 points on base pay alone). The chance is then set so good and bad luck cancel out on average: a 4% chance of +6% adds about 0.24% a year, and a 5% chance of a layoff with a 5% lasting cut takes away about 0.25%. Spending follows a step up like any raise.'),
   illustrative('gig', 'Gig or contract work', 'Income noise ±12% a year; an 8% chance each year of a 3-month slow stretch at half pay', STATCAN_URL, 'Illustrative', 'Replaces layoffs for gig and contract workers.'),
   illustrative('student', 'Students and co-op', 'Part-time or co-op pay until school ends, then full-time pay for the chosen field', STATCAN_URL, 'Illustrative', 'Full-time work starts at the later of 23 or two years from now, unless you say when you finish.'),
   illustrative('jobless', 'Income while out of work', '45% of previous pay', EI_URL, 'Illustrative; EI replaces up to 55% of insured earnings'),
