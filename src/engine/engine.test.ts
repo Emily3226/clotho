@@ -174,9 +174,45 @@ describe('worries', () => {
         expect(card.best).not.toBeNull();
         expect(card.best!.protects).toBeLessThanOrEqual(card.affected);
         expect(card.mask.reduce((s, v) => s + v, 0)).toBe(card.affected);
+        // Sized by how far things move: never better than without the worry,
+        // and the best habit never makes it worse.
+        expect(card.inControl).toBeLessThanOrEqual(card.baseInControl);
+        expect(card.middleAt65).toBeLessThanOrEqual(card.baseMiddleAt65);
+        expect(card.best!.inControl).toBeGreaterThanOrEqual(card.inControl);
       }
     }
   }, 30000);
+
+  it('lets lifestyle adjust, so a single worry never leaves the middle future with almost nothing', () => {
+    for (const persona of PERSONAS) {
+      const a = new Engine().analyse(persona.inputs, Object.fromEntries(WORRY_IDS.map((id) => [id, 'moderate'])), {}, NO_LEVERS, SEED);
+      for (const card of a.cards) {
+        // Lower pay or higher costs squeeze saving; they do not end it for life.
+        expect(card.middleAt65).toBeGreaterThan(0.4 * card.baseMiddleAt65);
+      }
+    }
+  }, 30000);
+
+  it('sizes the step up so good and bad luck at work cancel out on average, as the Assumptions panel says', () => {
+    const good = A.stepUpChance * A.stepUpRaise;
+    const bad = A.jobLossYoung * A.returnPayCut;
+    expect(Math.abs(good - bad)).toBeLessThan(0.0005);
+    // Three years of adjusting covers about half the gap, five about three quarters.
+    expect(1 - (1 - A.adaptSpeed) ** 3).toBeGreaterThan(0.5);
+    expect(1 - (1 - A.adaptSpeed) ** 5).toBeGreaterThan(0.75);
+  });
+
+  it('gives careers good luck as well as bad, with the same luck under every habit', () => {
+    const maya = PERSONAS[0].inputs;
+    const big = (paths: PathResult[]) => paths.map((p) => p.events.filter((e) => e.type === 'raise' && (e.value ?? 0) >= 8 && e.age < A.stepUpUntilAge + 1).map((e) => e.age).join(','));
+    const plain = simulate(maya, {}, NO_LEVERS, SEED);
+    const lucky = big(plain).filter((x) => x !== '').length;
+    // About 6 in 10 lives get at least one step up in 22 working years at 4% a year;
+    // a few more show a raise this size from ordinary growth and noise.
+    expect(lucky).toBeGreaterThan(400);
+    expect(lucky).toBeLessThan(850);
+    for (const id of LEVER_IDS) expect(big(simulate(maya, {}, leverOnly(id), SEED))).toEqual(big(plain));
+  });
 });
 
 describe('levers', () => {

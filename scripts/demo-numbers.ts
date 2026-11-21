@@ -15,7 +15,7 @@ console.log('Priya in control:', inControl(persona('priya').inputs));
 console.log('Automate $25 rescues:', row('auto25')?.rescued);
 console.log('Save part of every raise rescues:', row('raises')?.rescued);
 const card = a.cards[0];
-console.log('AI worry: harder', card.affected, 'recovered', card.recovered, 'best', card.best?.lever, card.best?.protects);
+console.log('AI worry: in control', card.inControl, 'instead of', card.baseInControl, '| middle at 65', card.middleAt65, 'instead of', card.baseMiddleAt65, '| best', card.best?.lever, card.best?.inControl);
 // Check-in after 3 months of the raise habit: saved grows by 3 months of saving.
 const after = { ...maya, saved: maya.saved + 3 * maya.monthly };
 console.log('Check-in start (no habit):', inControl(maya), '→ after 3 months with the raise habit:', inControl(after, leverOnly('raises')));

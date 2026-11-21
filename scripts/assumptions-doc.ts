@@ -43,7 +43,7 @@ ${WORRIES.map((w) => `| ${w.label} | ${w.changes[0]} | ${w.changes[1]} | ${w.cha
 - **Home** (only if set): the down payment is reached by the target age.
 - **Work-optional by 65:** income from savings and public pensions covers 70% of average spending over the last five working years. The earliest age this holds is recorded from 30 to 70. Before 65, savings must first stand in for public pensions until they start; pensions only count as far as that gap is funded.
 - **In control:** all milestones met. **Mostly there:** work-optional by 65, one other missed. **Tight:** work-optional by 65 with two or more others missed, or work-optional missed by less than 20 points. **Off track:** the rest.
-- A worry makes a future **harder** when its status drops against the no-worry run of the same path. It counts as **back on track later** when work still becomes optional by 70. A habit **lifts it back up** when the status improves under the same worry.
+- A worry is **sized** by how far it moves things on the same 1,000 paths: how many futures stay in control with it and without it, and the savings at 65 in the middle future. The habit named on the card is the one that leaves the most futures in control under that worry. In the river, the futures a worry touches are the ones whose status drops.
 - Habits are ranked by futures gained per dollar of take-home pay given up per paycheque today.
 
 ## Model order within a year
