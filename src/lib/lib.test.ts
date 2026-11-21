@@ -81,6 +81,10 @@ describe('calendar reminder', () => {
     const ics = buildIcs('2026-11-27', 'Clotho: Automate $25 a month', 'Check in.', new Date(Date.UTC(2026, 10, 21)), true);
     expect(ics).toContain('RRULE:FREQ=MONTHLY\r\n');
     expect(buildIcs('2026-11-27', 'x', 'y')).not.toContain('RRULE');
+    const linked = buildIcs('2026-11-27', 'x', 'Check in.', new Date(), true, 'https://example.com/app/');
+    expect(linked).toContain('URL:https://example.com/app/');
+    expect(linked).toContain('DESCRIPTION:Check in. https://example.com/app/');
+    expect(buildIcs('2026-11-27', 'x', 'y')).not.toContain('URL:');
   });
 
   it('picks the coming Friday as the default payday', () => {

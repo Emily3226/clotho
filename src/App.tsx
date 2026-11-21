@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
+import { ErrorNote } from './components/ErrorBoundary';
 import { APP_NAME } from './config';
 import { Explore } from './screens/Explore';
 import { About, Landing } from './screens/Intro';
@@ -17,6 +18,7 @@ export function App() {
   const setStep = useStore((s) => s.setStep);
   const theme = useStore((s) => s.theme);
   const setState = useStore((s) => s.setState);
+  const engineError = useStore((s) => s.engineError);
 
   useEffect(() => {
     if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
@@ -65,7 +67,9 @@ export function App() {
       </header>
 
       <main id="main">
-        {step === STEP.start ? (
+        {engineError && step >= STEP.futures ? (
+          <ErrorNote />
+        ) : step === STEP.start ? (
           <Landing />
         ) : step === STEP.about ? (
           <About />
@@ -78,11 +82,9 @@ export function App() {
         )}
       </main>
 
-      {step === STEP.start && (
-        <footer className="foot">
-          <p>Educational, not financial advice. Today’s dollars.</p>
-        </footer>
-      )}
+      <footer className="foot">
+        <p>Educational, not financial advice. Today’s dollars.</p>
+      </footer>
       <AssumptionsPanel />
     </>
   );

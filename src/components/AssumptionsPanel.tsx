@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DISCLAIMER } from '../config';
+import { ClearData } from './ClearData';
 import { ASSUMPTIONS, LIMITATIONS, type Assumption } from '../engine/assumptions';
 import { CITIES, FIELDS, MARKET_SETS, STAGES, STATCAN_GRAD_URL } from '../engine/profile';
 import stability from '../engine/stability.json';
@@ -91,6 +92,7 @@ export function AssumptionsPanel() {
         </header>
         <p className="lede">{DISCLAIMER}</p>
         <AiToggle />
+        <ClearData />
         <p>
           Every amount is in today’s dollars, so inflation is already taken out. The same inputs and the same seed always
           give the same thousand futures.

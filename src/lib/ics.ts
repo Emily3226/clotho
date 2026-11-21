@@ -11,7 +11,7 @@ export function nextFriday(from = new Date()): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export function buildIcs(dateISO: string, title: string, description: string, now = new Date(), monthly = false): string {
+export function buildIcs(dateISO: string, title: string, description: string, now = new Date(), monthly = false, url?: string): string {
   const [y, m, d] = dateISO.split('-').map(Number);
   const start = new Date(y, m - 1, d);
   const end = new Date(y, m - 1, d + 1);
@@ -28,7 +28,8 @@ export function buildIcs(dateISO: string, title: string, description: string, no
     `DTEND;VALUE=DATE:${ymd(end)}`,
     ...(monthly ? ['RRULE:FREQ=MONTHLY'] : []),
     `SUMMARY:${esc(title)}`,
-    `DESCRIPTION:${esc(description)}`,
+    `DESCRIPTION:${esc(url ? `${description} ${url}` : description)}`,
+    ...(url ? [`URL:${url}`] : []),
     'BEGIN:VALARM',
     'TRIGGER:PT9H',
     'ACTION:DISPLAY',

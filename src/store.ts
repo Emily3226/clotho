@@ -7,6 +7,8 @@ import { DEFAULT_INPUTS } from './engine/personas';
 import { NO_LEVERS, type AssumptionSetId, type Inputs, type LeverId, type Levers, type Scenario, type WorryId } from './engine/types';
 import type { Outcome } from './lib/doNow';
 
+export const STORE_KEY = 'clotho:v2';
+
 export type Theme = 'auto' | 'light' | 'dark';
 export const STEPS = ['Start', 'About you', 'Your futures', 'What helps most', 'Pick one'] as const;
 export const STEP = { start: 0, about: 1, futures: 2, habits: 3, pick: 4, back: 5 } as const;
@@ -96,6 +98,8 @@ interface Store {
   outcome: Outcome | null;
   // This person's row in the user-test log, so they are only counted once.
   testRowAt: string | null;
+  // The simulation failed to run or load.
+  engineError: boolean;
 
   setStep: (step: number) => void;
   setInputs: (patch: Partial<Inputs>) => void;
@@ -109,6 +113,8 @@ interface Store {
   answer: (label: string, patch: Partial<Inputs>, whyDown?: string) => void;
   setState: (patch: Partial<Store>) => void;
   restart: () => void;
+  // Removes everything this app has saved on this device.
+  clearAll: () => void;
 }
 
 export const leverIsOn = (levers: Levers, id: LeverId): boolean =>
@@ -155,6 +161,7 @@ const fresh = {
   hrCopied: false,
   outcome: null,
   testRowAt: null as string | null,
+  engineError: false,
 };
 
 export const useStore = create<Store>()(
@@ -225,9 +232,13 @@ export const useStore = create<Store>()(
       },
       setState: (patch) => set(patch),
       restart: () => set({ ...fresh }),
+      clearAll: () => {
+        set({ ...fresh, set: 'middle', aiOn: false, theme: 'dark', commitment: null, testLog: [], showAssumptions: false });
+        useStore.persist.clearStorage();
+      },
     }),
     {
-      name: 'clotho:v2',
+      name: STORE_KEY,
       // v1: dark became the default, so a saved 'auto' from before moves to dark.
       version: 1,
       migrate: (old, from) => {

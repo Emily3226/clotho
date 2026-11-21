@@ -197,6 +197,14 @@ button {
   font-size: 0.85rem;
   text-align: center;
 }
+.clear-data {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 4px;
+}
+.error-note {
+  padding-top: 48px;
+}
 .foot p {
   max-width: 70ch;
   margin: 0 auto 6px;
