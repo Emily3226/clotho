@@ -7,8 +7,8 @@ import { DEFAULT_INPUTS } from './engine/personas';
 import { NO_LEVERS, type AssumptionSetId, type Inputs, type LeverId, type Levers, type Scenario, type WorryId } from './engine/types';
 
 export type Theme = 'auto' | 'light' | 'dark';
-export const STEPS = ['Start', 'About you', 'Your futures', 'What helps most', 'What if', 'Pick one'] as const;
-export const STEP = { start: 0, about: 1, futures: 2, habits: 3, whatIf: 4, pick: 5, back: 6 } as const;
+export const STEPS = ['Start', 'About you', 'Your futures', 'What helps most', 'Pick one'] as const;
+export const STEP = { start: 0, about: 1, futures: 2, habits: 3, pick: 4, back: 5 } as const;
 
 export const ROOM_FOR = [
   { id: 'travel', label: 'Travel' },
@@ -75,7 +75,8 @@ interface Store {
   pendingNote: Note | null;
   note: string | null;
   // The first result after answering, so the dial can show "from 133 to 410".
-  first: { monthly: number; inControl: number } | null;
+  // Tied to the worry shown, so switching worries starts a fresh comparison.
+  first: { monthly: number; inControl: number; worry: WorryId | 'all' | null } | null;
   // A life being played back on the river.
   playing: number | null;
   commitment: Commitment | null;

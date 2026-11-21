@@ -135,6 +135,23 @@ export function Term({ children, explain }: { children: ReactNode; explain: stri
   );
 }
 
+// A small "?" that opens one plain sentence about a habit.
+export function Explain({ label, text }: { label: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className="qmark" aria-expanded={open} aria-label={`What is “${label}”?`} onClick={() => setOpen(!open)}>
+        ?
+      </button>
+      {open && (
+        <p className="explain" role="note">
+          {text}
+        </p>
+      )}
+    </>
+  );
+}
+
 // A question answered by tapping chips. Pattern adapted from the 21st "Chip
 // Group": each chip is a pressed or unpressed button, one tab stop for the
 // group, arrow keys and Home/End move between chips, and a check grows in on

@@ -1452,6 +1452,48 @@ details.why summary {
   font-style: normal;
 }
 
+/* What one habit puts within reach, under the headline. */
+.reach {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+.reach strong {
+  color: var(--s1);
+  font-size: 1.15em;
+  font-variant-numeric: tabular-nums;
+}
+.worries {
+  display: grid;
+  gap: 12px;
+}
+.worries .small-head {
+  margin-bottom: 0;
+}
+.qmark {
+  justify-self: start;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.qmark[aria-expanded='true'],
+.qmark:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.explain {
+  font-size: 0.92rem;
+  color: var(--muted);
+  max-width: 46ch;
+}
+
 .why-status,
 .why-bars {
   list-style: none;
