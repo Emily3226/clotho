@@ -119,6 +119,32 @@ export function leverCost(id: LeverId, inputs: Inputs): { perMonth: number; late
   }
 }
 
+// Why a future is not in control: the milestones it misses. A future can
+// miss more than one, so the counts can add up to more than `others`.
+export type WhyKey = 'workOptional65' | 'room45' | 'room35' | 'shockProof';
+export interface WhyNot {
+  others: number;
+  missed: { key: WhyKey; count: number }[];
+}
+
+export function whyNot(paths: { status: number; milestones: Milestones }[], startAge: number): WhyNot {
+  const keys: WhyKey[] = ['workOptional65', 'room45', 'room35', 'shockProof'];
+  const count: Record<WhyKey, number> = { workOptional65: 0, room45: 0, room35: 0, shockProof: 0 };
+  let others = 0;
+  for (const p of paths) {
+    if (p.status === 0) continue;
+    others++;
+    for (const k of keys) if (!p.milestones[k]) count[k]++;
+  }
+  const missed = keys
+    // The 35 check only exists for people who start before it.
+    .filter((k) => k !== 'room35' || startAge <= 35)
+    .map((key) => ({ key, count: count[key] }))
+    .filter((m) => m.count > 0)
+    .sort((x, y) => y.count - x.count);
+  return { others, missed };
+}
+
 export function rescueOf(before: PathResult[], after: PathResult[]): Rescue {
   const n = after.length;
   const mask = new Uint8Array(n);

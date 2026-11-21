@@ -4,7 +4,7 @@ import { AnimatedNumber, ChipGroup, Switch, Term } from '../components/bits';
 import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
-import type { Analysis, WorryCard } from '../engine/analyse';
+import { whyNot, type Analysis, type WhyKey, type WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
@@ -166,6 +166,63 @@ function Milestones({ a }: { a: Analysis }) {
   );
 }
 
+const WHY_LABEL: Record<WhyKey, string> = {
+  workOptional65: 'Work isn’t optional by 65',
+  room45: 'Less than a year saved by 45',
+  room35: 'Less than 6 months saved by 35',
+  shockProof: 'A bad year ran short or dipped into the workplace plan',
+};
+const STATUS_MEANS = ['all four checks met', 'work optional by 65, one other check missed', 'work optional by 65 with two or more missed, or close to it', 'the rest'];
+
+// Where the headline count comes from: what "in control" means, how the
+// other futures are sorted, and which checks they miss.
+function WhyNumber({ a }: { a: Analysis }) {
+  const inputs = useStore((s) => s.inputs);
+  const why = useMemo(() => whyNot(a.paths, a.startAge), [a]);
+  const counts = a.summary.counts;
+  const top = a.ranking[0];
+  return (
+    <details className="drawer why-number">
+      <summary>Why {num(counts[0])}?</summary>
+      <p className="hint">
+        Each of your 1,000 futures gets four checks: getting through bad years, 6 months saved by 35, a year saved by 45, and work optional by 65. In
+        control means all four.
+      </p>
+      <ul className="why-status">
+        {STATUS_LABELS.map((label, i) => (
+          <li key={label}>
+            <i className={`status-line s${i}`} aria-hidden="true" />
+            <span>
+              <b>{num(counts[i])}</b> {label.toLowerCase()}: <small>{STATUS_MEANS[i]}</small>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {why.others > 0 && (
+        <>
+          <p className="q-label">What the other {num(why.others)} miss</p>
+          <ul className="why-bars">
+            {why.missed.map((m) => (
+              <li key={m.key}>
+                <span>
+                  {WHY_LABEL[m.key]} <b>{num(m.count)}</b>
+                </span>
+                <i style={{ width: `${Math.max(2, (100 * m.count) / why.others)}%` }} aria-hidden="true" />
+              </li>
+            ))}
+          </ul>
+          <p className="hint">A future can miss more than one, so these can add up to more than {num(why.others)}.</p>
+        </>
+      )}
+      {top && top.rescued > 0 && (
+        <p className="hint">
+          What moves the most: <b>{leverCopy(top.id, inputs).noun}</b> rescues {num(top.rescued)} of them.
+        </p>
+      )}
+    </details>
+  );
+}
+
 function FuturesPanel({ a }: { a: Analysis }) {
   const seed = useStore((s) => s.seed);
   const note = useStore((s) => s.note);
@@ -173,6 +230,7 @@ function FuturesPanel({ a }: { a: Analysis }) {
   const setState = useStore((s) => s.setState);
   return (
     <>
+      <WhyNumber a={a} />
       <Milestones a={a} />
       <CompareCard />
       <details className="drawer live-answers">
