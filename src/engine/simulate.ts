@@ -120,6 +120,7 @@ export function simulate(
     let bought = false;
     let cushionFullSeen = cushion >= cushionShare * spend0 - 1 && cushionShare > 0 && inputs.saved > 0;
 
+    const trace = opts.trace ? { cushion: [] as number[], plan: [] as number[], flex: [] as number[], target: [] as number[] } : undefined;
     let minTfsaRoom = tfsaRoom;
     let maxFhsaYear = 0;
     let maxRrspOver = 0;
@@ -132,6 +133,12 @@ export function simulate(
       const total = cushion + flex + workplace;
       if (balances) balances[t] = total;
       final = total;
+      if (trace) {
+        trace.cushion.push(cushion);
+        trace.plan.push(workplace);
+        trace.flex.push(flex);
+        trace.target.push(cushionShare * lastSpend);
+      }
 
       if (a === 35) {
         room35 = cushion + flex >= (A.roomMonths35 / 12) * lastSpend - 1;
@@ -195,7 +202,7 @@ export function simulate(
       workplace *= 1 + r;
       taxable *= 1 + r - A.taxableDrag;
       tfsaRoom += A.tfsaAnnual;
-      if (detail && rs <= -0.15) events.push({ age: a, type: 'crash', value: Math.round(-rs * 100) });
+      if (detail && rs <= -0.2) events.push({ age: a, type: 'crash', value: Math.round(-rs * 100) });
 
       if (retired) {
         const pots = tfsa + fhsa + taxable + workplace;
@@ -412,6 +419,7 @@ export function simulate(
       peakFhsaYear: maxFhsaYear,
       peakRrspOver: maxRrspOver,
       minBalance,
+      trace,
     };
   }
   return out;

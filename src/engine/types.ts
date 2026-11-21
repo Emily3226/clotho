@@ -90,6 +90,8 @@ export interface PathResult {
   peakFhsaYear: number;
   peakRrspOver: number;
   minBalance: number;
+  // year-by-year cushion and workplace-plan balances, when asked for
+  trace?: { cushion: number[]; plan: number[]; flex: number[]; target: number[] };
 }
 
 export interface Summary {
@@ -102,4 +104,5 @@ export interface SimOptions {
   detail?: boolean;
   paths?: number;
   calm?: boolean;
+  trace?: boolean;
 }
