@@ -1,11 +1,9 @@
 import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
+import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor } from './profile';
 import { drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
 import type { Inputs, Levers, PathEvent, PathResult, Scenario, SimOptions, Status, Summary } from './types';
 import { SEV_INDEX, WORRY } from './worries';
 
-// Ordinary-year stock mean, re-centred so the long-run average stays at stockMean
-// once the crash regime is included.
-const STOCK_NORMAL_MEAN = (A.stockMean - A.crashChance * A.crashMean) / (1 - A.crashChance);
 
 function amortise(balance: number, rate: number, years: number): number {
   if (balance <= 0) return 0;
@@ -17,7 +15,7 @@ export function homeGoalFor(inputs: Inputs, scenario: Scenario): { price: number
   if (inputs.home) return inputs.home;
   if (scenario.home) {
     return {
-      price: WORRY.home.defaultPrice,
+      price: inputs.city ? cityInfo(inputs.city).homePrice : WORRY.home.defaultPrice,
       byAge: Math.max(inputs.age + WORRY.home.defaultYears, WORRY.home.minAge),
     };
   }
@@ -38,6 +36,21 @@ export function simulate(
   const age = inputs.age;
   const N = A.endAge - age;
   const income = inputs.income;
+  const mk = MARKET_SETS[opts.set ?? 'middle'];
+  // Ordinary-year stock mean, re-centred so the long-run average stays at the
+  // set's mean once the crash regime is included.
+  const stockNormalMean = (mk.stockMean - mk.crashChance * A.crashMean) / (1 - mk.crashChance);
+  const student = inputs.stage === 'student';
+  const gig = inputs.stage === 'gig';
+  const finishAge = student ? Math.max(age, inputs.finishAge) : age;
+  const fullIncome = student ? fieldSalaryFor('first', inputs.field) : income;
+  const field = fieldInfo(inputs.field);
+  const city = cityInfo(inputs.city);
+  const raiseSpent = city.raiseSpent;
+  const moveOutAge = inputs.living === 'family' ? Math.max(age + 1, inputs.moveOutAge) : -1;
+  const wageNoise = gig ? GIG.wageNoise : A.wageNoise;
+  const aiK = field.aiStrength;
+  const scale = (m: number) => 1 + (m - 1) * aiK;
 
   const sAi = scenario.ai ? SEV_INDEX[scenario.ai] : -1;
   const sRec = scenario.recession ? SEV_INDEX[scenario.recession] : -1;
@@ -62,7 +75,7 @@ export function simulate(
 
   const nth0 = takeHome(income);
   const saving0 = Math.min(
-    inputs.perPaycheque * A.paycheques + planPct * income * (1 - marginalRate(income)),
+    inputs.monthly * 12 + planPct * income * (1 - marginalRate(income)),
     0.6 * nth0,
   );
   const spend0 = nth0 - saving0;
@@ -103,7 +116,10 @@ export function simulate(
     let prevYearIncome = income;
     let costFactor = 1;
     let debtBal = inputs.debt ? inputs.debt.balance : 0;
-    let dropDebtPay = false;
+    // A student's loan payments start when school ends.
+    let debtStarted = !student;
+    let trendAtFinish = 1;
+    let plainAtFinish = 1;
 
     let woAge: number | null = null;
     let ratio65 = 0;
@@ -181,15 +197,15 @@ export function simulate(
       let rs: number;
       let rb: number;
       if (calm) {
-        rs = A.stockMean;
-        rb = A.bondMean;
+        rs = mk.stockMean;
+        rb = mk.bondMean;
       } else {
-        if (draws[o + S_CRASH_U] < A.crashChance) {
+        if (draws[o + S_CRASH_U] < mk.crashChance) {
           rs = Math.min(-0.05, Math.max(-0.6, A.crashMean + A.crashVol * draws[o + S_CRASH_Z]));
         } else {
-          rs = Math.max(-0.6, STOCK_NORMAL_MEAN + A.stockVol * draws[o + S_STOCK]);
+          rs = Math.max(-0.6, stockNormalMean + mk.stockVol * draws[o + S_STOCK]);
         }
-        rb = A.bondMean + A.bondVol * draws[o + S_BOND];
+        rb = mk.bondMean + A.bondVol * draws[o + S_BOND];
         if (sRec >= 0 && t === crashYear) rs = Math.min(rs, WORRY.recession.crash[sRec]);
       }
       rs -= worldDrag;
@@ -218,53 +234,72 @@ export function simulate(
 
       // Pay.
       if (t > 0) {
-        const g = wageGrowthAt(a - 1);
+        const g = a - 1 < 30 ? field.growthTo30 : wageGrowthAt(a - 1);
         plainTrend *= 1 + g;
-        trend *= 1 + g - (sAi >= 0 && t <= WORRY.ai.years ? WORRY.ai.wageDrag[sAi] : 0);
+        trend *= 1 + g - (sAi >= 0 && t <= WORRY.ai.years ? WORRY.ai.wageDrag[sAi] * aiK : 0);
       }
-      const gross = income * trend * level * (1 + (calm ? 0 : A.wageNoise * draws[o + S_WAGE]));
+      const inSchool = student && a < finishAge;
+      if (student && a === finishAge) {
+        trendAtFinish = trend;
+        plainAtFinish = plainTrend;
+        debtStarted = true;
+      }
+      const payBase = inSchool ? income * trend : student ? (fullIncome * trend) / trendAtFinish : income * trend;
+      const gross = payBase * level * (1 + (calm ? 0 : wageNoise * draws[o + S_WAGE]));
       const nth = takeHome(gross);
-      if (t > 0) spendBase += A.raiseSpentShare * (nth - prevNth);
-      if (dropDebtPay) {
-        spendBase -= debtPay;
-        dropDebtPay = false;
-      }
-      prevNth = nth;
-      if (spendBase > nth) spendBase = nth;
-      if (detail && t > 0 && gross / prevGross > 1.055) {
+      // Lifestyle follows the expected career, not each year's luck: a layoff,
+      // a pay cut or a slower career squeezes saving, not spending.
+      const expectedPay = inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend;
+      const expectedNth = takeHome(expectedPay);
+      if (t > 0) spendBase += raiseSpent * (expectedNth - prevNth);
+      prevNth = expectedNth;
+      if (detail && student && t > 0 && a === finishAge) {
+        events.push({ age: a, type: 'fulltime' });
+      } else if (detail && t > 0 && gross / prevGross > 1.055) {
         events.push({ age: a, type: 'raise', value: Math.round((gross / prevGross - 1) * 100) });
       }
       prevGross = gross;
 
-      if (debtBal > 0) {
-        debtBal = debtBal * (1 + debtRate) - debtPay;
+      // Student debt payments come out of what would have been saved. If that
+      // is not enough, the rest is squeezed out of spending that year.
+      let debtDue = 0;
+      if (debtBal > 0 && debtStarted) {
+        debtDue = Math.min(debtPay, debtBal * (1 + debtRate));
+        debtBal = debtBal * (1 + debtRate) - debtDue;
         if (debtBal <= 1) {
           debtBal = 0;
-          dropDebtPay = true;
           if (detail) events.push({ age: a + 1, type: 'debtFree' });
         }
       }
 
       if (sCost >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + WORRY.costs.extra[sCost] * WORRY.costs.essentialsShare;
-      let spend = Math.min(spendBase * costFactor, nth);
+      // Rents follow home prices: housing, about 30% of spending, rises with them.
+      if (sHome >= 0 && t >= 1 && t <= WORRY.costs.years) costFactor *= 1 + homeFaster * WORRY.home.housingShare;
+      const want = spendBase * costFactor;
+      // What income could not cover this year. The work-optional and room
+      // targets are set by the lifestyle wanted, not by a squeezed year.
+      const squeezed = Math.max(0, want - nth);
+      let spend = Math.min(want, nth);
       const target = cushionShare * spend;
 
       // A plan dollar costs less than a dollar of take-home pay.
       const relief = empPct > 0 ? 1 - marginalRate(gross) : 1;
       const delayed = t < levers.delay;
-      const pay = trend * level;
+      // Pay relative to today, for the save-a-raise habit.
+      const pay = (payBase * level) / Math.max(1, income);
       if (delayed) {
         spend = nth;
         lastStepPay = pay;
       } else {
         if (levers.raises) {
-          while (pay >= lastStepPay * (1 + A.raisesStep) * 0.9999 && raisePts < A.raisesCapPoints) {
+          // One more point of pay saved at each raise of 3% or more.
+          if (pay >= lastStepPay * (1 + A.raisesStep) * 0.9999 && raisePts < A.raisesCapPoints) {
             raisePts++;
-            lastStepPay *= 1 + A.raisesStep;
+            lastStepPay = pay;
           }
         }
-        let extra = levers.auto * A.paycheques + (matchExtra * relief + raisePts / 100) * gross;
-        if (levers.cushion && cushion < target) extra += A.cushionTopUp * A.paycheques;
+        let extra = levers.auto * 12 + (matchExtra * relief + raisePts / 100) * gross;
+        if (levers.cushion && cushion < target) extra += A.cushionTopUp * 12;
         if (extra > 0) spend = Math.max(spend - extra, Math.min(spend, 0.4 * nth));
       }
 
@@ -272,18 +307,32 @@ export function simulate(
       let months = carry;
       carry = 0;
       let scar = false;
-      if (!calm && months === 0) {
-        let p = a < A.jobLossAgeSplit ? A.jobLossYoung : A.jobLossLater;
+      let jobless: number = A.joblessIncomeShare;
+      if (!calm && months === 0 && !inSchool) {
         const aiHit = sAi >= 0 && a < WORRY.ai.untilAge;
-        if (aiHit) p *= WORRY.ai.jobMult[sAi];
-        if (sRec >= 0 && t >= crashYear && t < crashYear + WORRY.recession.jobYears) p *= WORRY.recession.jobMult[sRec];
-        if (draws[o + S_JOB_U] < Math.min(p, 0.9)) {
-          months = Math.min(
-            A.spellCapMonths,
-            A.spellMedianMonths * Math.exp(A.spellSigma * draws[o + S_SPELL]) * (aiHit ? WORRY.ai.spellMult[sAi] : 1),
-          );
-          scar = true;
-          if (detail) events.push({ age: a, type: 'job', value: Math.max(1, Math.round(months)) });
+        const recHit = sRec >= 0 && t >= crashYear && t < crashYear + WORRY.recession.jobYears;
+        if (gig) {
+          // Gig work: no layoffs, but a chance each year of a slow stretch.
+          let p = GIG.dipChance;
+          if (aiHit) p *= scale(WORRY.ai.jobMult[sAi]);
+          if (recHit) p *= WORRY.recession.jobMult[sRec];
+          if (draws[o + S_JOB_U] < Math.min(p, 0.9)) {
+            months = GIG.dipMonths;
+            jobless = GIG.dipIncomeShare;
+            if (detail) events.push({ age: a, type: 'dip', value: months });
+          }
+        } else {
+          let p = a < A.jobLossAgeSplit ? A.jobLossYoung : A.jobLossLater;
+          if (aiHit) p *= scale(WORRY.ai.jobMult[sAi]);
+          if (recHit) p *= WORRY.recession.jobMult[sRec];
+          if (draws[o + S_JOB_U] < Math.min(p, 0.9)) {
+            months = Math.min(
+              A.spellCapMonths,
+              A.spellMedianMonths * Math.exp(A.spellSigma * draws[o + S_SPELL]) * (aiHit ? scale(WORRY.ai.spellMult[sAi]) : 1),
+            );
+            scar = true;
+            if (detail) events.push({ age: a, type: 'job', value: Math.max(1, Math.round(months)) });
+          }
         }
       }
       if (months > 12) {
@@ -291,10 +340,14 @@ export function simulate(
         months = 12;
       }
       const share = (12 - months) / 12;
-      const yearIncome = gross * share + A.joblessIncomeShare * gross * (1 - share);
+      const yearIncome = gross * share + jobless * gross * (1 - share);
       const th = months > 0 ? takeHome(yearIncome) : nth;
 
       let free = th - spend;
+      // Living with family: the same lifestyle as renting, plus the rent not
+      // paid, saved until moving out.
+      if (a < moveOutAge) free += Math.min(city.moveOutCost, FAMILY_RENT_SHARE * th);
+      if (debtDue > 0) free -= Math.min(debtDue, Math.max(0, free));
       if (worldChance > 0 && !calm && draws[o + S_COST_U] < worldChance) {
         free -= (WORRY.world.months / 12) * spend;
         if (detail) events.push({ age: a, type: 'cost' });
@@ -389,11 +442,13 @@ export function simulate(
       const lowest = Math.min(cushion, tfsa, fhsa, taxable, workplace);
       if (lowest < minBalance) minBalance = lowest;
 
-      lastSpend = spend;
-      ring[ringN % 5] = spend;
+      lastSpend = spend + squeezed;
+      ring[ringN % 5] = spend + squeezed;
       ringN++;
-      earnedSum += yearIncome;
-      yearsWorked++;
+      if (!inSchool) {
+        earnedSum += yearIncome;
+        yearsWorked++;
+      }
       prevYearIncome = yearIncome;
       if (scar) level *= 1 - A.returnPayCut;
     }

@@ -1,9 +1,11 @@
 import { A, marginalRate } from './assumptions';
+import { fieldSalaryFor } from './profile';
 import { simulate, summarise } from './simulate';
 import {
   LEVER_IDS,
   NO_LEVERS,
   leverOnly,
+  type AssumptionSetId,
   type Inputs,
   type LeverId,
   type Levers,
@@ -25,8 +27,12 @@ export interface WorryCard {
 
 export interface LeverRow {
   id: LeverId;
-  costPerPay: number;
+  // Take-home pay given up per month.
+  costPerMonth: number;
   costLater: boolean;
+  noExtraCost: boolean;
+  // Futures whose status improves to In control or Mostly there.
+  rescued: number;
   gained: number;
   inControl: number;
   ageDelta: number | null;
@@ -43,7 +49,15 @@ export interface PathLite {
   events: PathEvent[];
 }
 
+export interface Rescue {
+  mask: Uint8Array;
+  toControl: number;
+  toMostly: number;
+  total: number;
+}
+
 export interface Analysis {
+  set: AssumptionSetId;
   startAge: number;
   years: number;
   balances: Float32Array;
@@ -54,6 +68,10 @@ export interface Analysis {
   reps: number[];
   baseSummary: Summary;
   scenarioSummary: Summary;
+  // What the switched-on habits rescue, against the same luck without them.
+  rescue: Rescue | null;
+  // The same lives without the habits, for the inspector.
+  plainPaths: PathLite[] | null;
   cards: WorryCard[];
   ranking: LeverRow[];
   waiting: { inControl: number; ageDelta: number | null };
@@ -74,25 +92,48 @@ export function matchPctFor(inputs: Inputs): number {
   return inputs.plan === 'yes' ? inputs.matchPct : inputs.plan === 'unsure' ? A.defaultMatchPct : 0;
 }
 
-export function leverCost(id: LeverId, inputs: Inputs): { perPay: number; later: boolean } {
+export function leverCost(id: LeverId, inputs: Inputs): { perMonth: number; later: boolean } {
   switch (id) {
     case 'match': {
       const from = inputs.plan === 'yes' ? inputs.employeePct : 0;
-      const gross = (((matchPctFor(inputs) - from) / 100) * inputs.income) / A.paycheques;
-      return { perPay: gross * (1 - marginalRate(inputs.income)), later: false };
+      const gross = (((matchPctFor(inputs) - from) / 100) * inputs.income) / 12;
+      return { perMonth: gross * (1 - marginalRate(inputs.income)), later: false };
     }
     case 'auto25':
-      return { perPay: 25, later: false };
+      return { perMonth: 25, later: false };
     case 'auto50':
-      return { perPay: 50, later: false };
+      return { perMonth: 50, later: false };
     case 'auto100':
-      return { perPay: 100, later: false };
+      return { perMonth: 100, later: false };
     case 'raises':
-      return { perPay: (0.01 * inputs.income) / A.paycheques, later: true };
+      return { perMonth: (0.01 * (inputs.stage === 'student' ? fieldSalaryFor('first', inputs.field) : inputs.income)) / 12, later: true };
     case 'cushion':
-      return { perPay: A.cushionTopUp, later: false };
+      return { perMonth: A.cushionTopUp, later: false };
   }
 }
+
+export function rescueOf(before: PathResult[], after: PathResult[]): Rescue {
+  const n = after.length;
+  const mask = new Uint8Array(n);
+  let toControl = 0;
+  let toMostly = 0;
+  for (let i = 0; i < n; i++) {
+    if (after[i].status < before[i].status && after[i].status <= 1) {
+      mask[i] = 1;
+      if (after[i].status === 0) toControl++;
+      else toMostly++;
+    }
+  }
+  return { mask, toControl, toMostly, total: toControl + toMostly };
+}
+
+const lite = (p: PathResult): PathLite => ({
+  status: p.status,
+  milestones: p.milestones,
+  workOptionalAge: p.workOptionalAge,
+  final: p.final,
+  events: p.events,
+});
 
 const ageDelta = (a: number | null, b: number | null): number | null => (a === null || b === null ? null : a - b);
 
@@ -102,27 +143,36 @@ export class Engine {
   private cache = new Map<string, PathResult[]>();
   private key = '';
 
-  private run(inputs: Inputs, scenario: Scenario, levers: Levers, seed: number, detail: boolean): PathResult[] {
+  private run(inputs: Inputs, scenario: Scenario, levers: Levers, seed: number, detail: boolean, set: AssumptionSetId): PathResult[] {
     const k = JSON.stringify([scenario, levers, detail]);
     const hit = this.cache.get(k) ?? (detail ? undefined : this.cache.get(JSON.stringify([scenario, levers, true])));
     if (hit) return hit;
-    const res = simulate(inputs, scenario, levers, seed, { detail });
+    const res = simulate(inputs, scenario, levers, seed, { detail, set });
     this.cache.set(k, res);
     return res;
   }
 
-  analyse(inputs: Inputs, selected: Scenario, scenario: Scenario, levers: Levers, seed: number): Analysis {
-    const key = JSON.stringify([inputs, seed]);
+  analyse(
+    inputs: Inputs,
+    selected: Scenario,
+    scenario: Scenario,
+    levers: Levers,
+    seed: number,
+    set: AssumptionSetId = 'middle',
+    showAll = false,
+  ): Analysis {
+    const key = JSON.stringify([inputs, seed, set]);
     if (key !== this.key) {
       this.cache.clear();
       this.key = key;
     }
-    const run = (s: Scenario, l: Levers, detail = false) => this.run(inputs, s, l, seed, detail);
+    const run = (s: Scenario, l: Levers, detail = false) => this.run(inputs, s, l, seed, detail, set);
+    const leversOn = levers.match || levers.raises || levers.cushion || levers.auto > 0;
     const available = LEVER_IDS.filter((id) => leverAvailable(id, inputs));
 
     const base = run({}, NO_LEVERS);
     const view = run(scenario, levers, true);
-    const scen = run(scenario, NO_LEVERS);
+    const scen = run(scenario, NO_LEVERS, leversOn);
     const baseSummary = summarise(base);
     const scenarioSummary = summarise(scen);
     const summary = summarise(view);
@@ -132,7 +182,7 @@ export class Engine {
     // Worry cards: each selected worry alone, then all together.
     const ids = Object.keys(selected) as WorryId[];
     const sets: { id: WorryId | 'all'; scenario: Scenario }[] = ids.map((id) => ({ id, scenario: { [id]: selected[id] } }));
-    if (ids.length > 1) sets.push({ id: 'all', scenario: selected });
+    if (ids.length > 1 && showAll) sets.push({ id: 'all', scenario: selected });
     const cards: WorryCard[] = sets.map(({ id, scenario: s }) => {
       const worried = run(s, NO_LEVERS);
       const mask = new Uint8Array(n);
@@ -160,22 +210,37 @@ export class Engine {
     // Lever ranking against the current scenario.
     const yearlyMatch = (matchPctFor(inputs) / 100) * inputs.income;
     const ranking: LeverRow[] = available.map((id) => {
-      const s = summarise(run(scenario, leverOnly(id)));
+      const res = run(scenario, leverOnly(id));
+      const s = summarise(res);
       const cost = leverCost(id, inputs);
       const gained = s.counts[0] - scenarioSummary.counts[0];
+      const rescued = rescueOf(scen, res).total;
+      const askHR = id === 'match' && inputs.plan === 'unsure';
       return {
         id,
-        costPerPay: cost.perPay,
+        costPerMonth: cost.perMonth,
         costLater: cost.later,
+        // Asking costs nothing; the habit itself starts later.
+        noExtraCost: askHR,
+        rescued,
         gained,
         inControl: s.counts[0],
         ageDelta: ageDelta(s.medianWorkOptionalAge, scenarioSummary.medianWorkOptionalAge),
-        perDollar: gained / Math.max(1, cost.perPay),
-        askHR: id === 'match' && inputs.plan === 'unsure',
+        perDollar: rescued / Math.max(1, cost.perMonth),
+        askHR,
         yearlyMatch: id === 'match' ? yearlyMatch : 0,
       };
     });
-    ranking.sort((x, y) => Number(y.askHR) - Number(x.askHR) || y.perDollar - x.perDollar || y.gained - x.gained);
+    // No-extra-cost steps first, by futures rescued; then futures rescued per
+    // dollar of take-home pay given up each month.
+    ranking.sort(
+      (x, y) =>
+        Number(y.noExtraCost) - Number(x.noExtraCost) ||
+        (x.noExtraCost ? y.rescued - x.rescued : y.perDollar - x.perDollar) ||
+        y.rescued - x.rescued,
+    );
+    const rescue = leversOn ? rescueOf(scen, view) : null;
+    const plainPaths = leversOn ? scen.map(lite) : null;
 
     const late = summarise(run(scenario, { ...levers, delay: A.waitingYears }));
     const waiting = {
@@ -192,7 +257,7 @@ export class Engine {
       const p = view[i];
       balances.set(p.balances!, i * w);
       statuses[i] = p.status;
-      paths[i] = { status: p.status, milestones: p.milestones, workOptionalAge: p.workOptionalAge, final: p.final, events: p.events };
+      paths[i] = lite(p);
     }
     const p25 = new Float32Array(w);
     const p50 = new Float32Array(w);
@@ -209,6 +274,7 @@ export class Engine {
     const reps = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98].map((q) => order[Math.min(n - 1, Math.floor(n * q))]);
 
     return {
+      set,
       startAge: inputs.age,
       years,
       balances,
@@ -219,6 +285,8 @@ export class Engine {
       reps,
       baseSummary,
       scenarioSummary,
+      rescue,
+      plainPaths,
       cards,
       ranking,
       waiting,

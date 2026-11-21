@@ -1,16 +1,32 @@
 export type PlanAnswer = 'yes' | 'no' | 'unsure';
 
+export type Stage = 'student' | 'first' | 'gig' | 'full';
+export type FieldId = 'health' | 'trades' | 'engcs' | 'business' | 'science' | 'social' | 'arts' | 'unsure';
+export type City = 'major' | 'big' | 'small';
+export type Living = 'family' | 'renting' | 'own';
+export type AssumptionSetId = 'cautious' | 'middle' | 'hopeful';
+
 export interface Inputs {
   age: number;
+  stage: Stage;
+  // Current yearly income before tax (part-time pay for a student).
   income: number;
   saved: number;
-  perPaycheque: number;
+  // What you set aside each month, in today's dollars.
+  monthly: number;
   plan: PlanAnswer;
   employeePct: number;
   matchPct: number;
   cushionMonths: number;
   home: { price: number; byAge: number } | null;
   debt: { balance: number; rate: number } | null;
+  // "Make it more you". null means not answered: the default is used.
+  field: FieldId | null;
+  city: City | null;
+  living: Living | null;
+  moveOutAge: number;
+  // Students only: the age full-time pay starts.
+  finishAge: number;
 }
 
 export type WorryId = 'ai' | 'recession' | 'costs' | 'home' | 'world' | 'pensions';
@@ -44,6 +60,8 @@ export function leverOnly(id: LeverId): Levers {
 
 export type EventType =
   | 'job'
+  | 'dip'
+  | 'fulltime'
   | 'cushion'
   | 'flex'
   | 'raid'
@@ -105,4 +123,5 @@ export interface SimOptions {
   paths?: number;
   calm?: boolean;
   trace?: boolean;
+  set?: AssumptionSetId;
 }

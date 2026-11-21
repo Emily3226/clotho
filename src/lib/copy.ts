@@ -7,6 +7,8 @@ import { money, moneyRound, num } from './format';
 export interface LeverCopy {
   title: string;
   doing: string;
+  // Used in "<noun> rescues 214 of your futures".
+  noun: string;
   explain: string;
 }
 
@@ -17,11 +19,13 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
         ? {
             title: 'Ask HR one question',
             doing: 'Finding and taking your employer match',
+            noun: 'Asking HR one question',
             explain: 'Many workplace plans come with matching: money your employer adds when you put some in.',
           }
         : {
             title: 'Take the full employer match',
             doing: 'Taking your full employer match',
+            noun: 'Taking the full employer match',
             explain: 'Money your employer adds when you put some in. Unclaimed, it stays with them.',
           };
     case 'auto25':
@@ -29,32 +33,35 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
     case 'auto100': {
       const n = id.slice(4);
       return {
-        title: `Add $${n} a paycheque, automatically`,
-        doing: `Adding $${n} a paycheque`,
-        explain: 'An automatic transfer on payday. You set it once and it keeps going.',
+        title: `Automate $${n} a month`,
+        doing: `Automating $${n} a month`,
+        noun: `Automating $${n} a month`,
+        explain: 'An automatic transfer to long-term savings, such as a TFSA, on payday. You set it once and it keeps going.',
       };
     }
     case 'raises':
       return {
-        title: 'Save a little of every raise',
-        doing: 'Saving a little of every raise',
-        explain: 'Each time your pay grows 3%, one more point of it goes to savings. Your take-home pay still goes up.',
+        title: 'Save part of every raise',
+        doing: 'Saving part of every raise',
+        noun: 'Saving part of every raise',
+        explain: 'Each time your pay grows 3% or more, one more point of it goes to savings, up to 5 points. Your take-home pay still goes up.',
       };
     case 'cushion':
       return {
         title: 'Build the cushion first',
         doing: 'Building your cushion first',
-        explain: `An extra $${A.cushionTopUp} a paycheque, only until your cushion is full. It stops by itself.`,
+        noun: 'Building the cushion first',
+        explain: `An extra $${A.cushionTopUp} a month, only until your cushion is full. It stops by itself.`,
       };
   }
 }
 
 export function leverCostLine(row: LeverRow): string {
-  if (row.id === 'raises') return '$0 today, then 1 point of pay each time you get a 3% raise';
-  if (row.id === 'cushion') return `${money(row.costPerPay)} a paycheque, only while the cushion fills`;
-  if (row.askHR) return `$0 to ask. The full match would take about ${money(row.costPerPay)} a paycheque`;
-  if (row.id === 'match') return `About ${money(row.costPerPay)} less take-home a paycheque`;
-  return `${money(row.costPerPay)} a paycheque`;
+  if (row.id === 'raises') return '$0 today, then 1 point of each raise';
+  if (row.id === 'cushion') return `${money(row.costPerMonth)} a month, only while the cushion fills`;
+  if (row.askHR) return `No extra cost to ask. The full match would take about ${money(row.costPerMonth)} a month`;
+  if (row.id === 'match') return `About ${money(row.costPerMonth)} less take-home a month`;
+  return `${money(row.costPerMonth)} a month`;
 }
 
 export function ageShift(delta: number | null): string {
@@ -66,6 +73,8 @@ export function ageShift(delta: number | null): string {
 
 const EVENT_TEXT: Record<PathEvent['type'], (v?: number) => string> = {
   job: (v) => `out of work for ${v === 1 ? '1 month' : `${v} months`}`,
+  dip: (v) => `a slow stretch of gig work for ${v} months`,
+  fulltime: () => 'started full-time work',
   cushion: () => 'used the cushion',
   flex: () => 'drew on long-term savings',
   raid: () => 'had to dip into retirement savings',
@@ -86,8 +95,8 @@ export interface TimelineRow {
   kind: 'good' | 'hard' | 'plain';
 }
 
-const GOOD: PathEvent['type'][] = ['raise', 'cushionFull', 'home', 'debtFree', 'room', 'optional'];
-const HARD: PathEvent['type'][] = ['job', 'raid', 'short', 'crash', 'cost'];
+const GOOD: PathEvent['type'][] = ['fulltime', 'raise', 'cushionFull', 'home', 'debtFree', 'room', 'optional'];
+const HARD: PathEvent['type'][] = ['job', 'dip', 'raid', 'short', 'crash', 'cost'];
 
 export function timeline(events: PathEvent[]): TimelineRow[] {
   const byAge = new Map<number, PathEvent[]>();
@@ -168,7 +177,7 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
   } else {
     parts.push(`${clause}, `, { strong: num(card.affected) }, ` of your 1,000 futures get harder.`);
     if (card.recovered > 0) parts.push(' In ', { strong: num(card.recovered) }, ' of those, work still becomes optional by 70.');
-    if (card.best) parts.push(` ${leverCopy(card.best.lever, inputs).doing} lifts `, { strong: num(card.best.protects) }, ' of them back up.');
+    if (card.best) parts.push(` ${leverCopy(card.best.lever, inputs).noun} protects `, { strong: num(card.best.protects) }, ' of them.');
   }
   return {
     parts,
@@ -179,7 +188,7 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
       futuresThatGetHarder: card.affected,
       ofThoseWorkStillOptionalBy70: card.recovered,
       workOptionalByAge: 70,
-      bestHabit: card.best ? leverCopy(card.best.lever, inputs).doing : null,
+      bestHabit: card.best ? leverCopy(card.best.lever, inputs).noun : null,
       futuresLiftedByBestHabit: card.best?.protects ?? 0,
     },
   };
@@ -201,7 +210,7 @@ export function planLines(id: LeverId, inputs: Inputs, yearlyMatch: number): [st
     case 'auto50':
     case 'auto100':
       return [
-        `Set up an automatic transfer of $${id.slice(4)} for the day your pay arrives.`,
+        `Set up an automatic monthly transfer of $${id.slice(4)} to long-term savings, on the day your pay arrives.`,
         'It moves before you see it, so there is nothing to remember.',
       ];
     case 'raises':
@@ -211,7 +220,7 @@ export function planLines(id: LeverId, inputs: Inputs, yearlyMatch: number): [st
       ];
     case 'cushion':
       return [
-        `Send $${A.cushionTopUp} a paycheque to a separate savings account until it holds ${inputs.cushionMonths} months of spending.`,
+        `Send $${A.cushionTopUp} a month to a separate savings account until it holds ${inputs.cushionMonths} months of spending.`,
         'Then stop, or point the same amount at long-term savings. You decide.',
       ];
   }

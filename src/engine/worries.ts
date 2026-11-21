@@ -9,7 +9,7 @@ export const WORRY = {
   recession: { crash: [-0.2, -0.3, -0.4], jobMult: [1.75, 2.5, 3.5], window: 3, jobYears: 2 },
   // Applied to essentials, taken as half of spending.
   costs: { extra: [0.0075, 0.015, 0.025], essentialsShare: 0.5, years: 10 },
-  home: { faster: [0.005, 0.01, 0.02], defaultPrice: 500000, defaultYears: 10, minAge: 32 },
+  home: { faster: [0.005, 0.01, 0.02], defaultPrice: 500000, defaultYears: 10, minAge: 32, housingShare: 0.3 },
   world: { chance: [0.02, 0.03, 0.05], months: 2, returns: [0.0025, 0.005, 0.01] },
   pensions: { paid: [0.9, 0.75, 0.5] },
 } as const;
@@ -62,9 +62,9 @@ export const WORRIES: WorryInfo[] = [
     short: 'Affording a home',
     ifClause: 'If home prices keep pulling away',
     changes: [
-      'Adds a home goal; prices rise 0.5% a year faster than wages',
-      'Adds a home goal; prices rise 1% a year faster than wages',
-      'Adds a home goal; prices rise 2% a year faster than wages',
+      'Adds a home goal; prices and rents rise 0.5% a year faster than wages',
+      'Adds a home goal; prices and rents rise 1% a year faster than wages',
+      'Adds a home goal; prices and rents rise 2% a year faster than wages',
     ],
   },
   {

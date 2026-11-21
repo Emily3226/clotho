@@ -1,0 +1,33 @@
+{
+  "seed": 2026,
+  "result": [
+    {
+      "persona": "Maya, 20",
+      "cautious": "raises",
+      "middle": "raises",
+      "hopeful": "raises",
+      "same": true
+    },
+    {
+      "persona": "Jordan, 23",
+      "cautious": "match",
+      "middle": "match",
+      "hopeful": "match",
+      "same": true
+    },
+    {
+      "persona": "Sam, 25",
+      "cautious": "raises",
+      "middle": "raises",
+      "hopeful": "raises",
+      "same": true
+    },
+    {
+      "persona": "Priya, 20",
+      "cautious": "raises",
+      "middle": "raises",
+      "hopeful": "raises",
+      "same": true
+    }
+  ]
+}

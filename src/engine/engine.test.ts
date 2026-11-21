@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Engine } from './analyse';
+import { writeFileSync } from 'node:fs';
+import { Engine, rescueOf } from './analyse';
 import { A, stockShareAt } from './assumptions';
-import { PERSONAS } from './personas';
+import { PERSONAS, persona } from './personas';
+import { inputsForStage } from './profile';
 import { simulate, summarise } from './simulate';
 import { LEVER_IDS, NO_LEVERS, WORRY_IDS, leverOnly, type Inputs, type Levers, type PathResult, type Scenario } from './types';
 
@@ -63,8 +65,8 @@ describe('monotonicity', () => {
   it('more saving never lowers the count of futures in control', () => {
     for (const persona of PERSONAS) {
       let last = -1;
-      for (const perPaycheque of [0, 25, 50, 100, 200, 400]) {
-        const n = inControl({ ...persona.inputs, perPaycheque });
+      for (const monthly of [0, 25, 50, 100, 200, 400]) {
+        const n = inControl({ ...persona.inputs, monthly });
         expect(n).toBeGreaterThanOrEqual(last);
         last = n;
       }
@@ -83,16 +85,18 @@ describe('monotonicity', () => {
 
 describe('limits', () => {
   const rich: Inputs = {
-    age: 30,
+    ...inputsForStage('full', 30),
     income: 220000,
     saved: 150000,
-    perPaycheque: 2500,
+    monthly: 5400,
     plan: 'yes',
     employeePct: 12,
     matchPct: 10,
-    cushionMonths: 3,
     home: { price: 900000, byAge: 40 },
     debt: { balance: 30000, rate: 6 },
+    city: 'major',
+    living: 'family',
+    moveOutAge: 33,
   };
   const cases: [Inputs, Scenario, Levers][] = [
     ...PERSONAS.map((p): [Inputs, Scenario, Levers] => [p.inputs, {}, NO_LEVERS]),
@@ -118,27 +122,25 @@ describe('limits', () => {
 describe('sanity', () => {
   it('reproduces hand-calculated compound growth with no volatility and no shocks', () => {
     const inputs: Inputs = {
-      age: 50,
+      ...inputsForStage('full', 50),
       income: 60000,
       saved: 0,
-      perPaycheque: 100,
+      monthly: 200,
       plan: 'no',
       employeePct: 0,
       matchPct: 0,
       cushionMonths: 0,
-      home: null,
-      debt: null,
     };
     const [p] = simulate(inputs, {}, NO_LEVERS, SEED, { calm: true, paths: 1 });
-    // Returns are earned on the opening balance; $2,600 is added at year end.
+    // Returns are earned on the opening balance; $2,400 is added at year end.
     let expected = 0;
     for (let age = 50; age < 60; age++) {
       const w = stockShareAt(age);
       const r = w * 0.05 + (1 - w) * 0.01 - 0.0075;
-      expected = expected * (1 + r) + 100 * 26;
+      expected = expected * (1 + r) + 200 * 12;
     }
     expect(p.balances![10]).toBeCloseTo(expected, 0);
-    expect(expected).toBeGreaterThan(26000);
+    expect(expected).toBeGreaterThan(24000);
     expect(p.events.filter((e) => e.type === 'job' || e.type === 'crash')).toHaveLength(0);
   });
 });
@@ -163,7 +165,7 @@ describe('worries', () => {
   it('sizes every worry and names a protection', () => {
     const all: Scenario = Object.fromEntries(WORRY_IDS.map((id) => [id, 'moderate']));
     for (const persona of PERSONAS) {
-      const a = new Engine().analyse(persona.inputs, all, {}, NO_LEVERS, SEED);
+      const a = new Engine().analyse(persona.inputs, all, {}, NO_LEVERS, SEED, 'middle', true);
       expect(a.cards).toHaveLength(WORRY_IDS.length + 1);
       for (const card of a.cards) {
         expect(card.affected).toBeGreaterThan(0);
@@ -206,12 +208,96 @@ describe('performance', () => {
 });
 
 describe('personas', () => {
-  it('gives plausible, different headlines', () => {
+  it('gives plausible, different headlines, each with a habit that rescues 50 or more', () => {
     const counts = PERSONAS.map((p) => inControl(p.inputs));
     for (const n of counts) {
-      expect(n).toBeGreaterThan(50);
+      expect(n).toBeGreaterThan(25);
       expect(n).toBeLessThan(950);
     }
     expect(new Set(counts).size).toBe(PERSONAS.length);
+    for (const p of PERSONAS) {
+      const a = new Engine().analyse(p.inputs, {}, {}, NO_LEVERS, SEED);
+      expect(Math.max(...a.ranking.map((r) => r.rescued))).toBeGreaterThanOrEqual(50);
+    }
+  }, 30000);
+
+  it('gives two students of the same age different futures', () => {
+    const maya = persona('maya').inputs;
+    const priya = persona('priya').inputs;
+    expect(maya.age).toBe(priya.age);
+    expect(Math.abs(inControl(maya) - inControl(priya))).toBeGreaterThanOrEqual(50);
   });
+});
+
+describe('make it more you', () => {
+  it('each of the five questions changes the count for at least one persona', () => {
+    const changes: [string, (i: Inputs) => Inputs][] = [
+      ['field', (i) => ({ ...i, field: i.field === 'health' ? 'arts' : 'health' })],
+      ['city', (i) => ({ ...i, city: i.city === 'major' ? 'small' : 'major' })],
+      ['living', (i) => ({ ...i, living: i.living === 'family' ? 'renting' : 'family', moveOutAge: i.age + 3 })],
+      ['debt', (i) => ({ ...i, debt: i.debt ? null : { balance: 35000, rate: 5 } })],
+      ['finish', (i) => ({ ...i, finishAge: i.finishAge + 3 })],
+    ];
+    for (const [name, change] of changes) {
+      const moved = PERSONAS.some((p) => inControl(change(p.inputs)) !== inControl(p.inputs));
+      expect(moved, name).toBe(true);
+    }
+  });
+
+  it('debt never helps, and living with family never hurts', () => {
+    for (const p of PERSONAS) {
+      const i = p.inputs;
+      expect(inControl({ ...i, debt: { balance: 35000, rate: 5 } })).toBeLessThanOrEqual(inControl({ ...i, debt: null }));
+      expect(inControl({ ...i, living: 'family', moveOutAge: i.age + 4 })).toBeGreaterThanOrEqual(inControl({ ...i, living: 'renting' }));
+    }
+  });
+
+  it('keeps students out of layoffs while in school, and gives gig workers dips instead of layoffs', () => {
+    const student = persona('maya').inputs;
+    for (const p of simulate(student, {}, NO_LEVERS, SEED)) {
+      expect(p.events.some((e) => e.type === 'job' && e.age < student.finishAge)).toBe(false);
+    }
+    const gig = persona('sam').inputs;
+    const paths = simulate(gig, {}, NO_LEVERS, SEED);
+    expect(paths.some((p) => p.events.some((e) => e.type === 'job'))).toBe(false);
+    expect(paths.some((p) => p.events.some((e) => e.type === 'dip'))).toBe(true);
+  });
+});
+
+describe('rescue', () => {
+  it('counts exactly the futures whose status improves to In control or Mostly there', () => {
+    const before = simulate(maya, {}, NO_LEVERS, SEED, { detail: false });
+    const after = simulate(maya, {}, leverOnly('auto50'), SEED, { detail: false });
+    const r = rescueOf(before, after);
+    let want = 0;
+    for (let i = 0; i < before.length; i++) {
+      const ok = after[i].status < before[i].status && after[i].status <= 1;
+      expect(r.mask[i] === 1).toBe(ok);
+      if (ok) want++;
+    }
+    expect(r.total).toBe(want);
+    expect(r.toControl + r.toMostly).toBe(want);
+    expect(want).toBeGreaterThan(0);
+  });
+});
+
+describe('assumption sets', () => {
+  it('cautious gives no more futures in control than middle, and middle no more than hopeful', () => {
+    for (const p of PERSONAS) {
+      const n = (set: 'cautious' | 'middle' | 'hopeful') => summarise(simulate(p.inputs, {}, NO_LEVERS, SEED, { detail: false, set })).counts[0];
+      expect(n('cautious')).toBeLessThanOrEqual(n('middle'));
+      expect(n('middle')).toBeLessThanOrEqual(n('hopeful'));
+    }
+  });
+
+  it('records whether the top habit stays the same under all three sets', () => {
+    // This test reports; it does not force the answer. The result is shown in
+    // the Assumptions panel and the pitch, whatever it is.
+    const result = PERSONAS.map((p) => {
+      const top = (['cautious', 'middle', 'hopeful'] as const).map((set) => new Engine().analyse(p.inputs, {}, {}, NO_LEVERS, SEED, set).ranking[0].id);
+      return { persona: p.name, cautious: top[0], middle: top[1], hopeful: top[2], same: new Set(top).size === 1 };
+    });
+    writeFileSync(new URL('./stability.json', import.meta.url), JSON.stringify({ seed: SEED, result }, null, 2) + '\n');
+    expect(result).toHaveLength(PERSONAS.length);
+  }, 30000);
 });

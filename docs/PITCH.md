@@ -2,26 +2,28 @@
 
 ## Two-minute demo script
 
-Numbers below are what the app shows for Maya with the default seed. Rehearse with the app open; if you change a model setting, read the new numbers off the screen.
+Numbers below are what the app shows with the default seed and the Middle return setting. Open the app at `/?demo=1`. If you change a model setting, read the new numbers off the screen.
 
-**0:00 The problem, in the sponsor's words (15 s)**
-"Canada Life's own research says young workers feel so much dread about the future that they stop planning for it, and that scaring them makes it worse. So we built something that doesn't predict the future and doesn't scare anyone. You can't predict the future. You can stack the odds."
+**0:00 The problem (15 s)**
+"Canada Life found that dread about the future leads to doomscrolling, and every extra hour of scrolling goes with fewer people setting up automatic savings. We didn't build another feed. It's two minutes once, then thirty seconds a month."
 
-**0:15 Maya's river (20 s)**
-Tap **Maya, 22**. Leave confidence where it is, tap "AI changes my job", Next, Next.
-"This is Maya: first job, fifty-two thousand, nothing saved, employer match unclaimed. Every line is one version of her life, same choices, different luck with jobs and markets. She stays in control in **705 of her 1,000 futures**." Tap one line. "Each one is a life you can read: out of work at 27, cushion carried it, work optional at 63."
+**0:15 Maya (15 s)**
+Tap **Maya, 20**. Next. "Maya is an arts student in Toronto, renting, with some student debt. She wants room to travel and to switch careers. Every line is one version of her life, same choices, different luck. She's in control in **380 of 1,000**."
 
-**0:35 Her worry, sized (25 s)**
-Next. "Maya is worried AI changes her job. We don't argue with that. We size it. If it happens, **621** of her thousand futures get harder. In **288** of those, work still becomes optional. And one habit lifts **570** of them back up." Tap "Show in the river" and let the affected lines light up.
+**0:30 Same age, different futures (15 s)**
+"Make it more me", then **Switch to Priya**. "Priya is the same age with the same savings, but she studies health in Halifax and lives with family. Her river moves: **869**. Personal detail changes the picture." Switch back to Maya.
 
-**1:00 One lever, the river moves (25 s)**
-Clear the worry. Next. "Here is what she controls, ranked by how much it moves per dollar." Switch on **Take the full employer match**. "Fifty-seven dollars a paycheque, and her employer adds two thousand and eighty a year. Watch: same thousand lives, same luck, **705 becomes 803**, and work becomes optional six years sooner." Add **+$50 a paycheque**: "880."
+**0:45 One habit, the rescue (25 s)**
+"That's me". Switch on **Automate $25 a month**. "Twenty-five dollars a month. Watch which of her futures it rescues: **74**, lit up, same luck." Then switch it off and switch on **Save part of every raise**: "**466** rescued, and it costs nothing today." Tap one lit line, flip **Without the habit**: "Same life, same luck, without the habit."
 
-**1:25 Her one step, and confidence (20 s)**
-Next. "She doesn't get a list. She picks one step, gets a two-line plan, a calendar reminder for payday, and the exact message to send HR." Move the confidence slider up, "See my summary". "Confidence before and after, futures before and after. That's uncertainty into confidence, with a number."
+**1:10 A worry, with its protection (20 s)**
+"What if…", tap **AI changes my job**. "Her field gets a stronger what-if. It's sized, and the protection is on the same card: saving part of every raise protects most of the futures it touches."
 
-**1:45 What's next (15 s)**
-"Everything ran in the browser, offline, with a fixed seed. Every assumption is one tap away with its source. Next: a pilot inside a real group plan, where the sponsor sees only totals: who found their match, and what people are worried about." Open `#/employer` if there is time.
+**1:30 Pick one, and come back (15 s)**
+"Pick one to try". Pick the habit, "Add a monthly reminder", move confidence up, "See my summary". Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "Since she started: **380 → 449**."
+
+**1:45 Proof and what's next (15 s)**
+Read the user-test result (n and the share who set a reminder). "Next: a pilot inside a group plan."
 
 **Backup:** if anything misbehaves, reload; inputs are kept. Have the recorded demo video ready.
 
@@ -29,18 +31,18 @@ Next. "She doesn't get a list. She picks one step, gets a two-line plan, a calen
 
 | Criterion | What answers it |
 |---|---|
-| Innovation & Creativity | Worries are sized, not dismissed: each fear is run against the same 1,000 lives and comes back as a count plus the habit that protects most. The river morphs path by path because every path keeps its luck across variants. |
+| Innovation & Creativity | The headline is the futures a habit rescues, lit up in the river, with the same life shown with and without it. Worries are sized and shown next to their protection. A monthly check-in turns a one-off visit into a habit loop. |
 | Technical Complexity | A seeded Monte Carlo engine with common random numbers, three savings buckets, Canadian account limits, job loss, market regimes and emergency withdrawals; runs in a Web Worker at about 10 ms per 1,000 paths; Canvas river with per-path morphing; a narration layer that rejects any number the engine did not compute; a test suite covering determinism, monotonicity, limits and a hand-calculated check. |
-| Completeness | Seven screens end to end, three personas, calendar file, HR message, summary image, assumptions panel, employer page, dark and light themes. Works offline with no key. |
+| Completeness | The flow end to end plus the monthly check-in, four personas, monthly calendar file, HR message, 9:16 summary card, assumptions panel with three return settings, user-test mode with CSV export, dark and light themes. Works offline with no key. |
 | Design | Typography-led, one accent colour, no red, counts instead of percentages, motion tied to cause and effect, usable at 375 px and on a projector, keyboard and reduced-motion support. |
 
 ## The Canada Life brief → features
 
 | Line in the brief | Feature |
 |---|---|
-| "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The check-in asks what is on your mind first; the worries screen tests exactly those things. |
-| "helps Gen Z take meaningful action" | The last screen is one step, with a reminder for the next payday and a message ready to send to HR. |
-| "motivation" | "705 → 803": the effect of one habit on your own futures, shown as it happens. |
+| "struggling to engage with long-term financial planning due to uncertainty about the world ahead" | The check-in asks what you want room for; the "What if" screen tests the worries, each next to what protects against it. |
+| "helps Gen Z take meaningful action" | One step, a monthly reminder, a message ready for HR, and a monthly check-in that shows progress. |
+| "motivation" | "Rescues 466 of your futures", and "Since you started: 380 → 449" at the check-in. |
 | "visualization" | The river: 1,000 lives, a middle line, milestones at 35, 45 and 65. |
 | "behavioral nudges" | The three behaviours the research measured: joining the plan, taking the match, automatic contributions. One step only; "make it automatic" checklist. |
 | "education" | Tap-to-explain terms, the short-term and long-term explainer, the Assumptions panel. |
@@ -62,13 +64,25 @@ No. It never names a product, fund or provider, and it never says what to buy. I
 It can't say that. The headline is a count of futures in control, the palette has no red, and the ranked habits always show the smallest step that helps. When the picture is hard, the screen answers with what moves it. The hard case ("everything at once") is there if you ask for it.
 
 **Why would Gen Z open this twice?**
-Because the inputs change: a raise, a new job, a new worry in the news. The second visit takes ten seconds because the inputs are remembered, and the question is always "what's my one step now?". Inside a workplace plan, the natural moments are onboarding, raise season and enrolment windows.
+The monthly reminder brings them back to a 30-second check-in: "Did you do it?", a streak, and the river moving from where they started. "Not yet" offers a smaller version instead of guilt. Inside a workplace plan, onboarding, raise season and enrolment windows are natural moments too.
+
+**What if I change the assumptions?**
+Open Assumptions and switch between Cautious, Middle and Hopeful. The counts move; the top-ranked habit does not, for any of the four personas. A test records that (`src/engine/stability.json`), and we would show it honestly if it changed.
+
+**What about people without a workplace plan?**
+The default habits need no employer: automate a monthly amount, build a cushion, save part of every raise. The employer match only appears when someone has a plan or isn't sure.
+
+**Where do the field-of-study numbers come from?**
+Statistics Canada Table 37-10-0284-01: median employment income two years after graduation, bachelor's graduates, class of 2022. They are medians across many programs, not salary offers. Growth by field and the AI multipliers are labelled illustrative.
+
+**Isn't this just another app fighting for screen time?**
+No feed and no infinite scroll. Two minutes the first time, then 30 seconds a month.
 
 **How is this different from a retirement calculator?**
 A calculator gives one number for one future at 65. This gives a thousand futures, measures flexibility at 35 and 45 as well as 65, tests the person's own fears against them, and ends with one action rather than a number.
 
 **What does the AI do?**
-Words only. Gemini turns a path's events into a short story, rephrases a worry's answer, and answers questions from computed facts. It never produces a number: every reply is checked, and if it contains a number the engine did not compute, it is thrown away and the built-in wording is shown. It is off by default and the demo works without it.
+Words only. Gemini turns a path's events into a short story and rephrases a worry's answer. It never produces a number: every reply is checked, and if it contains a number the engine did not compute, it is thrown away and the built-in wording is shown. It is off by default and the demo works without it.
 
 **Are the research figures right?**
 We quote the Canada Life and Deloitte findings as reported in trade press. Verify each figure against the full report before saying it on stage.

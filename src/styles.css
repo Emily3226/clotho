@@ -1184,3 +1184,62 @@ dialog.panel::backdrop {
     scroll-behavior: auto !important;
   }
 }
+
+/* v2 additions */
+fieldset.more-q {
+  border: 0;
+  padding: 0;
+  margin: 18px 0 0;
+}
+fieldset.more-q legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 10px;
+}
+.note-line {
+  min-height: 3em;
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 10px 10px 0;
+  transition: opacity 0.2s;
+}
+.note-line.busy {
+  opacity: 0.6;
+}
+.welcome,
+.compare,
+.test-mode {
+  margin: 18px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.welcome p,
+.compare p,
+.test-mode p {
+  margin: 0;
+  flex: 1 1 240px;
+}
+.lever h3 .tag {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.inspector .segmented {
+  margin: 4px 0 8px;
+}
+.inspector > .secondary {
+  margin-top: 12px;
+}
+.side > .link {
+  display: block;
+  margin: 0 0 12px;
+}
+.back .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

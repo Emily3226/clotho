@@ -1,37 +1,62 @@
 import { useMemo, useState } from 'react';
 import { DEFAULT_SEED } from '../config';
-import { AnimatedNumber, Segmented, Switch, Term } from '../components/bits';
+import { AnimatedNumber, Switch, Term } from '../components/bits';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
 import type { Analysis, WorryCard } from '../engine/analyse';
 import { A } from '../engine/assumptions';
+import { persona } from '../engine/personas';
+import { CITIES, DEBT_CHIPS, FIELDS, FINISH_CHIPS, LIVING, fieldSalaryFor } from '../engine/profile';
+import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
-import { STATUS_LABELS, type Severity, type WorryId } from '../engine/types';
-import { worryInfo } from '../engine/worries';
-import { ASK_HINT, ask } from '../lib/ask';
+import { LEVER_IDS, STATUS_LABELS, type Inputs, type LeverId, type WorryId } from '../engine/types';
+import { WORRIES, worryInfo } from '../engine/worries';
 import { ageShift, leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
-import { narrate, narrationAvailable, useNarration } from '../narrate/client';
-import { leverIsOn, useStore } from '../store';
-import { WorryChips } from './Intro';
+import { narrationAvailable, useNarration } from '../narrate/client';
+import { STEP, anyLever, leverIsOn, useStore } from '../store';
+
+function onLevers(): LeverId[] {
+  const l = useStore.getState().levers;
+  return LEVER_IDS.filter((id) => leverIsOn(l, id));
+}
 
 function Headline({ a }: { a: Analysis | null }) {
+  const step = useStore((s) => s.step);
   const levers = useStore((s) => s.levers);
   const activeWorry = useStore((s) => s.activeWorry);
   const inputs = useStore((s) => s.inputs);
-  const leversOn = levers.match || levers.raises || levers.cushion || levers.auto > 0;
   const now = a?.summary.counts[0] ?? 0;
-  const before = !a ? null : leversOn ? a.scenarioSummary.counts[0] : activeWorry ? a.baseSummary.counts[0] : null;
-  const context: string[] = [];
-  if (activeWorry) context.push(`What if: ${worryTitle(activeWorry)}`);
-  if (levers.match) context.push(inputs.plan === 'unsure' ? 'employer match found and taken' : 'full employer match');
-  if (levers.auto) context.push(`+$${levers.auto} a paycheque`);
-  if (levers.raises) context.push('a little of every raise');
-  if (levers.cushion) context.push('cushion first');
+  const ids = onLevers();
+  // With a habit switched on, lead with what it rescues.
+  if (a && a.rescue && anyLever(levers)) {
+    const subject = ids.length === 1 ? leverCopy(ids[0], inputs).noun : 'These habits';
+    return (
+      <div className="headline">
+        <p className="count" aria-live="polite">
+          {subject} {ids.length === 1 ? 'rescues' : 'rescue'}{' '}
+          <strong>
+            <AnimatedNumber value={a.rescue.total} />
+          </strong>{' '}
+          of your futures{activeWorry ? `, ${worryTitle(activeWorry).toLowerCase()} included` : ''}.
+        </p>
+        <p className="context">
+          In control in <span className="was">{num(a.scenarioSummary.counts[0])}</span>
+          <span aria-hidden="true"> → </span>
+          <span className="sr-only"> then </span>
+          <b>
+            <AnimatedNumber value={now} />
+          </b>{' '}
+          of 1,000 · {num(a.rescue.toControl)} move to in control, {num(a.rescue.toMostly)} to mostly there
+        </p>
+      </div>
+    );
+  }
+  const before = a && activeWorry ? a.baseSummary.counts[0] : null;
   return (
     <div className="headline">
       <p className="count" aria-live="polite">
-        You stay in control in{' '}
+        You’re in control in{' '}
         <strong>
           {before !== null && before !== now && (
             <>
@@ -44,7 +69,9 @@ function Headline({ a }: { a: Analysis | null }) {
         </strong>{' '}
         of your 1,000 futures.
       </p>
-      <p className="context">{context.length ? context.join(' · ') : 'Same you, a thousand different runs of luck.'}</p>
+      <p className="context">
+        {activeWorry ? `What if: ${worryTitle(activeWorry)}` : step === STEP.habits ? 'Switch on a habit to see which futures it rescues.' : 'Same you, a thousand different runs of luck.'}
+      </p>
     </div>
   );
 }
@@ -70,7 +97,7 @@ function Milestones({ a }: { a: Analysis }) {
     ['Room to move at 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
     ['Room to move at 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
     ['Home', m.home, 'The down payment is reached by your target age.'],
-    ['Work-optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of your recent spending, so working is a choice.'],
+    ['Work-optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of the spending you’re used to, so working is a choice.'],
   ];
   return (
     <ul className="milestones">
@@ -88,46 +115,9 @@ function Milestones({ a }: { a: Analysis }) {
   );
 }
 
-function AskBox({ a }: { a: Analysis }) {
-  const aiOn = useStore((s) => s.aiOn);
-  const [q, setQ] = useState('');
-  const [answer, setAnswer] = useState<{ text: string; narrated: boolean } | null>(null);
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!q.trim()) return;
-    const res = ask(q, a.paths);
-    setAnswer({ text: res.text, narrated: false });
-    if (aiOn && res.facts) {
-      const text = await narrate('ask', res.facts, q);
-      if (text) setAnswer({ text, narrated: true });
-    }
-  };
-  return (
-    <form className="ask card" onSubmit={submit}>
-      <label htmlFor="ask">Ask about your futures</label>
-      <div className="ask-row">
-        <input id="ask" value={q} onChange={(e) => setQ(e.target.value)} placeholder="What happens if I lose my job at 30?" />
-        <button type="submit" className="secondary">
-          Ask
-        </button>
-      </div>
-      <p className="hint" aria-live="polite">
-        {answer ? (
-          <>
-            {answer.text}
-            {answer.narrated && <span className="tag">AI wording</span>}
-          </>
-        ) : (
-          `Answers come only from your thousand futures. ${ASK_HINT}`
-        )}
-      </p>
-    </form>
-  );
-}
-
 function FuturesPanel({ a }: { a: Analysis }) {
   const seed = useStore((s) => s.seed);
-  const set = useStore((s) => s.set);
+  const setState = useStore((s) => s.setState);
   return (
     <>
       <p className="lede">
@@ -137,21 +127,128 @@ function FuturesPanel({ a }: { a: Analysis }) {
       <Milestones a={a} />
       <p className="hint">
         Tap any line to read that life. Amounts are in today’s dollars.{' '}
-        <button type="button" className="link" onClick={() => set({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
+        <button type="button" className="link" onClick={() => setState({ seed: seed === DEFAULT_SEED ? Math.floor(Math.random() * 1e6) : DEFAULT_SEED, selectedPath: null })}>
           {seed === DEFAULT_SEED ? 'Try a new run of luck' : 'Back to the first run of luck'}
         </button>
       </p>
-      <AskBox a={a} />
+    </>
+  );
+}
+
+function ChipRow<T extends string | number>({
+  legend,
+  value,
+  options,
+  onPick,
+}: {
+  legend: string;
+  value: T | null;
+  options: { value: T; label: string }[];
+  onPick: (v: T, label: string) => void;
+}) {
+  return (
+    <fieldset className="more-q">
+      <legend>{legend}</legend>
+      <div className="chips">
+        {options.map((o) => (
+          <button type="button" key={String(o.value)} className="chip" aria-pressed={value === o.value} onClick={() => onPick(o.value, o.label)}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function MorePanel() {
+  const inputs = useStore((s) => s.inputs);
+  const answer = useStore((s) => s.answer);
+  const note = useStore((s) => s.note);
+  const computing = useStore((s) => s.computing);
+  const incomeEdited = useStore((s) => s.incomeEdited);
+  const personaId = useStore((s) => s.personaId);
+  const setState = useStore((s) => s.setState);
+
+
+  const pickField = (field: Inputs['field'], label: string) => {
+    const patch: Partial<Inputs> = { field };
+    if ((inputs.stage === 'first' || inputs.stage === 'full') && !incomeEdited) {
+      // Typical pay for the field, saving the same share of it as before.
+      const income = fieldSalaryFor(inputs.stage, field);
+      patch.income = income;
+      patch.monthly = Math.round((inputs.monthly * income) / Math.max(1, inputs.income) / 5) * 5;
+    }
+    const before = inputs.stage === 'student' ? fieldSalaryFor('first', inputs.field) : inputs.income;
+    const after = inputs.stage === 'student' ? fieldSalaryFor('first', field) : (patch.income ?? inputs.income);
+    const why =
+      after > before
+        ? 'Higher pay, but CPP and OAS cover less of it, so keeping that lifestyle takes more saving. Saving part of every raise is built for this.'
+        : undefined;
+    answer(`Working toward ${label.toLowerCase()}`, patch, why);
+  };
+  const pickLiving = (living: Inputs['living'], label: string) => {
+    const patch: Partial<Inputs> = { living };
+    if (living === 'family') patch.moveOutAge = Math.max(inputs.age + 1, inputs.moveOutAge);
+    answer(label, patch);
+  };
+  const debtValue = !inputs.debt ? 'none' : inputs.debt.balance >= 25000 ? 'lots' : 'some';
+  const finishValue = Math.min(4, Math.max(0, inputs.finishAge - inputs.age));
+  const compare = personaId === 'maya' ? persona('priya') : personaId === 'priya' ? persona('maya') : null;
+
+  return (
+    <>
+      <p className="lede">Five quick taps. Each one re-runs your thousand futures, so you can watch what makes your river yours.</p>
+      <p className={`note-line${computing ? ' busy' : ''}`} aria-live="polite">
+        {note ?? 'Skip any question: the default stays.'}
+      </p>
+      <ChipRow legend="What are you studying or working toward?" value={inputs.field} options={FIELDS.map((f) => ({ value: f.id, label: f.label }))} onPick={(v, l) => pickField(v, l)} />
+      <ChipRow legend="Where do you live?" value={inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(`Living in ${l === 'Toronto or Vancouver' ? 'Toronto or Vancouver' : l.toLowerCase()}`, { city: v })} />
+      <ChipRow legend="Living situation?" value={inputs.living} options={LIVING.map((l) => ({ value: l.id, label: l.label }))} onPick={(v, l) => pickLiving(v, l)} />
+      <ChipRow
+        legend="Student debt?"
+        value={debtValue}
+        options={DEBT_CHIPS.map((d) => ({ value: d.id, label: d.label }))}
+        onPick={(v, l) => {
+          const chip = DEBT_CHIPS.find((d) => d.id === v)!;
+          answer(`Student debt: ${l.toLowerCase()}`, { debt: chip.balance ? { balance: chip.balance, rate: 5 } : null });
+        }}
+      />
+      {inputs.stage === 'student' && (
+        <ChipRow
+          legend="When do you finish school?"
+          value={finishValue}
+          options={FINISH_CHIPS.map((f) => ({ value: f.years, label: f.label }))}
+          onPick={(v, l) => answer(`Finishing ${l.toLowerCase()}`, { finishAge: inputs.age + v })}
+        />
+      )}
+      <p className="hint">
+        Starting pay by field is based on Statistics Canada graduate earnings. Everything is listed under Assumptions.
+      </p>
+      {compare && (
+        <div className="card compare">
+          <p>
+            <b>Same age, same savings, different futures.</b> See {compare.name.split(',')[0]}: {compare.line.charAt(0).toLowerCase() + compare.line.slice(1)}.
+          </p>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              answer(`Switched to ${compare.name.split(',')[0]}`, compare.inputs);
+              setState({ personaId: compare.id, room: compare.room });
+            }}
+          >
+            Switch to {compare.name.split(',')[0]}
+          </button>
+        </div>
+      )}
     </>
   );
 }
 
 function WorryCardView({ card }: { card: WorryCard }) {
   const inputs = useStore((s) => s.inputs);
-  const worries = useStore((s) => s.worries);
   const active = useStore((s) => s.activeWorry);
   const setActive = useStore((s) => s.setActiveWorry);
-  const setSeverity = useStore((s) => s.setSeverity);
   const answer = worryAnswer(card, inputs);
   const { text, narrated } = useNarration('worry', answer.facts, answer.plain);
   const on = active === card.id;
@@ -159,18 +256,6 @@ function WorryCardView({ card }: { card: WorryCard }) {
     <article className={`card worry${on ? ' on' : ''}`}>
       <header>
         <h3>{worryTitle(card.id)}</h3>
-        {card.id !== 'all' && (
-          <Segmented<Severity>
-            label={`How hard: ${worryTitle(card.id)}`}
-            value={worries[card.id as WorryId] ?? 'moderate'}
-            onChange={(sev) => setSeverity(card.id as WorryId, sev)}
-            options={[
-              { value: 'mild', label: 'Mild' },
-              { value: 'moderate', label: 'Moderate' },
-              { value: 'severe', label: 'Severe' },
-            ]}
-          />
-        )}
       </header>
       <p className="answer">
         {narrated ? (
@@ -182,10 +267,8 @@ function WorryCardView({ card }: { card: WorryCard }) {
           answer.parts.map((p, i) => (typeof p === 'string' ? <span key={i}>{p}</span> : <strong key={i}>{p.strong}</strong>))
         )}
       </p>
-      {card.id !== 'all' && (
-        <p className="hint">What if, not a forecast: {worryInfo(card.id as WorryId).changes[['mild', 'moderate', 'severe'].indexOf(worries[card.id as WorryId] ?? 'moderate')].toLowerCase()}.</p>
-      )}
-      {card.id === 'all' && <p className="hint">The honest hard case: every worry you picked, in the same life.</p>}
+      {card.id !== 'all' && <p className="hint">What if, not a forecast: {worryInfo(card.id as WorryId).changes[1].toLowerCase()}.</p>}
+      {card.id === 'all' && <p className="hint">The toughest case: every worry you picked, in the same life.</p>}
       <button type="button" className="secondary" aria-pressed={on} onClick={() => setActive(on ? null : card.id)}>
         {on ? 'Showing in the river · tap to clear' : 'Show in the river'}
       </button>
@@ -193,17 +276,39 @@ function WorryCardView({ card }: { card: WorryCard }) {
   );
 }
 
-function WorriesPanel({ a }: { a: Analysis }) {
+function WhatIfPanel({ a }: { a: Analysis }) {
+  const worries = useStore((s) => s.worries);
+  const toggle = useStore((s) => s.toggleWorry);
+  const showAll = useStore((s) => s.showAll);
+  const setState = useStore((s) => s.setState);
+  const active = useStore((s) => s.activeWorry);
+  const count = Object.keys(worries).length;
   return (
     <>
-      <p className="lede">Name it, then size it. Each worry is run against the same thousand futures.</p>
-      <WorryChips />
-      {a.cards.length === 0 && <p className="hint">Pick one above to see how many of your futures it touches, and what protects them.</p>}
+      <p className="lede">Name a worry, see it sized, and see what protects you. Each one runs against the same thousand futures.</p>
+      <div className="chips">
+        {WORRIES.map((w) => (
+          <button type="button" key={w.id} className="chip" aria-pressed={!!worries[w.id]} onClick={() => toggle(w.id)}>
+            <span aria-hidden="true">{worries[w.id] ? '✓ ' : '+ '}</span>
+            {w.label}
+          </button>
+        ))}
+      </div>
+      {a.cards.length === 0 && <p className="hint">Pick any that are on your mind, or skip this step.</p>}
       <div className="stack">
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
         ))}
       </div>
+      {count > 1 && (
+        <button
+          type="button"
+          className="link"
+          onClick={() => setState({ showAll: !showAll, activeWorry: showAll && active === 'all' ? null : active })}
+        >
+          {showAll ? 'Hide the toughest case' : 'See the toughest case (all of them at once)'}
+        </button>
+      )}
     </>
   );
 }
@@ -214,7 +319,7 @@ function Together() {
   const rows = useMemo(() => {
     const [p] = simulate(inputs, {}, levers, 1, { calm: true, paths: 1, trace: true, detail: false });
     const t = p.trace!;
-    return [1, 2, 3, 4, 5].map((y) => ({ year: y, cushion: t.cushion[y], target: t.target[y], long: t.plan[y] + t.flex[y] }));
+    return [1, 2, 3, 4, 5].map((y) => ({ year: y, cushion: t.cushion[y] ?? 0, target: t.target[y] ?? 0, long: (t.plan[y] ?? 0) + (t.flex[y] ?? 0) }));
   }, [inputs, levers]);
   const max = Math.max(1, ...rows.map((r) => Math.max(r.cushion, r.long, r.target)));
   return (
@@ -222,7 +327,7 @@ function Together() {
       <h3>Short-term and long-term, together</h3>
       <p className="hint">
         You don’t have to choose. In a steady five years with your plan, the cushion fills while long-term savings
-        {inputs.plan !== 'no' ? ' and the workplace plan grow' : ' grow'} beside it.
+        {inputs.plan === 'yes' ? ' and the workplace plan grow' : ' grow'} beside it.
       </p>
       <div className="bars" role="img" aria-label={`After 5 steady years: cushion ${money(rows[4].cushion)}, long-term savings ${money(rows[4].long)}.`}>
         {rows.map((r) => (
@@ -243,32 +348,14 @@ function Together() {
   );
 }
 
-function LeversPanel({ a }: { a: Analysis }) {
+function HabitsPanel({ a }: { a: Analysis }) {
   const inputs = useStore((s) => s.inputs);
   const levers = useStore((s) => s.levers);
   const toggle = useStore((s) => s.toggleLever);
-  const worries = useStore((s) => s.worries);
-  const active = useStore((s) => s.activeWorry);
-  const setActive = useStore((s) => s.setActiveWorry);
-  const ids = Object.keys(worries) as WorryId[];
   const now = a.summary.counts[0];
   return (
     <>
-      <p className="lede">Smallest step, biggest shift. Each habit is tested alone against your thousand futures. Switch one on and watch the river move.</p>
-      {ids.length > 0 && (
-        <label className="against">
-          Test against
-          <select value={active ?? ''} onChange={(e) => setActive((e.target.value || null) as WorryId | 'all' | null)}>
-            <option value="">an ordinary run of luck</option>
-            {ids.map((id) => (
-              <option key={id} value={id}>
-                {worryInfo(id).label}
-              </option>
-            ))}
-            {ids.length > 1 && <option value="all">Everything at once</option>}
-          </select>
-        </label>
-      )}
+      <p className="lede">Smallest step, biggest shift. Each habit is tested alone against your thousand futures. Switch one on and watch which futures it rescues.</p>
       <ol className="levers">
         {a.ranking.map((row, i) => {
           const copy = leverCopy(row.id, inputs);
@@ -277,7 +364,10 @@ function LeversPanel({ a }: { a: Analysis }) {
             <li key={row.id} className={`card lever${on ? ' on' : ''}`}>
               <span className="rank" aria-hidden="true">{i + 1}</span>
               <div className="lever-body">
-                <h3>{copy.title}</h3>
+                <h3>
+                  {copy.title}
+                  {row.noExtraCost && <span className="tag">No extra cost</span>}
+                </h3>
                 <p className="cost">{leverCostLine(row)}</p>
                 {row.id === 'match' && (
                   <p className="hint">
@@ -286,7 +376,7 @@ function LeversPanel({ a }: { a: Analysis }) {
                   </p>
                 )}
                 <p className="effect">
-                  <b>{row.gained >= 0 ? '+' : '−'}{num(Math.abs(row.gained))}</b> futures in control
+                  Rescues <b>{num(row.rescued)}</b> futures
                   {row.ageDelta !== null && row.ageDelta !== 0 && <span> · {ageShift(row.ageDelta)}</span>}
                 </p>
                 <p className="hint">{copy.explain}</p>
@@ -312,12 +402,12 @@ function LeversPanel({ a }: { a: Analysis }) {
 
 function AiToggle() {
   const aiOn = useStore((s) => s.aiOn);
-  const set = useStore((s) => s.set);
+  const setState = useStore((s) => s.setState);
   const [note, setNote] = useState('');
   const change = async (on: boolean) => {
     setNote('');
-    if (!on) return set({ aiOn: false });
-    if (await narrationAvailable()) set({ aiOn: true });
+    if (!on) return setState({ aiOn: false });
+    if (await narrationAvailable()) setState({ aiOn: true });
     else setNote('AI narration isn’t set up here, so the built-in wording stays on. Nothing was sent.');
   };
   return (
@@ -331,8 +421,8 @@ function AiToggle() {
   );
 }
 
-const NEXT_LABEL: Record<number, string> = { 3: 'Size my worries', 4: 'See what I control', 5: 'Pick my one step' };
-const TITLES: Record<number, string> = { 3: 'Your thousand futures', 4: 'Your worries, sized', 5: 'What you control' };
+const NEXT_LABEL: Record<number, string> = { 3: 'Make it more me', 4: 'That’s me', 5: 'What if…', 6: 'Pick one to try' };
+const TITLES: Record<number, string> = { 3: 'Your thousand futures', 4: 'Make it more you', 5: 'Smallest step, biggest shift', 6: 'What if…' };
 
 export function Explore() {
   const step = useStore((s) => s.step);
@@ -340,25 +430,56 @@ export function Explore() {
   const a = useStore((s) => s.analysis);
   const selected = useStore((s) => s.selectedPath);
   const activeWorry = useStore((s) => s.activeWorry);
-  const set = useStore((s) => s.set);
-  const mask = step === 4 && a && activeWorry ? (a.cards.find((c) => c.id === activeWorry)?.mask ?? null) : null;
+  const seed = useStore((s) => s.seed);
+  const setState = useStore((s) => s.setState);
+  const [another, setAnother] = useState(0);
+  const mask =
+    a && step === STEP.whatIf && activeWorry
+      ? (a.cards.find((c) => c.id === activeWorry)?.mask ?? null)
+      : a && step === STEP.habits && a.rescue
+        ? a.rescue.mask
+        : null;
   const path = a && selected !== null ? a.paths[selected] : null;
+  const plain = a && selected !== null && a.plainPaths ? a.plainPaths[selected] : null;
+  // Lives shown by "Show me another", in a seeded order so the mix of
+  // statuses matches the real counts.
+  const order = useMemo(() => {
+    const rng = mulberry32(seed + 7);
+    const idx = Array.from({ length: 1000 }, (_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    return idx;
+  }, [seed]);
+  const showAnother = () => {
+    setState({ selectedPath: order[another % order.length] });
+    setAnother(another + 1);
+  };
   return (
     <section className="explore">
       <div className="stage">
         <p className="eyebrow">{TITLES[step]}</p>
         <Headline a={a} />
-        <River analysis={a} mask={mask} selected={selected} onSelect={(i) => set({ selectedPath: i })} />
+        <River analysis={a} mask={mask} selected={selected} onSelect={(i) => setState({ selectedPath: i })} />
         <Legend a={a} />
       </div>
       <div className="side">
-        {path && selected !== null && <Inspector index={selected} path={path} onClose={() => set({ selectedPath: null })} />}
-        {a && step === 3 && <FuturesPanel a={a} />}
-        {a && step === 4 && <WorriesPanel a={a} />}
-        {a && step === 5 && <LeversPanel a={a} />}
+        {path && selected !== null && (
+          <Inspector key={selected} index={selected} path={path} plain={plain} onAnother={showAnother} onClose={() => setState({ selectedPath: null })} />
+        )}
+        {!path && a && (
+          <button type="button" className="link" onClick={showAnother}>
+            Read one of your futures
+          </button>
+        )}
+        {a && step === STEP.futures && <FuturesPanel a={a} />}
+        {step === STEP.more && <MorePanel />}
+        {a && step === STEP.habits && <HabitsPanel a={a} />}
+        {a && step === STEP.whatIf && <WhatIfPanel a={a} />}
         <AiToggle />
         <div className="nav">
-          <button type="button" className="ghost" onClick={() => setStep(step - 1)}>
+          <button type="button" className="ghost" onClick={() => setStep(step === STEP.futures ? STEP.basics : step - 1)}>
             Back
           </button>
           <button type="button" className="primary" onClick={() => setStep(step + 1)}>
