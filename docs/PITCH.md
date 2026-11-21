@@ -65,7 +65,7 @@ Canada Life's *Gen Z workplace savings communications guide* (Gen Z Workplace Sa
 | Acknowledge uncertainty in a realistic, authentic way. | The first question is "What worries you most?", and that worry is tested on the same 1,000 lives, not waved away. |
 | Avoid fear-based, apocalyptic or manipulative language. | A count ("599 of 1,000"), never a warning. No red, no alarms. The worst case is there if you ask, never forced. |
 | Frame saving as control, flexibility or resilience. | Checks at 35 and 45, not only 65, and "What if there's no 65?" shows what is yours to use at 35, 40 or 50. |
-| Connect to an immediate moment or decision. | **Partly.** The student who finishes this year, the first full-time job, a home or goal they named, and the monthly check-in. Raise or bonus season is next. |
+| Connect to an immediate moment or decision. | **Yes.** The student who finishes this year, the first full-time job, a home or goal they named, and the monthly check-in, which asks "Got a raise or bonus since last time?". A raise offers to save part of it (and of every raise after), with the futures it rescues; a bonus asks how much to put aside and adds it once. |
 | Give one clear next step. | "Pick one to try" ends on a single "Do it now" step. |
 | Make the action feel small enough to start now. | Automate $25 a month; saving part of every raise costs nothing today. |
 | Explain the benefit in plain language. | "+363 futures rescued", with a plain sentence under every number and a "?" on every habit. |

@@ -29,6 +29,11 @@ export interface Commitment {
   lastCheckISO: string | null;
   // What they said on Pick one: set it up, sent the HR message, or not yet.
   outcome?: Outcome | null;
+  // Added at a check-in after a raise: "save part of every raise" on top of
+  // the step they picked, which stays as it was.
+  alsoRaises?: boolean;
+  // When "Got a raise or bonus?" was last answered (once a month).
+  lastWindfallISO?: string | null;
 }
 
 // One anonymous record per finished session, only in user-test mode.
