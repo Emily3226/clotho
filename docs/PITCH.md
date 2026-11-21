@@ -54,7 +54,7 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 | "the future is still worth planning for" | A worry is never the end of the story: with AI changing her job, Maya stays in control in 83 futures, and one habit brings that back to 409. The all-at-once case stays hard for low savers, and we show it rather than hide it. |
 | Research: fear-based messaging backfires | No red, no alarms, no shaming words. The worst case is offered, never forced. |
 | Research: flexibility and control beat a distant retirement date | Milestones are shock-proof, room to move at 35 and 45, and "work becomes optional". |
-| Research: short-term and long-term saving together | Cushion and workplace plan fill side by side; raiding retirement savings in a bad year is modelled and the cushion habit addresses it. |
+| Research: short-term and long-term saving together | Cushion and workplace plan fill side by side; raiding retirement savings in a bad year is modelled and the cushion habit addresses it. **Keep yours reachable?** tests Canada Life's own design: your contributions within reach, the match kept for retirement. |
 
 ## Hard questions
 
@@ -63,6 +63,9 @@ Tap **Why 599?** under the play button. Each future gets four checks (bad years,
 
 **What if someone saves nothing?**
 Drag the dial to $0: Maya is in control in **0** of 1,000. Keeping part of a raise takes a saving habit, so someone setting nothing aside spends every raise. Automating $25 a month takes her to about **500**. That jump is an assumption and we say so: the usual share of a raise (15% to 25% by city) is reached once regular saving is 2% of take-home pay, and it is listed in the Assumptions panel as one the results are very sensitive to.
+
+**How does this fit what Canada Life is already doing?**
+In October 2026 Canada Life announced plan options where your own contributions can go to shorter-term savings while the employer match stays set aside for retirement. Its claims data shows Gen Z withdrawing from RRSPs 12% more often than millennials and 42% more often than Gen X at the same age. Open **Keep yours reachable?** on What helps most for **Jordan** with the AI worry: in control in **714** futures instead of **694**, **29** dip into retirement savings instead of **60**, and the trade is about **$573,000** at 65 after tax instead of **$610,000**. With no worry on, Jordan's count goes the other way (971 to 954) and the card says so: it is a trade, not a free win.
 
 **Where do your return assumptions come from?**
 They are labelled illustrative, and they are conservative: 5% real for stocks with 17% volatility and a crash regime, 1% real for bonds, 0.75% fees, a glide path from 80/20 to 40/60. They sit in the range of the FP Canada projection guidelines. Every one is in the Assumptions panel with its source and date, and the published limits (TFSA, FHSA, RRSP, CPP, OAS) link to government pages. Change a number in one file and the whole tool follows.

@@ -15,6 +15,7 @@ Clotho shows you a thousand simulated versions of your own financial life, from 
 - **The river.** A thousand lines, a middle line, and one headline: "599 of 1,000 futures in control today, 921 within reach with one habit." **Why 599?** opens the working behind it. Tap any line to read that life as a story.
 - **Your worries, sized.** Pick what's on your mind: AI and your job, a recession, rising costs, housing, a rougher world, public pensions. Each is run against the same thousand lives: how many stay in control with it and without it, what the middle future has saved at 65, and which habit brings the most back.
 - **What you control.** Habits ranked by futures gained per dollar: take the full employer match, add an automatic $25, save a little of every raise, build the cushion first. Switch one on and the river moves, line by line.
+- **Keep yours reachable.** For anyone with a workplace plan, Clotho tests the design Canada Life announced in October: your own contributions in a TFSA, the employer match kept for retirement. It shows how many fewer futures have to raid retirement savings, and what that costs at 65.
 - **One step.** You pick one. **Do it now** gives its exact steps, or an email to HR ready to send, then asks "Did you do it?". "Not yet" offers a monthly reminder. Then the same confidence question you answered at the start, so you can see what changed.
 
 It runs fully in the browser, with no account, and needs no network unless AI wording is switched on. It is an educational tool and recommends no product, fund or provider.
