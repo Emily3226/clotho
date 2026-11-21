@@ -17,7 +17,8 @@ import {
   minDownPayment,
 } from '../engine/profile';
 import { GOAL_WHEN, MAX_GOALS, goalKind, matchGoal, newGoal } from '../engine/goals';
-import type { Goal, HomeType, Inputs, Stage } from '../engine/types';
+import { matchField } from '../engine/concerns';
+import type { FieldId, Goal, HomeType, Inputs, Stage } from '../engine/types';
 import { classifyGoal } from '../narrate/client';
 import { money } from '../lib/format';
 import { ROOM_FOR, useStore } from '../store';
@@ -59,7 +60,11 @@ export function AboutYou({ live = false }: { live?: boolean }) {
   const home = inputs.home;
   const homeType = home?.type ?? null;
   const price = home ? (home.type ? homePriceFor(inputs.city, home.type) : home.price) : 0;
-  const debtValue = !inputs.debt ? 'none' : inputs.debt.balance >= 25000 ? 'lots' : 'some';
+  const fieldOther = useStore((s) => s.fieldOther);
+  const chipDebt = DEBT_CHIPS.find((d) => d.balance > 0 && d.balance === inputs.debt?.balance);
+  // "Other amount" stays open while the amount is being changed.
+  const [debtOther, setDebtOther] = useState(!!inputs.debt && !chipDebt);
+  const debtValue = !inputs.debt ? 'none' : debtOther || !chipDebt ? 'other' : chipDebt.id;
   // Match the years left to the nearest chip: this year, next year, 2–3 years, 4+.
   const left = Math.max(0, inputs.finishAge - inputs.age);
   const finishValue = left <= 1 ? left : left <= 3 ? 3 : 4;
@@ -84,7 +89,17 @@ export function AboutYou({ live = false }: { live?: boolean }) {
       </div>
 
       <ChipGroup legend="Right now" selected={(v) => v === inputs.stage} options={STAGES.map((s) => ({ value: s.id, label: s.label }))} onPick={setStage} />
-      <ChipGroup legend={isStudent(inputs.stage) ? 'Studying' : 'Field'} selected={(v) => v === inputs.field} options={FIELDS.map((f) => ({ value: f.id, label: f.label }))} onPick={(v, l) => pickField(v, l)} />
+      <ChipGroup<FieldId | 'other'>
+        legend={isStudent(inputs.stage) ? 'Studying' : 'Field'}
+        selected={(v) => (v === 'other' ? fieldOther !== null : fieldOther === null && v === inputs.field)}
+        options={[...FIELDS.map((f) => ({ value: f.id as FieldId | 'other', label: f.label })), { value: 'other', label: 'Other' }]}
+        onPick={(v, l) => {
+          if (v === 'other') return setState({ fieldOther: fieldOther ?? '' });
+          setState({ fieldOther: null });
+          pickField(v, l);
+        }}
+      />
+      {fieldOther !== null && <FieldOther initial={fieldOther} onUse={(text, field) => { setState({ fieldOther: text }); pickField(field, text); }} />}
       <ChipGroup legend="Where" selected={(v) => v === inputs.city} options={CITIES.map((c) => ({ value: c.id, label: c.label }))} onPick={(v, l) => answer(l, { city: v })} />
 
       <details className="drawer">
@@ -118,12 +133,30 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           <ChipGroup
             legend="Student debt"
             selected={(v) => v === debtValue}
-            options={DEBT_CHIPS.map((d) => ({ value: d.id, label: d.label }))}
+            options={[...DEBT_CHIPS.map((d) => ({ value: d.id as string, label: d.label as string })), { value: 'other', label: 'Other amount' }]}
             onPick={(v, l) => {
+              if (v === 'other') {
+                setDebtOther(true);
+                if (!inputs.debt) answer('Debt: other amount', { debt: { balance: 25000, rate: 5 } });
+                return;
+              }
+              setDebtOther(false);
               const chip = DEBT_CHIPS.find((d) => d.id === v)!;
               answer(`Debt: ${l.toLowerCase()}`, { debt: chip.balance ? { balance: chip.balance, rate: 5 } : null });
             }}
           />
+          {debtValue === 'other' && inputs.debt && (
+            <Field
+              id="debt-amount"
+              label="About how much student debt?"
+              value={inputs.debt.balance}
+              min={0}
+              max={150000}
+              step={500}
+              prefix="$"
+              onChange={(v) => answer(`Debt: ${money(v)}`, { debt: v > 0 ? { balance: Math.round(v), rate: inputs.debt?.rate ?? 5 } : null })}
+            />
+          )}
           <GoalsEditor answer={answer} />
           <Field
             id="income"
@@ -172,6 +205,46 @@ export function AboutYou({ live = false }: { live?: boolean }) {
         </div>
       </details>
     </div>
+  );
+}
+
+// A field of work in the person's own words. It is matched to the closest
+// field the app has pay figures for; when nothing fits, a middle figure is
+// used and said so.
+function FieldOther({ initial, onUse }: { initial: string; onUse: (text: string, field: FieldId) => void }) {
+  const [text, setText] = useState(initial);
+  const used = initial.trim();
+  const match = used ? matchField(used) : null;
+  const info = FIELDS.find((f) => f.id === (match ?? 'unsure'))!;
+  const use = () => {
+    const t = text.trim().slice(0, 40);
+    if (t && t !== used) onUse(t, matchField(t) ?? 'unsure');
+  };
+  return (
+    <form
+      className="goal-add"
+      onSubmit={(e) => {
+        e.preventDefault();
+        use();
+      }}
+    >
+      <label className="q-label" htmlFor="field-text">
+        What field?
+      </label>
+      <div className="goal-row">
+        <input id="field-text" value={text} maxLength={40} autoComplete="off" placeholder="Nursing, film, plumbing…" onChange={(e) => setText(e.target.value)} onBlur={use} />
+        <button type="submit" className="secondary" disabled={!text.trim() || text.trim() === used}>
+          Use
+        </button>
+      </div>
+      {used && (
+        <p className="hint" aria-live="polite">
+          {match
+            ? `Closest we have pay figures for: ${info.label}, about ${money(info.salary)} to start.`
+            : `We don’t have pay figures for that, so we use a middle starting salary, about ${money(info.salary)}. Set your income below if you know it.`}
+        </p>
+      )}
+    </form>
   );
 }
 

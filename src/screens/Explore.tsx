@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DEFAULT_SEED } from '../config';
-import { AnimatedNumber, Switch, Term } from '../components/bits';
+import { AnimatedNumber, ChipGroup, Switch, Term } from '../components/bits';
 import { AboutYou, CompareCard } from '../components/AboutYou';
 import { Inspector } from '../components/Inspector';
 import { River } from '../components/River';
@@ -9,11 +9,12 @@ import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
 import { LEVER_IDS, STATUS_LABELS, type LeverId } from '../engine/types';
+import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
 import { WORRIES } from '../engine/worries';
 import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
 import { useNarration } from '../narrate/client';
-import { STEP, anyLever, leverIsOn, useStore } from '../store';
+import { STEP, anyLever, leverIsOn, selectedWorries, useStore } from '../store';
 
 function onLevers(): LeverId[] {
   const l = useStore.getState().levers;
@@ -197,11 +198,16 @@ function WorryCardView({ card }: { card: WorryCard }) {
   const answer = worryAnswer(card, inputs);
   const { text, narrated } = useNarration('worry', answer.facts, answer.plain);
   const on = active === card.id;
+  // A worry typed in the person's own words keeps their words as the title.
+  const typed = useStore((s) => s.concerns).filter((c) => c.kind === card.id);
+  const chipOn = useStore((s) => card.id !== 'all' && !!s.worries[card.id]);
+  const words = typed.map((c) => `“${c.label}”`).join(', ');
   return (
     <article className={`card worry${on ? ' on' : ''}`}>
       <header>
-        <h3>{worryTitle(card.id)}</h3>
+        <h3>{typed.length && !chipOn ? words : worryTitle(card.id)}</h3>
       </header>
+      {typed.length > 0 && <p className="hint">{chipOn ? `Also covers ${words}.` : `Tested as: ${worryTitle(card.id)}.`}</p>}
       <p className="answer">
         {narrated ? (
           <>
@@ -219,13 +225,71 @@ function WorryCardView({ card }: { card: WorryCard }) {
   );
 }
 
+// A worry in the person's own words. It is matched to one of the what-ifs
+// the simulation can run, and they can change what it is tested as.
+function ConcernEditor() {
+  const concerns = useStore((s) => s.concerns);
+  const add = useStore((s) => s.addConcern);
+  const setKind = useStore((s) => s.setConcernKind);
+  const remove = useStore((s) => s.removeConcern);
+  const [text, setText] = useState('');
+  return (
+    <div className="goals concerns">
+      {concerns.map((c) => (
+        <div className="home-q goal" key={c.id}>
+          <div className="goal-head">
+            <b>{c.label}</b>
+            <button type="button" className="link" onClick={() => remove(c.id)} aria-label={`Remove ${c.label}`}>
+              Remove
+            </button>
+          </div>
+          {c.kind ? (
+            // Matched: one line, with the choices tucked away until asked for.
+            <details className="tested-as">
+              <summary>
+                Tested as: {effectLabel(c.kind)} <span className="link">Change</span>
+              </summary>
+              <ChipGroup legend={`Tested as (${c.label})`} label="Test it as" selected={(v) => v === c.kind} options={CONCERN_EFFECTS.map((e) => ({ value: e.kind, label: e.label }))} onPick={(v) => setKind(c.id, v)} />
+            </details>
+          ) : (
+            <ChipGroup legend={`What would it mostly do? (${c.label})`} label="What would it mostly do?" selected={() => false} options={CONCERN_EFFECTS.map((e) => ({ value: e.kind, label: e.label }))} onPick={(v) => setKind(c.id, v)} />
+          )}
+          {!c.kind && <p className="hint">Pick the closest one and it joins the cards below.</p>}
+        </div>
+      ))}
+      {concerns.length < MAX_CONCERNS && (
+        <form
+          className="goal-add"
+          onSubmit={(e) => {
+            e.preventDefault();
+            add(text);
+            setText('');
+          }}
+        >
+          <label className="q-label" htmlFor="concern-text">
+            {concerns.length ? 'Anything else?' : 'Something else on your mind?'}
+          </label>
+          <div className="goal-row">
+            <input id="concern-text" value={text} maxLength={60} autoComplete="off" placeholder="My parents need care, rent keeps rising…" onChange={(e) => setText(e.target.value)} />
+            <button type="submit" className="secondary" disabled={!text.trim()}>
+              Add
+            </button>
+          </div>
+          <p className="hint">Stays on this device. It is tested as the closest what-if, which you can change.</p>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function WhatIfPanel({ a }: { a: Analysis }) {
   const worries = useStore((s) => s.worries);
   const toggle = useStore((s) => s.toggleWorry);
   const showAll = useStore((s) => s.showAll);
   const setState = useStore((s) => s.setState);
   const active = useStore((s) => s.activeWorry);
-  const count = Object.keys(worries).length;
+  const concerns = useStore((s) => s.concerns);
+  const count = Object.keys(selectedWorries(worries, concerns)).length;
   return (
     <>
       <div className="chips">
@@ -236,6 +300,7 @@ function WhatIfPanel({ a }: { a: Analysis }) {
           </button>
         ))}
       </div>
+      <ConcernEditor />
       <div className="stack">
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
