@@ -138,15 +138,16 @@ function Milestones({ a }: { a: Analysis }) {
   const m = a.summary.milestoneCounts;
   const goals = useStore((s) => s.inputs.goals ?? []);
   const items: [string, number | null, string][] = [
-    ['Got through bad years', m.shockProof, 'Never had to dip into the workplace plan, and never ended a year short.'],
-    ['6 months saved by 35', a.startAge <= 35 ? m.room35 : null, 'Savings you can reach cover 6 months of spending: enough to change jobs, retrain or take time off.'],
-    ['A year saved by 45', m.room45, 'Savings you can reach cover 12 months of spending.'],
-    ['Home', m.home, 'The down payment is reached by your target age.'],
-    ['Work optional by 65', m.workOptional65, 'Savings and public pensions cover 70% of the spending you’re used to, so working is a choice.'],
+    // Each line finishes "In 849 of your 1,000 futures, …".
+    ['Got through bad years', m.shockProof, 'every rough patch (a layoff, a market drop) was covered. You never ran out of money or had to touch your retirement savings.'],
+    ['6 months saved by 35', a.startAge <= 35 ? m.room35 : null, 'by 35 you have 6 months of living costs saved that you can use any time. That’s enough to switch jobs or take a break.'],
+    ['A year saved by 45', m.room45, 'by 45 you have a full year of living costs saved that you can use any time.'],
+    ['Home', m.home, 'you have the down payment by the age you picked.'],
+    ['Work optional by 65', m.workOptional65, 'by 65 your savings plus government pensions (CPP and OAS) pay for at least 70% of what you usually spend. That’s enough to stop working if you want to.'],
     ...goals.map((g, k): [string, number | null, string] => [
       `${g.label} by ${g.byAge}`,
       m.goals[k] ?? null,
-      `Paid from savings you can reach, without touching the cushion. Counted on its own: it doesn’t change whether a future is in control.`,
+      'you can pay for it by then from savings, without touching your emergency cushion.',
     ]),
   ];
   return (
@@ -158,7 +159,7 @@ function Milestones({ a }: { a: Analysis }) {
             <b>
               <AnimatedNumber value={n!} />
             </b>
-            <Term explain={explain}>{label}</Term>
+            <Term explain={`In ${num(n!)} of your 1,000 futures, ${explain}`}>{label}</Term>
           </li>
         ))}
     </ul>
