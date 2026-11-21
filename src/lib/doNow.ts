@@ -119,3 +119,27 @@ export function csvRow(r: CsvRecord): string {
 export function testCsv(records: CsvRecord[]): string {
   return [CSV_HEAD, ...records.map(csvRow)].join('\n') + '\n';
 }
+
+export interface TestSummary {
+  people: number;
+  // Average out of 10, for people who answered both times.
+  confBefore: number | null;
+  confAfter: number | null;
+  // Said they set it up, sent the message, or added the reminder for a raise.
+  tookStep: number;
+  // Of those, the ones who only added a reminder for their next raise.
+  reminderOnly: number;
+}
+
+export function testSummary(records: CsvRecord[]): TestSummary {
+  const both = records.filter((r) => r.confBefore !== null && r.confAfter !== null);
+  const avg = (v: number[]) => (v.length ? Math.round((v.reduce((s, x) => s + x, 0) / v.length) * 10) / 10 : null);
+  const took = records.filter((r) => r.outcome === 'done' || r.outcome === 'sent');
+  return {
+    people: records.length,
+    confBefore: avg(both.map((r) => r.confBefore!)),
+    confAfter: avg(both.map((r) => r.confAfter!)),
+    tookStep: took.length,
+    reminderOnly: took.filter((r) => r.lever === 'raises').length,
+  };
+}

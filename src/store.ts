@@ -88,6 +88,8 @@ interface Store {
   reminderAdded: boolean;
   hrCopied: boolean;
   outcome: Outcome | null;
+  // This person's row in the user-test log, so they are only counted once.
+  testRowAt: string | null;
 
   setStep: (step: number) => void;
   setInputs: (patch: Partial<Inputs>) => void;
@@ -146,6 +148,7 @@ const fresh = {
   reminderAdded: false,
   hrCopied: false,
   outcome: null,
+  testRowAt: null as string | null,
 };
 
 export const useStore = create<Store>()(
