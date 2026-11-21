@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_SEED } from '../config';
 import { AnimatedNumber, ChipGroup, Explain, Switch, Term } from '../components/bits';
 import { AboutYou, CompareCard } from '../components/AboutYou';
@@ -9,13 +9,15 @@ import { A } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { simulate } from '../engine/simulate';
 import { MARKET_SETS } from '../engine/profile';
-import { LEVER_IDS, STATUS_LABELS, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
+import { LEVER_IDS, NO_LEVERS, STATUS_LABELS, leverOnly, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
 import { CONCERN_EFFECTS, MAX_CONCERNS, effectLabel } from '../engine/concerns';
 import { WORRIES, worryInfo } from '../engine/worries';
-import { leverCopy, leverCostLine, worryAnswer, worryTitle } from '../lib/copy';
+import { cutAgesFor, defaultCutAge, type CutShort } from '../engine/noSixtyFive';
+import type { CutShortRequest } from '../engine/noSixtyFive.worker';
+import { leverCopy, leverCostLine, noSixtyFiveAnswer, worryAnswer, worryTitle } from '../lib/copy';
 import { money, moneyShort, num } from '../lib/format';
 import { classifyWorry, useNarration } from '../narrate/client';
-import { STEP, anyLever, leverIsOn, selectedWorries, useStore } from '../store';
+import { STEP, anyLever, currentScenario, leverIsOn, selectedWorries, useStore } from '../store';
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
@@ -384,6 +386,66 @@ function ConcernEditor() {
   );
 }
 
+// Why save if there may be no 65? The same lives, stopped early: what the
+// best step leaves you to use then, against what it cost along the way.
+function NoSixtyFive({ a }: { a: Analysis }) {
+  const inputs = useStore((s) => s.inputs);
+  const levers = useStore((s) => s.levers);
+  const seed = useStore((s) => s.seed);
+  const market = useStore((s) => s.set);
+  const worries = useStore((s) => s.worries);
+  const concerns = useStore((s) => s.concerns);
+  const active = useStore((s) => s.activeWorry);
+  const [picked, setPicked] = useState<number | null>(null);
+  const ages = cutAgesFor(inputs.age);
+  const cutAge = picked !== null && ages.includes(picked) ? picked : defaultCutAge(inputs.age);
+  // The habits switched on, or else the one ranked first.
+  const on = LEVER_IDS.filter((id) => leverIsOn(levers, id));
+  const top = a.ranking[0]?.rescued > 0 ? a.ranking[0] : null;
+  const topId = top?.id ?? null;
+  const used = useMemo(() => (anyLever(levers) ? levers : topId ? leverOnly(topId) : NO_LEVERS), [levers, topId]);
+  const askHR = (on.length ? on.includes('match') : topId === 'match') && inputs.plan === 'unsure';
+  const single = on.length === 1 ? on[0] : on.length === 0 ? topId : null;
+  // The cost and the money come from taking the match, not from asking about it.
+  const noun = on.length > 1 ? 'These habits' : single === 'match' && askHR ? 'Taking the employer match' : single ? leverCopy(single, inputs).noun : null;
+
+  // In its own worker, so opening the card never freezes the screen.
+  const worker = useRef<Worker | null>(null);
+  const latest = useRef(0);
+  const [result, setResult] = useState<CutShort | null>(null);
+  useEffect(() => {
+    const w = new Worker(new URL('../engine/noSixtyFive.worker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent<{ id: number; result: CutShort }>) => {
+      if (e.data.id === latest.current) setResult(e.data.result);
+    };
+    worker.current = w;
+    return () => w.terminate();
+  }, []);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const req: CutShortRequest = { id: ++latest.current, inputs, levers: used, cutAge, seed, set: market, scenario: currentScenario(selectedWorries(worries, concerns), active) };
+      worker.current?.postMessage(req);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [inputs, used, cutAge, seed, market, worries, concerns, active]);
+  const answer = result ? noSixtyFiveAnswer(result, noun) : null;
+  return (
+    <article className="card worry no65">
+      <header>
+        <h3>If there’s no 65</h3>
+      </header>
+      <ChipGroup legend="Say everything changes at" selected={(v) => v === cutAge} options={ages.map((v) => ({ value: v, label: `Age ${v}` }))} onPick={(v) => setPicked(v)} />
+      <p className="answer" aria-live="polite">
+        {answer ? answer.parts.map((p, i) => (typeof p === 'string' ? <span key={i}>{p}</span> : <strong key={i}>{p.strong}</strong>)) : 'Working it out…'}
+      </p>
+      <p className="hint">
+        Saving isn’t only for 65: it’s money for time off, a move or a hard year. Middle future shown. The workplace plan is counted after tax, and some plans limit withdrawals.
+        {askHR ? ` Assumes your plan matches ${A.defaultMatchPct}%.` : ''}
+      </p>
+    </article>
+  );
+}
+
 function WhatIfPanel({ a }: { a: Analysis }) {
   const worries = useStore((s) => s.worries);
   const toggle = useStore((s) => s.toggleWorry);
@@ -392,6 +454,7 @@ function WhatIfPanel({ a }: { a: Analysis }) {
   const active = useStore((s) => s.activeWorry);
   const concerns = useStore((s) => s.concerns);
   const count = Object.keys(selectedWorries(worries, concerns)).length;
+  const [no65, setNo65] = useState(false);
   return (
     <section className="worries" aria-label="Worries">
       <h2 className="small-head">What if…</h2>
@@ -402,9 +465,14 @@ function WhatIfPanel({ a }: { a: Analysis }) {
             {w.label}
           </button>
         ))}
+        <button type="button" className="chip" aria-pressed={no65} onClick={() => setNo65(!no65)}>
+          <span aria-hidden="true">{no65 ? '✓ ' : '+ '}</span>
+          What if there’s no 65?
+        </button>
       </div>
       <ConcernEditor />
       <div className="stack">
+        {no65 && <NoSixtyFive a={a} />}
         {a.cards.map((c) => (
           <WorryCardView key={c.id} card={c} />
         ))}
