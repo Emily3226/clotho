@@ -1,61 +1,92 @@
-# Clotho
+# Devpost submission: Clotho
+
+## Fields to paste
+
+**Project name:** Clotho
+
+**Elevator pitch:** See 1,000 versions of your financial future, test what worries you, and find the one small habit that helps most.
+
+**Try it out:**
+- https://emily3226.github.io/clotho/
+- https://github.com/Emily3226/clotho
+
+**Video demo:** [add link]
+
+**Built with:** typescript, react, vite, canvas, web-workers, zustand, node.js, express, gemini, firebase, firebase-authentication, cloud-firestore, vitest, github-pages
+
+**Prizes to enter:** Canada Life Future Me Challenge, MLH Best Use of Gemini, Most Adventurous
+
+---
+
+## Project story (paste into "About the project")
 
 *You can't predict the future. You can stack the odds.*
 
 ## Inspiration
 
-Canada Life's research on young workers describes a loop: dread about the world leads to doomscrolling, doomscrolling leads to helplessness, and helplessness means not enrolling, not automating, and leaving the employer match unclaimed. The same research says that scaring people makes it worse, and that talking about flexibility and control works better than pointing at a distant retirement date.
+Canada Life's research on Gen Z and retirement describes a loop we recognized: worry about the world leads to doomscrolling, doomscrolling leads to helplessness, and helplessness leads to putting off the things that would help. Gen Z reported about 74 minutes of doomscrolling a day, and each extra hour was linked to a 4.4% lower chance of setting up automatic contributions.
 
-So we asked a different question. What if a tool took those fears seriously instead of waving them away, and answered each one with a number and a small thing you can do about it?
+The same research found that fear-based messages backfire. Talking about flexibility and control works better than pointing at a retirement date 40 years away.
+
+Most financial calculators give you one number for one future. But the future is exactly what young people feel unsure about. So we asked: what if a tool took those fears seriously, showed how much each one could really change, and ended with one thing you could do today?
+
+Hack Western's theme is "Discover the unknown." Clotho, named for the Fate who spins the thread of life, makes the unknown something you can explore.
 
 ## What it does
 
-Clotho shows you a thousand simulated versions of your own financial life, from now to 70. Same choices, different luck with jobs and markets.
+Clotho simulates 1,000 versions of your financial life from now to age 70. Each one has the same choices and different luck with jobs, pay, markets and surprise costs.
 
-- **The river.** A thousand lines, a middle line, and one headline: "185 of 1,000 futures in control today, 779 within reach with one habit." **Why 185?** opens the working behind it. Tap any line to read that life as a story.
-- **Your worries, sized.** Pick what's on your mind: AI and your job, a recession, rising costs, housing, a rougher world, public pensions. Each is run against the same thousand lives: how many stay in control with it and without it, what the middle future has saved at 65, and which habit brings the most back.
-- **What you control.** Habits ranked by how many futures they rescue: take the full employer match, add an automatic $25, save a little of every raise, build the cushion first. Switch one on and the river moves, line by line.
-- **Keep yours reachable.** For anyone with a workplace plan, Clotho tests the design Canada Life announced in October: your own contributions in a TFSA, the employer match kept for retirement. It shows how many fewer futures have to raid retirement savings, and what that costs at 65.
-- **One step.** You pick one. **Do it now** gives its exact steps, or an email to HR ready to send, then asks "Did you do it?". Then an optional payday nudge: one tap adds a monthly reminder to their own calendar (Google, Apple or Outlook). No sign-up, and nothing is sent to us. Then the same confidence question you answered at the start, so you can see what changed.
+**Start with how you feel.** You rate how you feel about your financial future and pick what worries you, or type your own worry. A few quick questions cover your work, field, city and savings. You can also add what you want from life, like kids, helping family, time off, going back to school or a four-day week.
 
-It runs fully in the browser, with no account, and needs no network unless AI wording is switched on. It is an educational tool and recommends no product, fund or provider.
+**See your river of futures.** A thousand lines flow across the screen with one plain headline, like *"185 of 1,000 futures in control today, 779 within reach with one habit."* "In control" means a future passes four checks: it handles bad years, has room to move at 35 and 45, and makes work optional by 65. Tap any line to read that life as a story, or press play and watch one unfold event by event.
+
+**Size your worries.** AI changing your job, a recession, rising costs, housing, a rougher world, or public pensions not being there. Each worry runs against the same 1,000 lives, so you see how much it changes and which habit brings back the most.
+
+**Find what helps most.** Habits are ranked by how many futures they rescue: automating a small amount, taking the employer match, building a cushion, or saving part of every raise. Switch one on and the same lives visibly move. Clotho also tests options that cost nothing extra each month, like asking for a raise, paying lower fees and reinvesting an RRSP refund, and points to the TFSA, FHSA, Home Buyers' Plan, Lifelong Learning Plan and RESP grant where they fit.
+
+**Take one step.** You pick one habit and get exact steps, or a ready-to-send message to HR. You can add a reminder to Google, Apple or Outlook calendar, then answer the confidence question again to see what changed. The ending links to Canada Life's free public tools.
+
+**Come back.** Optional Google sign-up saves your step and opens a 30-second monthly check-in with your streak and month-by-month progress. Without an account, nothing is saved after you leave.
+
+Clotho is an educational tool. It isn't financial advice, a Canada Life product, or a recommendation of any product or provider.
 
 ## How we built it
 
-- **Engine:** pure TypeScript in a Web Worker. 1,000 paths with yearly steps, three buckets (cushion, reachable long-term savings, workplace plan with employer match), TFSA, FHSA and RRSP limits, job loss, market crash regimes, and emergency withdrawals from retirement savings.
-- **Common random numbers:** every path draws its luck up front from a generator seeded with the path number, so path 412 has the same layoffs and the same markets whether or not you take the match. That makes the comparison honest and lets the river morph per path.
-- **River:** Canvas 2D, layered, with draw-in, 600 ms per-path morphing, hit testing and keyboard stepping.
-- **App:** Vite, React, a small Zustand store, hand-written CSS with light and dark themes.
-- **Gemini:** optional, for words only: path stories, warmer worry answers, and sorting goals typed in your own words. Every reply is validated and thrown away if it contains a number the engine did not compute.
-- **Tests:** determinism, common random numbers, monotonicity, account limits, a hand-calculated compound-growth check, worry severity ordering, performance.
+- **Simulation engine:** strict TypeScript running in Web Workers. It models yearly pay, career moves, job loss, market crashes, inflation, a cash cushion, TFSA, FHSA, RRSP and workplace plans, employer matching, student debt, and emergency withdrawals.
+- **Common random numbers:** each life draws all of its luck up front from a seeded generator. Life #412 gets the same layoffs and markets whether or not you turn on a habit, so every comparison is fair and each line can animate from its old shape to its new one.
+- **The river:** a custom Canvas 2D visualization with draw-in, per-path morphing, hit testing, life playback and keyboard navigation.
+- **Frontend:** React, Vite, Zustand and hand-written CSS, with light and dark themes, reduced-motion support and a phone layout.
+- **Gemini, for words only:** when the Express server is running, Gemini can turn a life's events into a short story, warm up worry answers, and sort free-text answers into fixed categories. It never produces a number. Every reply is checked, and anything containing a number the engine didn't compute is thrown away for a built-in template. The hosted demo is a static site, so it uses those templates and on-device keyword matching.
+- **Accounts:** Firebase Authentication with Google, and one private Firestore record per person, protected by access rules. People can delete their account at any time.
+- **Trust:** 162 automated tests cover determinism, fair comparisons, account limits, hand-calculated growth and the safety checks on AI text. Every assumption is listed in the app with its source.
 
 ## Challenges we ran into
 
-- **Making a hard picture useful instead of frightening.** Our first version of "everything keeps getting more expensive" left almost no futures standing for a low saver. The fix was not to hide it but to make the what-if explicit and adjustable, and to always pair it with the habit that moves it.
-- **Fair comparisons.** Without shared luck across variants, switching on a habit reshuffled the whole picture. Drawing all randomness up front fixed both the maths and the animation.
-- **Keeping the model out of the numbers.** A language model will happily do arithmetic. We made that impossible to ship: no number reaches the screen unless the engine produced it.
-- **Ranking habits honestly.** Our first ranking put a free step first even when another habit rescued far more, so two parts of the screen disagreed. Now the headline, the list and the "does it still hold" card all name the habit that rescues the most.
+- **Making hard results useful instead of scary.** Some honest results are tough. We use counts instead of percentages, avoid red and alarm language, and pair every worry with the habit that helps most.
+- **Keeping comparisons fair.** At first, switching on a habit reshuffled everyone's luck, so the before and after weren't comparable. Drawing all randomness up front fixed both the math and the animation.
+- **Modelling real careers.** Pay doesn't rise smoothly. A first full-time job, a new employer or a career change can move it up or down. One bug treated the jump from student pay to a first salary as a raise and saved part of it automatically, which made a student saving $50 a month look far safer than someone already working. Testing across life stages caught it.
+- **Keeping AI away from the numbers.** A language model will happily do arithmetic. In a financial tool that's a real risk, so we built validation that makes an invented number impossible to show.
+- **Saving progress without overcollecting.** We wanted people to come back without forcing an account. Sign-up is optional, and the browser no longer keeps answers for people who don't sign up.
 
-## Accomplishments we're proud of
+## Accomplishments that we're proud of
 
-- The river morph: the same thousand lives visibly shifting when one habit is switched on.
-- A worry gets an answer in three numbers, in one sentence.
-- Every assumption is one tap away, with its source and date.
-- No red anywhere, and no percentages in headlines.
+- Watching the same 1,000 lives move when one small habit is switched on.
+- Turning a vague fear into a specific, sized answer with a next step.
+- Building a model that reflects real life, including career changes, kids, caregiving and time away from work.
+- Making every assumption visible, with no number from AI.
+- Finishing the whole loop: worry, understanding, action and a monthly return.
 
 ## What we learned
 
-- People don't need a forecast. They need to see the range, and where their own choices sit inside it.
-- "185 of 1,000" lands in a way "19%" never does.
-- Framing matters as much as modelling. "Work becomes optional" starts a different conversation than "retirement".
+- A range of outcomes can be more honest and more motivating than a single forecast.
+- "185 of 1,000" is easier to picture than a percentage.
+- Small modelling assumptions can change the whole story, so testing across different kinds of people matters as much as testing the code.
+- In a financial product, the wording is part of the product. "Work becomes optional" starts a different conversation than "retirement."
 
-## What's next
+## What's next for Clotho
 
-- A pilot inside a real group plan, with the sponsor view showing totals only.
-- More lives: partners, children, moving between provinces.
-- Verified parameters reviewed by an actuary, and real plan rules per employer.
-- A ten-second yearly check-in at raise time: "what's my one step now?"
-
-## Built with
-
-TypeScript, React, Vite, Canvas 2D, Web Workers, Zustand, Vitest, Express, Gemini API.
+- Test it with more Gen Z users and measure whether they actually take their step.
+- Have an actuary review the assumptions.
+- Pilot it inside a group benefits plan, with employers seeing only anonymous totals.
+- Add partners, inheritances, moves between provinces and real plan rules for each employer.
+- Bring the Gemini features to the hosted version.
