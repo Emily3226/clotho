@@ -59,7 +59,7 @@ src/
   lib/                   copy, templates, calendar file, do-it-now steps
   narrate/               client and the number validator shared with the server
 server/index.ts          Express proxy for /api/narrate (keeps the key off the client)
-docs/                    ASSUMPTIONS, PITCH, DEVPOST
+docs/                    ASSUMPTIONS, PITCH
 ```
 
 **The engine is the product.** 1,000 paths, yearly steps to age 70, three buckets (cushion, reachable long-term savings, workplace plan).
