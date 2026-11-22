@@ -105,6 +105,35 @@ describe('accounts across two devices', () => {
     expect(other.useStore.getState().step).toBe(5);
   });
 
+  it('keeps answers and progress out of the browser', async () => {
+    const storage = new Map<string, string>();
+    const a = await device({ storage });
+    a.useStore.setState({ commitment, confBefore: 7 });
+    await wait(20);
+    const kept = JSON.parse(storage.get('clotho:v2')!).state;
+    expect(Object.keys(kept)).toEqual(['theme']);
+
+    const next = await device({ storage });
+    expect(next.useStore.getState().commitment).toBeNull();
+    expect(next.useStore.getState().confBefore).toBeNull();
+  });
+
+  it('lets an older browser save be kept once, then removes it', async () => {
+    const storage = new Map([['clotho:v2', JSON.stringify({ version: 1, state: { theme: 'light', commitment, inputs, confBefore: 6 } })]]);
+    const a = await device({ storage });
+    expect(a.useStore.getState().commitment?.lever).toBe('auto25');
+    expect(a.useStore.getState().theme).toBe('light');
+    expect(storage.get('clotho:v2')).not.toContain('auto25');
+  });
+
+  it('stays on the home page when coming back already signed in', async () => {
+    server.set('users/person-1', { v: 1, data: JSON.stringify({ inputs, room: [], confBefore: 5, commitment }) });
+    const back = await device({ storage: new Map(), signedIn: true });
+    await wait(20);
+    expect(back.useStore.getState().commitment?.lever).toBe('auto25');
+    expect(back.useStore.getState().step).toBe(0);
+  });
+
   it('never overwrites an account after a failed read', async () => {
     server.set('users/person-1', { v: 1, data: JSON.stringify({ inputs, room: [], confBefore: 5, commitment: { ...commitment, streak: 6 } }) });
     const before = server.get('users/person-1');

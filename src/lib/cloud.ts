@@ -19,7 +19,7 @@ interface Account {
 }
 export const useAccount = create<Account>(() => ({ status: cloudEnabled ? 'loading' : 'off', who: null, saved: false, ready: false, loadFailed: false, message: null }));
 
-const SAVE_FAILED = 'Couldn’t save just now. Your progress is still on this device.';
+const SAVE_FAILED = 'Couldn’t save just now. We’ll try again at your next change.';
 
 async function connect() {
   const [app, auth, db] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore')]);
@@ -37,6 +37,8 @@ const localProgress = (): Progress => {
 let stopSync: (() => void) | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let currentUid: string | null = null;
+// Tapped sign-in just now, rather than coming back already signed in.
+let askedToSignIn = false;
 
 async function push(uid: string) {
   const p = localProgress();
@@ -61,7 +63,7 @@ async function flush() {
 function startSync(uid: string) {
   stopSync?.();
   stopSync = useStore.subscribe((s, prev) => {
-    // "Remove everything from this device" also ends the session here, so
+    // "Clear my data" also ends the session here, so
     // the next load doesn't quietly bring it all back.
     if (prev.commitment && !s.commitment) {
       if (timer) clearTimeout(timer);
@@ -83,6 +85,8 @@ async function onUser(user: User | null) {
   stopSync?.();
   stopSync = null;
   currentUid = user?.uid ?? null;
+  const asked = askedToSignIn && !!user;
+  if (user) askedToSignIn = false;
   if (!user) {
     useAccount.setState({ status: 'out', who: null, saved: false, ready: false, loadFailed: false });
     return;
@@ -95,9 +99,11 @@ async function onUser(user: User | null) {
     const cloud = snap.exists() ? parseProgress(snap.data().data) : null;
     if (chooseProgress(localProgress(), cloud) === 'cloud' && cloud) {
       const s = useStore.getState();
-      s.setState({ inputs: { ...s.inputs, ...cloud.inputs }, room: cloud.room as typeof s.room, confBefore: cloud.confBefore, commitment: cloud.commitment });
-      s.setStep(STEP.back);
-      useAccount.setState({ saved: true, message: 'Welcome back. Your progress is restored.' });
+      // Someone already answering on this visit keeps what they've typed.
+      const answers = asked || s.step === STEP.start ? { inputs: { ...s.inputs, ...cloud.inputs }, room: cloud.room as typeof s.room, confBefore: cloud.confBefore } : {};
+      s.setState({ ...answers, commitment: cloud.commitment });
+      if (asked) s.setStep(STEP.back);
+      useAccount.setState({ saved: true, message: asked ? 'Welcome back. Your progress is restored.' : null });
     } else {
       await push(user.uid);
     }
@@ -135,6 +141,7 @@ const SIGN_IN_ERRORS: Record<string, string> = {
 };
 
 export async function signIn() {
+  askedToSignIn = true;
   useAccount.setState({ message: null });
   try {
     const { auth, authApi } = await services();
@@ -146,13 +153,14 @@ export async function signIn() {
       else throw e;
     }
   } catch (e) {
+    askedToSignIn = false;
     if (cancelled(e)) return;
     console.warn('Sign-in failed:', code(e));
-    useAccount.setState({ message: SIGN_IN_ERRORS[code(e)] ?? 'Couldn’t sign you in just now. Your progress is still on this device.' });
+    useAccount.setState({ message: SIGN_IN_ERRORS[code(e)] ?? 'Couldn’t sign you in just now. Try again.' });
   }
 }
 
-// Saves first, then removes the data from this device, for shared computers.
+// Saves first, then clears this visit, for shared computers.
 export async function signOutHere() {
   try {
     await flush();

@@ -229,8 +229,9 @@ export function AssumptionsPanel() {
 
         <h3>Privacy</h3>
         <p>
-          Your answers stay in this browser. Nothing is sent anywhere unless you turn on AI narration, and then only
-          anonymous simulation facts (counts, ages, events) are sent to be put into words. Numbers always come from the
+          Your answers aren’t saved in this browser. If you sign up, your answers, step and check-ins are kept in a
+          private account you can delete. Otherwise nothing is sent anywhere unless you turn on AI narration, and then
+          only anonymous simulation facts (counts, ages, events) are sent to be put into words. Numbers always come from the
           simulation.
         </p>
       </div>

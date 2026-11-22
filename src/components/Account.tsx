@@ -67,7 +67,15 @@ export function SignInLink() {
           Signed in as <b>{who}</b>. No step saved yet. Tap Start and pick one, and it will save here.
         </p>
       )}
-      {status === 'out' && (
+      {status === 'out' && hasStep && (
+        <p className="hint">
+          Your progress isn’t saved yet.{' '}
+          <button type="button" className="link" onClick={() => void signIn()}>
+            Sign up to keep it
+          </button>
+        </p>
+      )}
+      {status === 'out' && !hasStep && (
         <p className="hint">
           Already signed up?{' '}
           <button type="button" className="link" onClick={() => void signIn()}>
@@ -89,7 +97,7 @@ export function AccountPanel() {
     return (
       <div className="card account-panel">
         <p>
-          <b>Keep your progress.</b> Right now it’s only in this browser.
+          <b>Keep your progress.</b> It isn’t saved unless you sign up.
         </p>
         <button type="button" className="secondary" onClick={() => void signIn()}>
           Sign up with Google
@@ -123,7 +131,7 @@ export function AccountPanel() {
           </button>
         )}
       </div>
-      <p className="hint">Signing out also clears this device. Your progress stays in your account.</p>
+      <p className="hint">Signing out clears this page. Your progress stays in your account.</p>
       <Message />
     </div>
   );

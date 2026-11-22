@@ -25,7 +25,7 @@ export function monthLabel(month: string): string {
 }
 
 // Whichever has kept the habit longer, then whichever was active most recently.
-// A tie stays with this device.
+// A tie stays with this visit.
 export function chooseProgress(local: Progress, cloud: Progress | null): 'local' | 'cloud' {
   if (!cloud?.commitment) return 'local';
   if (!local.commitment) return 'cloud';
@@ -40,7 +40,7 @@ export function chooseProgress(local: Progress, cloud: Progress | null): 'local'
 // summary. A step already being kept is only replaced by finishing again.
 export const shouldSaveStep = (c: Commitment | null, lever: string): boolean => !c || (c.lever !== lever && c.streak === 0);
 
-// Saved data is checked before it replaces anything on this device.
+// Saved data is checked before it replaces anything in this visit.
 export function parseProgress(json: unknown): Progress | null {
   if (typeof json !== 'string') return null;
   try {
