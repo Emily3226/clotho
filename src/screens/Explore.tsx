@@ -484,7 +484,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
               <span className="rank" aria-hidden="true">{i + 1}</span>
               <div className="lever-body">
                 <h3>
-                  {copy.title}
+                  {copy.title}{' '}
                   {row.noExtraCost && <span className="tag">No extra cost</span>}
                   {row.startsLater && <span className="tag">Starts at your next raise</span>}
                 </h3>

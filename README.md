@@ -102,7 +102,7 @@ All of these are listed in the Assumptions panel and in `docs/ASSUMPTIONS.md`.
 
 1. **The parameters are illustrative, not forecasts.** A thousand runs of luck show a range of what could happen, not what will.
 2. **Taxes, CPP and OAS are simplified.** Approximate effective tax rates for a single Ontario earner, and simple pension estimates.
-3. **One set of life events cannot cover everyone.** No partners, children, inheritances or moves between provinces, and field-of-study effects are broad averages, not a prediction for any one person.
+3. **One set of life events cannot cover everyone.** No partners, inheritances or moves between provinces. Kids and caregiving are simplified, and field-of-study effects are broad averages, not a prediction for any one person.
 
 Starting pay by field comes from Statistics Canada Table 37-10-0284-01 (median employment income two years after graduation, bachelor's, class of 2022). The figures were gathered while the table was offline; confirm each one against the table before quoting it.
 

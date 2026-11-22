@@ -1714,3 +1714,34 @@ details.why summary {
     white-space: nowrap;
   }
 }
+
+/* Final polish: keep the + apart from worry labels, tags at their own width,
+   and comfortable tap targets on text links. */
+.chip > span[aria-hidden='true']:not(.chip-check) {
+  white-space: pre;
+}
+.choice .tag {
+  justify-self: start;
+  align-self: flex-start;
+  width: fit-content;
+  margin-left: 0;
+}
+.hint .link {
+  display: inline-block;
+  padding-block: 12px;
+  margin-block: -6px;
+}
+.cl-links {
+  gap: 0;
+}
+.cl-links a {
+  display: inline-block;
+  padding-block: 12px;
+}
+@media (max-width: 520px) {
+  .lever h3 .tag {
+    display: block;
+    width: fit-content;
+    margin: 4px 0 0;
+  }
+}
