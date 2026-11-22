@@ -23,7 +23,7 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 "Pick one to try". **Automate $100 a month** is already picked. Show the **Do it now** steps, tap **I set it up**, move confidence up, "See my summary". "One step, done before she leaves."
 
 **2:20 She comes back (15 s)**
-Don't reload. Tap the **Clotho** logo, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **518**. Keeping it up points to **866**, and she's kept it 4 months in a row."
+Use the `?demo=1` link and don't reload. Tap the **Clotho** logo, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **518**. Keeping it up points to **866**, and she's kept it 4 months in a row."
 
 **2:35 Proof and what's next (25 s)**
 "We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** took the step before leaving." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan. Scan the code and try it with your own numbers."
