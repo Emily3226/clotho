@@ -14,6 +14,7 @@ export function Return() {
   const commitment = useStore((s) => s.commitment);
   const inputs = useStore((s) => s.inputs);
   const a = useStore((s) => s.analysis);
+  const computing = useStore((s) => s.computing);
   const setState = useStore((s) => s.setState);
   const setStep = useStore((s) => s.setStep);
   const [answer, setAnswer] = useState<'yes' | 'notyet' | 'changed' | null>(null);
@@ -23,6 +24,16 @@ export function Return() {
   useEffect(() => {
     if (commitment) setState({ levers: leversFor(commitment.lever, commitment.alsoRaises), worries: {}, activeWorry: null });
   }, [commitment, setState]);
+
+  // The month just kept shows the same number as the headline, once the
+  // futures have re-run with what was just saved.
+  const settled = !computing && a ? a.summary.counts[0] : null;
+  useEffect(() => {
+    const c = useStore.getState().commitment;
+    const last = c?.months?.at(-1);
+    if (!c || !last || settled === null || last.month < monthKey() || last.pointsTo === settled) return;
+    setState({ commitment: { ...c, months: recordMonth(c.months, last.month, settled, last.saved) } });
+  }, [settled, setState]);
 
   if (!commitment) {
     return (
@@ -54,8 +65,15 @@ export function Return() {
     const extra = commitment.lever.startsWith('auto') ? Number(commitment.lever.slice(4)) : 0;
     const add = months * (inputs.monthly + extra);
     const saved = Math.round(inputs.saved + add);
+    // One row per month kept. The demo jump fills in the months it skips.
+    const today = new Date();
+    let rows = commitment.months;
+    for (let j = 1; j <= months; j++) {
+      const when = months === 1 ? today : new Date(today.getFullYear(), today.getMonth() + j, 1);
+      rows = recordMonth(rows, monthKey(when), j === months ? now : null, Math.round(inputs.saved + (j * add) / months));
+    }
     setState({
-      commitment: { ...commitment, streak: streak + months, lastCheckISO: new Date().toISOString(), months: recordMonth(commitment.months, monthKey(), now, saved) },
+      commitment: { ...commitment, streak: streak + months, lastCheckISO: today.toISOString(), months: rows },
       inputs: { ...inputs, saved },
     });
     setAnswer('yes');
@@ -121,7 +139,7 @@ export function Return() {
                 const c = s.commitment;
                 setState({
                   inputs: { ...s.inputs, saved: v },
-                  commitment: c ? { ...c, months: recordMonth(c.months, monthKey(), now, v) } : c,
+                  commitment: c?.months?.length ? { ...c, months: recordMonth(c.months, c.months.at(-1)!.month, c.months.at(-1)!.pointsTo, v) } : c,
                 });
               }}
             />

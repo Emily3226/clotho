@@ -174,7 +174,7 @@ export function MonthlyProgress({ commitment }: { commitment: Commitment }) {
           <li key={m.month}>
             <b>{monthLabel(m.month)}</b>
             <span>
-              Kept it · points to {num(m.pointsTo)} · {money(m.saved)} saved
+              Kept it{m.pointsTo === null ? '' : ` · points to ${num(m.pointsTo)}`} · {money(m.saved)} saved
             </span>
           </li>
         ))}

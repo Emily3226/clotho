@@ -98,7 +98,14 @@ export function simulate(
   const raiseSpent = 1 - raiseKept;
   // The cushion is sized to the spending of the first year. For a student who
   // finishes school this year, that is already the full-time lifestyle.
-  const spendStart = student && finishAge <= age ? spend0 + raiseSpent * Math.max(0, takeHome(fullIncome) - nth0) : spend0;
+  // What someone keeps setting aside once full-time pay arrives: at least the
+  // dollars they entered, and the same share of pay up to a modest cap.
+  // An automatic habit counts the same as setting that amount aside yourself.
+  const savingAtJob = (pay: number) => {
+    const auto = levers.auto * 12;
+    return Math.max(saving0, Math.min((saving0 + auto) / Math.max(1, nth0), A.firstJobSavingCap) * pay - auto);
+  };
+  const spendStart = student && finishAge <= age ? Math.max(0, takeHome(fullIncome) - savingAtJob(takeHome(fullIncome))) : spend0;
   const cushionShare = inputs.cushionMonths / 12;
   const debtRate = inputs.debt ? Math.max(0, inputs.debt.rate / 100 - A.inflationForDebt) : 0;
   const debtPay = inputs.debt ? amortise(inputs.debt.balance, debtRate, A.debtYears) : 0;
@@ -132,6 +139,7 @@ export function simulate(
     let hasFullTime = fullTimeChance === 0;
     // Lifestyle is set by the job someone actually lands, not the typical one.
     let landed = 1;
+    let landedFullTime = false;
     let movedLastYear = false;
     // How far lifestyle has adjusted to pay or costs that differ from the plan.
     let trim = 0;
@@ -335,11 +343,14 @@ export function simulate(
       const expectedPay = landed * (inSchool ? income * plainTrend : student ? (fullIncome * plainTrend) / plainAtFinish : income * plainTrend);
       const chosenPace = lifestyleShare(life, a);
       const expectedNth = takeHome(expectedPay * chosenPace);
-      // Starting full-time work lifts lifestyle like a raise, even when it
-      // happens this year (t = 0): otherwise spending stays at part-time level
-      // for life and nearly all of the new pay is saved.
+      // A first full-time job is a new life, not a raise: rent, a car and the
+      // rest move up to that pay, and their saving habit comes with them.
+      // Treating it as a raise banked a share of the whole jump, so a student
+      // saving $50 a month out-saved someone already working.
       const startsFullTime = student && a === finishAge;
-      if (t > 0 || startsFullTime) spendBase += raiseSpent * (expectedNth - prevNth);
+      if (startsFullTime || landedFullTime) spendBase = Math.max(0, expectedNth - savingAtJob(expectedNth));
+      else if (t > 0) spendBase += raiseSpent * (expectedNth - prevNth);
+      landedFullTime = false;
       prevNth = expectedNth;
       if (detail && startsFullTime) {
         events.push({ age: a, type: 'fulltime', value: Math.round(gross / 1000) });
@@ -705,6 +716,7 @@ export function simulate(
           const now = payBase * level;
           boost *= target / Math.max(1, now);
           landed *= target / Math.max(1, now);
+          landedFullTime = true;
           movedLastYear = true;
           if (detail) events.push({ age: a + 1, type: 'fulltime', value: Math.round(target / 1000) });
         } else if (hasFullTime || student) {

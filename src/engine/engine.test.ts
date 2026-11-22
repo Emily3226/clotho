@@ -241,8 +241,8 @@ describe('saving nothing', () => {
   });
 
   it('leaves anyone already saving 2% of take-home exactly where they were', () => {
-    expect(inControl(persona('maya').inputs)).toBe(518);
-    expect(inControl(persona('priya').inputs)).toBe(942);
+    expect(inControl(persona('maya').inputs)).toBe(185);
+    expect(inControl(persona('priya').inputs)).toBe(243);
   });
 });
 
@@ -459,8 +459,15 @@ describe('make it more you', () => {
     const plain = simulate(student, {}, NO_LEVERS, SEED, opts)[0].balances!;
     const ai = simulate(student, { ai: 'severe' }, NO_LEVERS, SEED, opts)[0].balances!;
     const added = (b: Float32Array) => b[at + 4] - b[at + 3];
-    // About $3,800 with the carry-over; below zero if pay resets at graduation.
-    expect(added(plain) - added(ai)).toBeGreaterThan(2000);
+    // About $1,500 with the carry-over; below zero if pay resets at graduation.
+    expect(added(plain) - added(ai)).toBeGreaterThan(1000);
+  });
+
+  it('treats a first full-time job as a new lifestyle, not a raise to bank', () => {
+    // Saving $50 a month in school must not far outrun $150 in a first job.
+    const student = inControl(inputsForStage('student', 20));
+    const firstJob = inControl(inputsForStage('first', 24));
+    expect(student).toBeLessThan(firstJob + 50);
   });
 
   it('lifts lifestyle when school ends this year, just as it does next year', () => {

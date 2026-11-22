@@ -25,7 +25,8 @@ export const ROOM_FOR = [
 // One month's check-in, for the progress list.
 export interface MonthRecord {
   month: string;
-  pointsTo: number;
+  // Only the latest month has a projection; a demo jump fills in the others.
+  pointsTo: number | null;
   saved: number;
 }
 
