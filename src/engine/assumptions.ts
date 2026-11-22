@@ -86,6 +86,8 @@ export const A = {
   // Part-time and gig workers: the yearly chance of landing a full-time role.
   fullTimeChancePart: 0.25,
   fullTimeChanceGig: 0.1,
+  // A saving habit carries into a first full-time job as a share of pay, up to this.
+  firstJobSavingCap: 0.05,
   fullTimeUntilAge: 45,
   // "More ways": lower fees, and asking for more pay once.
   lowerFees: 0.0025,
@@ -221,6 +223,7 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('careerMoves', 'Changing jobs or roles', 'A 12% chance a year under 30, 6% to 45, 2% after. Pay changes by about +3% on average, and can go either way (\u221225% to +35%)', JOB_CHANGE_URL, 'Average gain from ADP Canada: job-changers 6.0% vs stayers 3.0%, October 2026. How often and how widely are our assumptions', 'On top of ordinary raises, which are already in wage growth.'),
   illustrative('firstPay', 'First full-time salary', 'Varies around the typical salary for your field, from about 40% below to 70% above', STATCAN_GRAD_PAGE, 'Centre from Statistics Canada graduate earnings; the spread is our assumption', 'Every future lands a different first job, so students and co-op workers do not all start at the same pay.'),
   illustrative('fullTime', 'Moving from part-time or gig work', 'A 25% chance a year of a full-time role from part-time, 10% from gig work, until 45', STATCAN_GRAD_PAGE, 'Our assumption', 'Pay then moves to around the typical salary for your field, which can be higher or lower than now.'),
+  illustrative('firstJobSaving', 'Saving when full-time pay starts', 'At least the dollars you entered, or the same share of pay up to 5%', STATCAN_GRAD_PAGE, 'Our assumption', 'Rent and everyday spending move up to the new pay, so the jump from student pay is not treated as a raise to bank.'),
   illustrative('ways', 'More ways to get ahead', 'RRSP refund reinvested, FHSA deduction, fees of 0.25% instead of 0.75%, and asking once for 5% more pay', FP_URL, 'Our own comparison on the same 1,000 lives', 'Each is tested alone, at no extra monthly cost. Tax savings use the approximate marginal rate.'),
   illustrative('gig', 'Gig or contract work', 'Income noise ±12% a year; an 8% chance each year of a 3-month slow stretch at half pay', STATCAN_URL, 'Illustrative', 'Replaces layoffs for gig and contract workers.'),
   illustrative('student', 'Students and co-op', 'Part-time or co-op pay until school ends, then full-time pay for the chosen field', STATCAN_URL, 'Illustrative', 'Full-time work starts at the later of 23 or two years from now, unless you say when you finish. While in school, pay below $12,000 a year is topped up to $12,000 (family, loans or bursaries), so a lower income never makes the future look better.'),

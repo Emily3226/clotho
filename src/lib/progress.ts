@@ -14,7 +14,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const monthKey = (d = new Date()): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 
 // One record per month, oldest first. Answering again updates that month.
-export function recordMonth(months: MonthRecord[] | undefined, month: string, pointsTo: number, saved: number): MonthRecord[] {
+export function recordMonth(months: MonthRecord[] | undefined, month: string, pointsTo: number | null, saved: number): MonthRecord[] {
   const rest = (months ?? []).filter((m) => m.month !== month);
   return [...rest, { month, pointsTo, saved }].sort((a, b) => a.month.localeCompare(b.month)).slice(-120);
 }

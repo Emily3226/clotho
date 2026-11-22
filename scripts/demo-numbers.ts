@@ -10,7 +10,7 @@ const maya = persona('maya').inputs;
 const a = new Engine().analyse(maya, { ai: 'moderate' }, {}, NO_LEVERS, 2026);
 const row = (id: string) => a.ranking.find((r) => r.id === id);
 console.log('Maya in control:', inControl(maya));
-console.log('Maya at $150 a month:', inControl({ ...maya, monthly: 150 }));
+console.log('Maya at $250 a month:', inControl({ ...maya, monthly: 250 }));
 console.log('Priya in control:', inControl(persona('priya').inputs));
 console.log('Automate $25 rescues:', row('auto25')?.rescued);
 console.log('Save part of every raise rescues:', row('raises')?.rescued);

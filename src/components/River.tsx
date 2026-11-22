@@ -26,7 +26,10 @@ const STATUS_VARS = ['--s0', '--s1', '--s2', '--s3'];
 const Y_TICKS = [10e3, 25e3, 50e3, 100e3, 250e3, 500e3, 1e6, 2e6, 3e6, 5e6, 10e6, 20e6];
 // The two room checks and 65, which move later for someone who starts late.
 const milestoneAges = (startAge: number): number[] => [...roomAges(startAge), 65];
-const PLAY_MS = 7000;
+// One life takes this long to draw, plus a pause to read each event.
+const PLAY_MS = 9000;
+const READ_MS = 1700;
+const LAST_READ_MS = 2600;
 
 function frameOf(a: Analysis): Frame {
   const w = a.years + 1;
@@ -308,16 +311,25 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     playRef.current = { index: playing, start, raf: 0 };
     let shown = -1;
     let done = 0;
+    let holdUntil = 0;
+    let lastFrame = performance.now();
     const step = () => {
       const pr = playRef.current;
       if (!pr) return;
+      // While an event is being read, the line waits.
+      const clock = performance.now();
+      if (clock < holdUntil) pr.start += clock - lastFrame;
+      lastFrame = clock;
       drawOverlay();
-      const p = Math.min(1, (performance.now() - pr.start) / PLAY_MS);
+      const p = Math.min(1, (clock - pr.start) / PLAY_MS);
       const age = analysis.startAge + p * analysis.years;
       let k = -1;
       for (let j = 0; j < rows.length; j++) if (rows[j].age <= age) k = j;
-      if (k !== shown && k >= 0) {
+      // Events in the same year each get their turn.
+      if (!reducedMotion() && k > shown + 1) k = shown + 1;
+      if (clock >= holdUntil && k !== shown && k >= 0) {
         shown = k;
+        if (!reducedMotion()) holdUntil = clock + READ_MS;
         const { w, h } = size.current;
         const plotW = w - M.left - M.right;
         const plotH = h - M.top - M.bottom;
@@ -332,13 +344,13 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
           y: M.top + plotH - Math.sqrt(Math.max(v, 0) / ymax) * plotH,
         });
       }
-      if (p < 1) pr.raf = requestAnimationFrame(step);
+      if (p < 1 || clock < holdUntil || shown < rows.length - 1) pr.raf = requestAnimationFrame(step);
       else {
         playRef.current = null;
         done = window.setTimeout(() => {
           setCaption(null);
           onPlayDone?.(playing);
-        }, 900);
+        }, reducedMotion() ? 900 : LAST_READ_MS);
       }
     };
     step();
