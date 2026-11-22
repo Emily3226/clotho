@@ -83,7 +83,7 @@ export function App() {
       </main>
 
       <footer className="foot">
-        <p>Educational, not financial advice. Today’s dollars.</p>
+        <p>For educational purposes, not financial advice.</p>
       </footer>
       <AssumptionsPanel />
     </>

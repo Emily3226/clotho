@@ -228,8 +228,11 @@ const MARKET_ORDER: AssumptionSetId[] = ['cautious', 'middle', 'hopeful'];
 // The habit that rescues the most futures comes first, so the headline, the
 // list and the "does it hold" card all name the same step. Ties go to the
 // one that costs less.
-function byRank(x: { rescued: number; perDollar: number }, y: { rescued: number; perDollar: number }): number {
-  return y.rescued - x.rescued || y.perDollar - x.perDollar;
+// Steps that can start today come first; one that waits for a raise goes
+// after them. Then by futures rescued, then per dollar.
+type Rankable = { rescued: number; perDollar: number; startsLater: boolean };
+function byRank(x: Rankable, y: Rankable): number {
+  return Number(x.startsLater) - Number(y.startsLater) || y.rescued - x.rescued || y.perDollar - x.perDollar;
 }
 
 // Runs variants on demand and remembers them, so toggling a lever only
@@ -300,6 +303,7 @@ export class Engine {
       // measure the habits list is ranked by, so the two never disagree.
       let best: WorryCard['best'] = null;
       let bestRescued = 0;
+      let bestLater = false;
       if (affected > 0) {
         for (const lever of available) {
           const helped = run(s, leverOnly(lever));
@@ -307,9 +311,12 @@ export class Engine {
           for (let i = 0; i < n; i++) if (mask[i] && helped[i].status < worried[i].status) protects++;
           const kept = summarise(helped).counts[0];
           const rescued = rescueOf(worried, helped).total;
-          if (protects > 0 && (!best || rescued > bestRescued || (rescued === bestRescued && kept > best.inControl))) {
+          const later = lever === 'raises';
+          const better = !best || (bestLater && !later) || (bestLater === later && (rescued > bestRescued || (rescued === bestRescued && kept > best.inControl)));
+          if (protects > 0 && better) {
             best = { lever, protects, inControl: kept };
             bestRescued = rescued;
+            bestLater = later;
           }
         }
       }
@@ -365,7 +372,7 @@ export class Engine {
         return available
           .map((id) => {
             const rescued = rescueOf(plain, this.run(inputs, s, leverOnly(id), seed, false, m)).total;
-            return { id, rescued, perDollar: rescued / Math.max(1, leverCost(id, inputs).perMonth) };
+            return { id, rescued, perDollar: rescued / Math.max(1, leverCost(id, inputs).perMonth), startsLater: id === 'raises' };
           })
           .sort(byRank);
       };
