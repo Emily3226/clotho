@@ -50,6 +50,25 @@ export function SaveProgressNote() {
   );
 }
 
+// Always shows whether someone is signed in, on every screen.
+export function HeaderAccount() {
+  const status = useAccount((a) => a.status);
+  const who = useAccount((a) => a.who);
+  if (status === 'out') {
+    return (
+      <button type="button" className="ghost" onClick={() => void signIn()}>
+        Sign up
+      </button>
+    );
+  }
+  if (status !== 'in') return null;
+  return (
+    <button type="button" className="ghost" title={`Signed in as ${who}`} aria-label={`Signed in as ${who}. Sign out.`} onClick={() => void signOutHere()}>
+      Sign out
+    </button>
+  );
+}
+
 // For someone coming back on a new device.
 export function SignInLink() {
   const status = useAccount((a) => a.status);
@@ -65,6 +84,11 @@ export function SignInLink() {
       {status === 'in' && ready && !hasStep && (
         <p className="hint">
           Signed in as <b>{who}</b>. No step saved yet. Tap Start and pick one, and it will save here.
+        </p>
+      )}
+      {status === 'in' && ready && hasStep && (
+        <p className="hint">
+          Signed in as <b>{who}</b>.
         </p>
       )}
       {status === 'out' && hasStep && (
