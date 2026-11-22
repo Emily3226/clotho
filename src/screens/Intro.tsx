@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TAGLINE } from '../config';
 import { SignInLink } from '../components/Account';
-import { cloudEnabled } from '../lib/cloud';
+import { cloudEnabled, useAccount } from '../lib/cloud';
 import { AboutYou } from '../components/AboutYou';
 import { ChipGroup } from '../components/bits';
 import { ConcernEditor } from '../components/ConcernEditor';
@@ -9,13 +9,16 @@ import { WORRIES } from '../engine/worries';
 import type { WorryId } from '../engine/types';
 import { LandingRiver } from '../components/LandingRiver';
 import { PERSONAS } from '../engine/personas';
-import { STEP, useStore } from '../store';
+import { STEP, demoMode, useStore } from '../store';
 
 export function Landing() {
   const setStep = useStore((s) => s.setStep);
   const setState = useStore((s) => s.setState);
   const restart = useStore((s) => s.restart);
   const commitment = useStore((s) => s.commitment);
+  const signedIn = useAccount((a) => a.status === 'in' && a.ready);
+  // Check-ins belong to an account. ?demo=1 keeps the step for the stage.
+  const canCheckIn = !!commitment && (signedIn || demoMode());
   const [first, second] = TAGLINE.split('. ');
   const usePersona = (id: string) => {
     const p = PERSONAS.find((x) => x.id === id)!;
@@ -32,7 +35,7 @@ export function Landing() {
       </h1>
       <p className="lede">1,000 runs of luck. One habit that helps most.</p>
       <LandingRiver />
-      {commitment && (
+      {canCheckIn && (
         <div className="card welcome">
           <p>
             <b>Welcome back.</b> 30-second check-in?
@@ -45,7 +48,7 @@ export function Landing() {
       <div className="cta">
         <button
           type="button"
-          className={commitment ? 'secondary big' : 'primary big'}
+          className={canCheckIn ? 'secondary big' : 'primary big'}
           onClick={() => {
             restart();
             setStep(STEP.about);
