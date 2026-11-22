@@ -39,6 +39,11 @@ export interface LeverRow {
   costPerMonth: number;
   costLater: boolean;
   noExtraCost: boolean;
+  // Can't be started today (it waits for a raise).
+  startsLater: boolean;
+  // For a habit that grows, what it sets aside a month by then (calm path).
+  grownPerMonth: number | null;
+  grownByAge: number | null;
   // Futures whose status improves to In control or Mostly there.
   rescued: number;
   gained: number;
@@ -121,6 +126,8 @@ export function leverAvailable(id: LeverId, inputs: Inputs): boolean {
     return true;
   }
   if (id === 'cushion') return inputs.cushionMonths > 0;
+  // With the match one point away, +1% is the same step as taking it.
+  if (id === 'plus1') return inputs.plan === 'yes' && !(inputs.matchPct > inputs.employeePct && inputs.matchPct - inputs.employeePct <= 1);
   return true;
 }
 
@@ -135,6 +142,8 @@ export function leverCost(id: LeverId, inputs: Inputs): { perMonth: number; late
       const gross = (((matchPctFor(inputs) - from) / 100) * inputs.income) / 12;
       return { perMonth: gross * (1 - marginalRate(inputs.income)), later: false };
     }
+    case 'plus1':
+      return { perMonth: ((0.01 * inputs.income) / 12) * (1 - marginalRate(inputs.income)), later: false };
     case 'auto25':
       return { perMonth: 25, later: false };
     case 'auto50':
@@ -205,6 +214,16 @@ function middle(paths: PathResult[]): number {
 
 const ageDelta = (a: number | null, b: number | null): number | null => (a === null || b === null ? null : a - b);
 
+// The raise habit starts at nothing and grows to 5 points of pay, so its
+// cost today says little. What it sets aside a month by 35 (or 5 years out),
+// on a calm path, is the honest comparison with a fixed monthly amount.
+export function grownAmount(inputs: Inputs, seed: number, set: AssumptionSetId): { perMonth: number; age: number } {
+  const age = Math.max(35, inputs.age + 5);
+  const [p] = simulate(inputs, {}, leverOnly('raises'), seed, { calm: true, paths: 1, detail: false, trace: true, set });
+  const yearly = p.trace!.extra[Math.min(age - inputs.age, p.trace!.extra.length - 1)] ?? 0;
+  return { perMonth: Math.round(yearly / 12 / 5) * 5, age };
+}
+
 const MARKET_ORDER: AssumptionSetId[] = ['cautious', 'middle', 'hopeful'];
 
 // The habit that rescues the most futures comes first, so the headline, the
@@ -245,7 +264,7 @@ export class Engine {
       this.key = key;
     }
     const run = (s: Scenario, l: Levers, detail = false) => this.run(inputs, s, l, seed, detail, set);
-    const leversOn = levers.match || levers.raises || levers.cushion || levers.auto > 0;
+    const leversOn = levers.match || levers.plus1 || levers.raises || levers.cushion || levers.auto > 0;
     const available = LEVER_IDS.filter((id) => leverAvailable(id, inputs));
 
     const base = run({}, NO_LEVERS);
@@ -278,15 +297,20 @@ export class Engine {
         }
       }
       const inControl = summarise(worried).counts[0];
+      // The habit that rescues the most futures under this worry: the same
+      // measure the habits list is ranked by, so the two never disagree.
       let best: WorryCard['best'] = null;
+      let bestRescued = 0;
       if (affected > 0) {
         for (const lever of available) {
           const helped = run(s, leverOnly(lever));
           let protects = 0;
           for (let i = 0; i < n; i++) if (mask[i] && helped[i].status < worried[i].status) protects++;
           const kept = summarise(helped).counts[0];
-          if (protects > 0 && (!best || kept > best.inControl || (kept === best.inControl && protects > best.protects))) {
+          const rescued = rescueOf(worried, helped).total;
+          if (protects > 0 && (!best || rescued > bestRescued || (rescued === bestRescued && kept > best.inControl))) {
             best = { lever, protects, inControl: kept };
+            bestRescued = rescued;
           }
         }
       }
@@ -312,10 +336,14 @@ export class Engine {
       const gained = s.counts[0] - scenarioSummary.counts[0];
       const rescued = rescueOf(scen, res).total;
       const askHR = id === 'match' && inputs.plan === 'unsure';
+      const grown = id === 'raises' ? grownAmount(inputs, seed, set) : null;
       return {
         id,
         costPerMonth: cost.perMonth,
         costLater: cost.later,
+        startsLater: id === 'raises',
+        grownPerMonth: grown?.perMonth ?? null,
+        grownByAge: grown?.age ?? null,
         // Asking costs nothing; the habit itself starts later.
         noExtraCost: askHR,
         rescued,

@@ -31,6 +31,20 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
             noun: 'Taking the full employer match',
             explain: 'When you put part of your pay into your workplace plan, your employer adds money too. Put in less than the match and you leave that money with them.',
           };
+    case 'plus1':
+      return inputs.employeePct === 0
+        ? {
+            title: 'Join your plan at 1% today',
+            doing: 'Joining your workplace plan at 1% of your pay',
+            noun: 'Joining your workplace plan at 1%',
+            explain: 'Start putting 1% of each paycheque into your workplace plan, before you see it. If your employer matches, they add to it too, and you can raise it any time.',
+          }
+        : {
+            title: 'Add 1% to your plan today',
+            doing: 'Adding 1% of your pay to your workplace plan',
+            noun: 'Adding 1% to your workplace plan',
+            explain: 'One more point of each paycheque goes into your workplace plan, before you see it. If your employer matches more than you put in now, they add to it too.',
+          };
     case 'auto25':
     case 'auto50':
     case 'auto100': {
@@ -60,7 +74,11 @@ export function leverCopy(id: LeverId, inputs: Inputs): LeverCopy {
 }
 
 export function leverCostLine(row: LeverRow): string {
-  if (row.id === 'raises') return '$0 today, then 1% of your pay at each raise';
+  if (row.id === 'raises')
+    return row.grownPerMonth && row.grownByAge
+      ? `$0 today. Grows to about ${money(row.grownPerMonth)} a month by ${row.grownByAge}`
+      : '$0 today, then 1% of your pay at each raise';
+  if (row.id === 'plus1') return `About ${money(row.costPerMonth)} less take-home a month, starting now`;
   if (row.id === 'cushion') return `${money(row.costPerMonth)} a month, only while the cushion fills`;
   if (row.askHR) return `No extra cost to ask. The full match would take about ${money(row.costPerMonth)} a month`;
   if (row.id === 'match') return `About ${money(row.costPerMonth)} less take-home a month`;
@@ -208,8 +226,9 @@ export function worryAnswer(card: WorryCard, inputs: Inputs): WorryAnswer {
     if (less > 0) parts.push(' The middle one has about ', { strong: money(card.middleAt65) }, ' saved at 65 instead of ', { strong: money(card.baseMiddleAt65) }, '.');
     if (card.best && card.best.inControl > card.inControl) {
       const noun = leverCopy(card.best.lever, inputs).noun;
+      const lower = noun.charAt(0).toLowerCase() + noun.slice(1);
       parts.push(
-        card.best.inControl >= card.baseInControl ? ` ${noun} takes it to ` : ` ${noun} brings it back up to `,
+        card.best.inControl >= card.baseInControl ? ` For this worry, ${lower} helps most and takes it to ` : ` For this worry, ${lower} helps most and brings it back up to `,
         { strong: num(card.best.inControl) },
         card.best.inControl > card.baseInControl ? ', more than before the worry.' : '.',
       );
@@ -281,6 +300,13 @@ export function planLines(id: LeverId, inputs: Inputs, yearlyMatch: number): [st
             `Ask to save ${inputs.matchPct}% of each paycheque in your workplace plan, so your employer adds the most it will.`,
             `Your employer then adds about ${money(yearlyMatch)} a year. You set it once with HR or in your plan account.`,
           ];
+    case 'plus1':
+      return [
+        inputs.employeePct === 0
+          ? 'Join your workplace plan and put in 1% of each paycheque.'
+          : `Raise what you put in your workplace plan from ${inputs.employeePct}% to ${inputs.employeePct + 1}% of each paycheque.`,
+        'It comes off before you see it. You can change it any time.',
+      ];
     case 'auto25':
     case 'auto50':
     case 'auto100':

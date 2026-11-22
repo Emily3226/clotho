@@ -121,16 +121,19 @@ interface Store {
 export const leverIsOn = (levers: Levers, id: LeverId): boolean =>
   id === 'match'
     ? levers.match
+    : id === 'plus1'
+      ? levers.plus1
     : id === 'raises'
       ? levers.raises
       : id === 'cushion'
         ? levers.cushion
         : levers.auto === Number(id.slice(4));
 
-export const anyLever = (l: Levers): boolean => l.match || l.raises || l.cushion || l.auto > 0;
+export const anyLever = (l: Levers): boolean => l.match || l.plus1 || l.raises || l.cushion || l.auto > 0;
 
 export const leverOn = (levers: Levers, id: LeverId): Levers => {
   if (id === 'match') return { ...levers, match: true };
+  if (id === 'plus1') return { ...levers, plus1: true };
   if (id === 'raises') return { ...levers, raises: true };
   if (id === 'cushion') return { ...levers, cushion: true };
   return { ...levers, auto: Number(id.slice(4)) as 25 | 50 | 100 };
@@ -210,6 +213,7 @@ export const useStore = create<Store>()(
       toggleLever: (id) => {
         const l = get().levers;
         if (id === 'match') set({ levers: { ...l, match: !l.match } });
+        else if (id === 'plus1') set({ levers: { ...l, plus1: !l.plus1 } });
         else if (id === 'raises') set({ levers: { ...l, raises: !l.raises } });
         else if (id === 'cushion') set({ levers: { ...l, cushion: !l.cushion } });
         else {

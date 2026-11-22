@@ -7,7 +7,7 @@ export type Outcome = 'done' | 'sent' | 'notyet';
 
 export interface DoNow {
   // Bank: a recurring transfer. HR: a message. Raise: can't happen today.
-  kind: 'bank' | 'hr' | 'raise';
+  kind: 'bank' | 'hr' | 'plan' | 'raise';
   steps: string[];
   // The outcomes offered, in order. "I sent it" only when there's a message.
   outcomes: Outcome[];
@@ -17,6 +17,23 @@ export const HR_SUBJECT = 'Question about our workplace savings plan';
 
 export function doNow(id: LeverId, inputs: Inputs): DoNow {
   switch (id) {
+    case 'plus1':
+      return {
+        kind: 'plan',
+        steps:
+          inputs.employeePct === 0
+            ? [
+                'Sign in to your workplace plan account, or ask HR how to enrol.',
+                'Join the plan and set what you put in to 1% of your pay.',
+                'Save it. It starts with your next paycheque, and you can raise it any time.',
+              ]
+            : [
+                'Sign in to your workplace plan account, or ask HR if you don’t have one.',
+                `Find your contribution and raise it from ${inputs.employeePct}% to ${inputs.employeePct + 1}% of your pay.`,
+                'Save it. It starts with your next paycheque.',
+              ],
+        outcomes: ['done', 'notyet'],
+      };
     case 'auto25':
     case 'auto50':
     case 'auto100':

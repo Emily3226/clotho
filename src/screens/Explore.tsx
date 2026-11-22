@@ -509,6 +509,7 @@ function HabitsPanel({ a }: { a: Analysis }) {
                 <h3>
                   {copy.title}
                   {row.noExtraCost && <span className="tag">No extra cost</span>}
+                  {row.startsLater && <span className="tag">Starts at your next raise</span>}
                 </h3>
                 <p className="cost">{leverCostLine(row)}</p>
                 <Explain label={copy.title} text={copy.explain} />

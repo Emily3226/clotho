@@ -102,8 +102,8 @@ describe('limits', () => {
   };
   const cases: [Inputs, Scenario, Levers][] = [
     ...PERSONAS.map((p): [Inputs, Scenario, Levers] => [p.inputs, {}, NO_LEVERS]),
-    [maya, { ai: 'severe', recession: 'severe', world: 'severe', home: 'severe' }, { match: true, auto: 100, raises: true, cushion: true, delay: 0 }],
-    [rich, {}, { match: true, auto: 100, raises: true, cushion: true, delay: 0 }],
+    [maya, { ai: 'severe', recession: 'severe', world: 'severe', home: 'severe' }, { match: true, auto: 100, raises: true, cushion: true, plus1: false, delay: 0 }],
+    [rich, {}, { match: true, auto: 100, raises: true, cushion: true, plus1: false, delay: 0 }],
     [rich, { recession: 'severe', ai: 'severe' }, NO_LEVERS],
   ];
 

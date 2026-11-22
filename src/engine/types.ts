@@ -61,13 +61,15 @@ export interface Levers {
   auto: 0 | 25 | 50 | 100;
   raises: boolean;
   cushion: boolean;
+  // One more point of pay into the workplace plan, starting now.
+  plus1: boolean;
   delay: number;
 }
 
-export const NO_LEVERS: Levers = { match: false, auto: 0, raises: false, cushion: false, delay: 0 };
+export const NO_LEVERS: Levers = { match: false, auto: 0, raises: false, cushion: false, plus1: false, delay: 0 };
 
-export type LeverId = 'match' | 'auto25' | 'auto50' | 'auto100' | 'raises' | 'cushion';
-export const LEVER_IDS: LeverId[] = ['match', 'auto25', 'auto50', 'auto100', 'raises', 'cushion'];
+export type LeverId = 'match' | 'plus1' | 'auto25' | 'auto50' | 'auto100' | 'raises' | 'cushion';
+export const LEVER_IDS: LeverId[] = ['match', 'plus1', 'auto25', 'auto50', 'auto100', 'raises', 'cushion'];
 
 export function leverOnly(id: LeverId): Levers {
   return {
@@ -75,6 +77,7 @@ export function leverOnly(id: LeverId): Levers {
     auto: id === 'auto25' ? 25 : id === 'auto50' ? 50 : id === 'auto100' ? 100 : 0,
     raises: id === 'raises',
     cushion: id === 'cushion',
+    plus1: id === 'plus1',
     delay: 0,
   };
 }
@@ -147,7 +150,8 @@ export interface PathResult {
   peakRrspOver: number;
   minBalance: number;
   // year-by-year cushion and workplace-plan balances, when asked for
-  trace?: { cushion: number[]; plan: number[]; flex: number[]; target: number[] };
+  // extra: what the switched-on habits set aside that year.
+  trace?: { cushion: number[]; plan: number[]; flex: number[]; target: number[]; extra: number[] };
 }
 
 export interface Summary {

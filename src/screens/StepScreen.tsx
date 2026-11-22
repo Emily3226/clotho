@@ -114,7 +114,10 @@ export function StepScreen() {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   const ranking = a?.ranking ?? [];
-  const pick: LeverRow | undefined = ranking.find((r) => r.id === chosen) ?? ranking.find((r) => leverIsOn(levers, r.id));
+  // The best step that can be started today. Saving part of a raise waits
+  // for the raise, so it is never the default here.
+  const today = ranking.find((r) => !r.startsLater);
+  const pick: LeverRow | undefined = ranking.find((r) => r.id === chosen) ?? ranking.find((r) => leverIsOn(levers, r.id)) ?? today;
   const copy = pick ? leverCopy(pick.id, inputs) : null;
   const roomLabels = ROOM_FOR.filter((r) => room.includes(r.id)).map((r) => r.label);
 
@@ -141,9 +144,16 @@ export function StepScreen() {
   const showHR = pick?.id === 'match';
   const noPlan = !isStudent(inputs.stage) && inputs.plan === 'no';
 
+  // Acting on the step shown by default makes it the chosen one, so the
+  // answer stays with this habit even if the ranking or habits change later.
+  const pin = () => {
+    if (pick && chosen !== pick.id) setState({ chosen: pick.id });
+  };
+
   // Monthly on payday, or once on the likely date of the next raise.
   const reminder = () => {
     if (!copy || !lines || !now) return;
+    pin();
     const raise = now.kind === 'raise';
     const ics = buildIcs(
       raise ? raiseDay : payday,
@@ -158,6 +168,7 @@ export function StepScreen() {
   };
   // Saying "I set it up" starts the first month today, at the check-in too.
   const pickOutcome = (o: Outcome) => {
+    pin();
     const next = outcome === o ? null : o;
     setState({ outcome: next });
     // Only while the streak is still just this first answer.
@@ -178,6 +189,7 @@ export function StepScreen() {
       t.remove();
     }
     setCopied(true);
+    pin();
     setState({ hrCopied: true });
     setTimeout(() => setCopied(false), 2500);
   };
@@ -192,6 +204,7 @@ export function StepScreen() {
   const finish = () => {
     // Read from the store, not this render: the outcome may have just changed.
     const outcome = useStore.getState().outcome;
+    pin();
     setState({ confAfter: conf });
     if (pick) {
       setState({
@@ -245,6 +258,7 @@ export function StepScreen() {
           return (
             <button type="button" key={r.id} role="radio" aria-checked={on} className={`card choice${on ? ' on' : ''}`} onClick={() => r.id !== pick?.id && setState({ chosen: r.id, outcome: null, confAfter: null, reminderAdded: false, hrCopied: false })}>
               <b>{c.title}</b>
+              {r.startsLater && <span className="tag">Starts at your next raise</span>}
               <span>{leverCostLine(r)}</span>
               <span className="effect">Rescues {num(r.rescued)} futures</span>
             </button>
@@ -265,7 +279,10 @@ export function StepScreen() {
             <div className="hr">
               <blockquote>{HR_MESSAGE}</blockquote>
               <div className="row">
-                <a className="primary button-link" href={hrMailto(HR_MESSAGE)} onClick={() => setState({ hrCopied: true })}>
+                <a className="primary button-link" href={hrMailto(HR_MESSAGE)} onClick={() => {
+                  pin();
+                  setState({ hrCopied: true });
+                }}>
                   Open it as an email
                 </a>
                 <button type="button" className="secondary" onClick={copyHR}>
@@ -284,6 +301,16 @@ export function StepScreen() {
                 {reminderAdded ? 'Reminder downloaded' : 'Add the reminder'}
               </button>
             </div>
+          )}
+          {now.kind === 'plan' && <p className="hint">{CANADA_LIFE_NOTE}</p>}
+          {now.kind === 'raise' && today && (
+            <p className="hint">
+              Want one you can do today too?{' '}
+              <button type="button" className="link" onClick={() => setState({ chosen: today.id, outcome: null, confAfter: null, reminderAdded: false, hrCopied: false })}>
+                {leverCopy(today.id, inputs).title}
+              </button>{' '}
+              rescues {num(today.rescued)}.
+            </p>
           )}
           {noPlan && now.kind === 'bank' && <p className="hint">{NO_PLAN_NOTE}</p>}
 
