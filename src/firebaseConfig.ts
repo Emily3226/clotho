@@ -8,4 +8,9 @@ export interface FirebaseWebConfig {
   appId: string;
 }
 
-export const FIREBASE_CONFIG = null as FirebaseWebConfig | null;
+export const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCKRCCiUm8eEbpIGh_H6WBkgpcfH54Lz28',
+  authDomain: 'clotho-b1e7e.firebaseapp.com',
+  projectId: 'clotho-b1e7e',
+  appId: '1:25186574213:web:034f0f9598e8f712e3eeec',
+} as FirebaseWebConfig | null;
