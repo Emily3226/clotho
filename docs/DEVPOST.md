@@ -46,7 +46,7 @@ Clotho simulates 1,000 versions of your financial life from now to age 70. Each 
 
 **Take one step.** You pick one habit and get exact steps, or a ready-to-send message to HR. You can add a reminder to Google, Apple or Outlook calendar, then answer the confidence question again to see what changed. The ending links to Canada Life's free public tools.
 
-**Come back.** Optional Google sign-up saves your step and opens a 30-second monthly check-in with your streak and month-by-month progress. Without an account, nothing is saved after you leave.
+**Come back.** Optional Google sign-up saves your step and opens a 30-second monthly check-in with your streak and month-by-month progress. Without an account, none of your answers are saved after you leave.
 
 Clotho is an educational tool. It isn't financial advice, a Canada Life product, or a recommendation of any product or provider.
 
@@ -56,16 +56,16 @@ Clotho is an educational tool. It isn't financial advice, a Canada Life product,
 - **Common random numbers:** each life draws all of its luck up front from a seeded generator. Life #412 gets the same layoffs and markets whether or not you turn on a habit, so every comparison is fair and each line can animate from its old shape to its new one.
 - **The river:** a custom Canvas 2D visualization with draw-in, per-path morphing, hit testing, life playback and keyboard navigation.
 - **Frontend:** React, Vite, Zustand and hand-written CSS, with light and dark themes, reduced-motion support and a phone layout.
-- **Gemini, for words only:** when the Express server is running, Gemini can turn a life's events into a short story, warm up worry answers, and sort free-text answers into fixed categories. It never produces a number. Every reply is checked, and anything containing a number the engine didn't compute is thrown away for a built-in template. The hosted demo is a static site, so it uses those templates and on-device keyword matching.
+- **Gemini, for words only:** when the Express server is running, Gemini can turn a life's events into a short story, warm up worry answers, and sort free-text answers into fixed categories. It never calculates anything. Every reply is checked, and anything containing a number the engine didn't compute is thrown away for a built-in template. The hosted demo is a static site, so it uses those templates and on-device keyword matching.
 - **Accounts:** Firebase Authentication with Google, and one private Firestore record per person, protected by access rules. People can delete their account at any time.
-- **Trust:** 162 automated tests cover determinism, fair comparisons, account limits, hand-calculated growth and the safety checks on AI text. Every assumption is listed in the app with its source.
+- **Trust:** 162 automated tests cover determinism, fair comparisons, account limits, hand-calculated growth and the safety checks on AI text. Every assumption is listed in the app, with its source or a clear label when it is our own estimate.
 
 ## Challenges we ran into
 
 - **Making hard results useful instead of scary.** Some honest results are tough. We use counts instead of percentages, avoid red and alarm language, and pair every worry with the habit that helps most.
-- **Keeping comparisons fair.** At first, switching on a habit reshuffled everyone's luck, so the before and after weren't comparable. Drawing all randomness up front fixed both the math and the animation.
+- **Keeping comparisons fair.** If switching on a habit reshuffled everyone's luck, the before and after wouldn't be comparable. Drawing all randomness up front keeps the math fair and lets each line animate from its old shape to its new one.
 - **Modelling real careers.** Pay doesn't rise smoothly. A first full-time job, a new employer or a career change can move it up or down. One bug treated the jump from student pay to a first salary as a raise and saved part of it automatically, which made a student saving $50 a month look far safer than someone already working. Testing across life stages caught it.
-- **Keeping AI away from the numbers.** A language model will happily do arithmetic. In a financial tool that's a real risk, so we built validation that makes an invented number impossible to show.
+- **Keeping AI away from the numbers.** A language model will happily do arithmetic. In a financial tool that's a real risk, so every AI reply is checked, and a reply with any number the engine didn't compute is rejected.
 - **Saving progress without overcollecting.** We wanted people to come back without forcing an account. Sign-up is optional, and the browser no longer keeps answers for people who don't sign up.
 
 ## Accomplishments that we're proud of
@@ -73,7 +73,7 @@ Clotho is an educational tool. It isn't financial advice, a Canada Life product,
 - Watching the same 1,000 lives move when one small habit is switched on.
 - Turning a vague fear into a specific, sized answer with a next step.
 - Building a model that reflects real life, including career changes, kids, caregiving and time away from work.
-- Making every assumption visible, with no number from AI.
+- Making every assumption visible and keeping the math out of AI's hands.
 - Finishing the whole loop: worry, understanding, action and a monthly return.
 
 ## What we learned
