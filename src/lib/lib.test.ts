@@ -4,7 +4,7 @@ import { PERSONAS } from '../engine/personas';
 import { NO_LEVERS } from '../engine/types';
 import { factNumbers, numbersIn, validateNarration } from '../narrate/validate';
 import { pathFacts, story, timeline, worryAnswer } from './copy';
-import { buildIcs, nextFriday } from './ics';
+import { buildIcs, googleCalendarUrl, nextFriday } from './ics';
 
 const maya = PERSONAS[0].inputs;
 const analysis = new Engine().analyse(maya, { ai: 'moderate' }, {}, NO_LEVERS, 2026);
@@ -90,5 +90,23 @@ describe('calendar reminder', () => {
   it('picks the coming Friday as the default payday', () => {
     expect(nextFriday(new Date(2026, 10, 21))).toBe('2026-11-27');
     expect(nextFriday(new Date(2026, 10, 27))).toBe('2026-12-04');
+  });
+});
+
+describe('Google Calendar reminder', () => {
+  it('links an all-day event on the payday, repeating monthly', () => {
+    const url = new URL(googleCalendarUrl('2026-11-27', 'Clotho: Automate $100 a month', 'Set it up. Then check in.', true));
+    expect(url.origin + url.pathname).toBe('https://calendar.google.com/calendar/render');
+    expect(url.searchParams.get('action')).toBe('TEMPLATE');
+    expect(url.searchParams.get('text')).toBe('Clotho: Automate $100 a month');
+    expect(url.searchParams.get('details')).toBe('Set it up. Then check in.');
+    expect(url.searchParams.get('dates')).toBe('20261127/20261128');
+    expect(url.searchParams.get('recur')).toBe('RRULE:FREQ=MONTHLY');
+  });
+
+  it('crosses a month end and leaves out the repeat for a one-off', () => {
+    const url = new URL(googleCalendarUrl('2026-12-31', 'x', 'y'));
+    expect(url.searchParams.get('dates')).toBe('20261231/20270101');
+    expect(url.searchParams.has('recur')).toBe(false);
   });
 });

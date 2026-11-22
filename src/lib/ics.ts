@@ -40,3 +40,14 @@ export function buildIcs(dateISO: string, title: string, description: string, no
     '',
   ].join('\r\n');
 }
+
+// The same reminder as a Google Calendar link: one tap on a phone, no file to
+// open. An all-day event on that date, repeating monthly when asked.
+export function googleCalendarUrl(dateISO: string, title: string, details: string, monthly = false): string {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
+  const end = new Date(y, m - 1, d + 1);
+  const p = new URLSearchParams({ action: 'TEMPLATE', text: title, details, dates: `${ymd(start)}/${ymd(end)}` });
+  if (monthly) p.set('recur', 'RRULE:FREQ=MONTHLY');
+  return `https://calendar.google.com/calendar/render?${p.toString()}`;
+}
