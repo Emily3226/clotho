@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PERSONAS } from '../engine/personas';
 import type { Commitment } from '../store';
-import { chooseProgress, monthKey, parseProgress, recordMonth, type Progress } from './progress';
+import { chooseProgress, monthKey, parseProgress, recordMonth, shouldSaveStep, type Progress } from './progress';
 
 const inputs = PERSONAS[0].inputs;
 const commitment = (streak: number, lastCheckISO: string | null): Commitment => ({
@@ -50,6 +50,18 @@ describe('choosing between a device and an account', () => {
     expect(chooseProgress(progress(early), progress(late))).toBe('cloud');
     expect(chooseProgress(progress(late), progress(early))).toBe('local');
     expect(chooseProgress(progress(late), progress(late))).toBe('local');
+  });
+});
+
+describe('saving the step on sign-up', () => {
+  it('saves a new step, or a change before any month is kept', () => {
+    expect(shouldSaveStep(null, 'auto25')).toBe(true);
+    expect(shouldSaveStep(commitment(0, null), 'auto50')).toBe(true);
+  });
+
+  it('leaves a step alone when it is the same or already has a streak', () => {
+    expect(shouldSaveStep(commitment(0, null), 'auto25')).toBe(false);
+    expect(shouldSaveStep(commitment(3, '2026-11-01T00:00:00.000Z'), 'auto50')).toBe(false);
   });
 });
 

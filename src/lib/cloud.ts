@@ -12,9 +12,12 @@ interface Account {
   status: 'off' | 'loading' | 'out' | 'in';
   who: string | null;
   saved: boolean;
+  // The account's saved progress has been read, so it is safe to write.
+  ready: boolean;
+  loadFailed: boolean;
   message: string | null;
 }
-export const useAccount = create<Account>(() => ({ status: cloudEnabled ? 'loading' : 'off', who: null, saved: false, message: null }));
+export const useAccount = create<Account>(() => ({ status: cloudEnabled ? 'loading' : 'off', who: null, saved: false, ready: false, loadFailed: false, message: null }));
 
 const SAVE_FAILED = 'Couldn’t save just now. Your progress is still on this device.';
 
@@ -81,10 +84,10 @@ async function onUser(user: User | null) {
   stopSync = null;
   currentUid = user?.uid ?? null;
   if (!user) {
-    useAccount.setState({ status: 'out', who: null, saved: false });
+    useAccount.setState({ status: 'out', who: null, saved: false, ready: false, loadFailed: false });
     return;
   }
-  useAccount.setState({ status: 'in', who: user.email ?? user.displayName, message: null });
+  useAccount.setState({ status: 'in', who: user.email ?? user.displayName, ready: false, loadFailed: false, message: null });
   try {
     const { db, dbApi } = await services();
     const snap = await dbApi.getDoc(dbApi.doc(db, 'users', user.uid));
@@ -93,18 +96,25 @@ async function onUser(user: User | null) {
     if (chooseProgress(localProgress(), cloud) === 'cloud' && cloud) {
       const s = useStore.getState();
       s.setState({ inputs: { ...s.inputs, ...cloud.inputs }, room: cloud.room as typeof s.room, confBefore: cloud.confBefore, commitment: cloud.commitment });
-      if (s.step !== STEP.start) s.setStep(STEP.back);
+      s.setStep(STEP.back);
       useAccount.setState({ saved: true, message: 'Welcome back. Your progress is restored.' });
     } else {
       await push(user.uid);
     }
-    if (currentUid === user.uid) startSync(user.uid);
-  } catch {
     if (currentUid === user.uid) {
-      useAccount.setState({ message: SAVE_FAILED });
       startSync(user.uid);
+      useAccount.setState({ ready: true });
     }
+  } catch (e) {
+    console.warn('Could not load saved progress:', code(e));
+    // Never sync after a failed read: it could overwrite a longer run.
+    if (currentUid === user.uid) useAccount.setState({ loadFailed: true, message: 'Couldn’t load your saved progress. Nothing was changed.' });
   }
+}
+
+export async function retryLoad() {
+  const { auth } = await services();
+  await onUser(auth.currentUser);
 }
 
 let started = false;
@@ -117,6 +127,12 @@ export function startCloud() {
 }
 
 const code = (e: unknown) => (e as { code?: string })?.code ?? '';
+const cancelled = (e: unknown) => ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(code(e));
+const SIGN_IN_ERRORS: Record<string, string> = {
+  'auth/web-storage-unsupported': 'This browser window is blocking Google sign-in. Private windows often do. Try a normal window, or allow third-party cookies for this site.',
+  'auth/network-request-failed': 'Couldn’t reach Google. Check your connection and try again.',
+  'auth/unauthorized-domain': 'Sign-in isn’t set up for this address yet.',
+};
 
 export async function signIn() {
   useAccount.setState({ message: null });
@@ -130,9 +146,9 @@ export async function signIn() {
       else throw e;
     }
   } catch (e) {
-    if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(code(e))) {
-      useAccount.setState({ message: 'Couldn’t sign you in just now. Your progress is still on this device.' });
-    }
+    if (cancelled(e)) return;
+    console.warn('Sign-in failed:', code(e));
+    useAccount.setState({ message: SIGN_IN_ERRORS[code(e)] ?? 'Couldn’t sign you in just now. Your progress is still on this device.' });
   }
 }
 
@@ -166,9 +182,8 @@ export async function deleteAccount() {
     useStore.getState().clearAll();
     useAccount.setState({ message: 'Your account and saved progress are deleted.' });
   } catch (e) {
-    if (auth_cancelled(e)) return;
+    if (cancelled(e)) return;
     useAccount.setState({ message: 'Couldn’t delete your account just now. Try again.' });
     if (currentUid) startSync(currentUid);
   }
 }
-const auth_cancelled = (e: unknown) => ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(code(e));

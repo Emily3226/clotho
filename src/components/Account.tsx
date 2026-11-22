@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { deleteAccount, signIn, signOutHere, useAccount } from '../lib/cloud';
+import { deleteAccount, retryLoad, signIn, signOutHere, useAccount } from '../lib/cloud';
 import { monthLabel } from '../lib/progress';
 import { money, num } from '../lib/format';
-import type { Commitment } from '../store';
+import { useStore, type Commitment } from '../store';
 
 const WHAT_WE_SAVE = 'Saves your answers, your step and your monthly check-ins to a private account. Optional, and you can delete it any time.';
 
@@ -15,11 +15,22 @@ function Message() {
   );
 }
 
+function RetryButton() {
+  return (
+    <button type="button" className="secondary" onClick={() => void retryLoad()}>
+      Try loading again
+    </button>
+  );
+}
+
 // Beside the calendar buttons.
 export function SaveProgressButton() {
   const status = useAccount((a) => a.status);
   const saved = useAccount((a) => a.saved);
-  if (status === 'in') return <span className="account-state">{saved ? 'Saved to your account' : 'Signed in'}</span>;
+  const ready = useAccount((a) => a.ready);
+  const failed = useAccount((a) => a.loadFailed);
+  if (failed) return <RetryButton />;
+  if (status === 'in') return <span className="account-state">{!ready ? 'Loading your progress…' : saved ? 'Saved to your account' : 'Saving…'}</span>;
   if (status !== 'out') return null;
   return (
     <button type="button" className="secondary" onClick={() => void signIn()}>
@@ -42,9 +53,20 @@ export function SaveProgressNote() {
 // For someone coming back on a new device.
 export function SignInLink() {
   const status = useAccount((a) => a.status);
+  const who = useAccount((a) => a.who);
+  const ready = useAccount((a) => a.ready);
+  const failed = useAccount((a) => a.loadFailed);
+  const hasStep = useStore((s) => !!s.commitment);
   if (status === 'off' || status === 'loading') return null;
   return (
     <div className="account-link">
+      {status === 'in' && !ready && !failed && <p className="hint">Loading your progress…</p>}
+      {failed && <RetryButton />}
+      {status === 'in' && ready && !hasStep && (
+        <p className="hint">
+          Signed in as <b>{who}</b>. No step saved yet. Tap Start and pick one, and it will save here.
+        </p>
+      )}
       {status === 'out' && (
         <p className="hint">
           Already signed up?{' '}

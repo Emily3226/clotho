@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { APP_NAME, LIVE_URL } from '../config';
 import { AnimatedNumber } from '../components/bits';
 import { SaveProgressButton, SaveProgressNote } from '../components/Account';
+import { useAccount } from '../lib/cloud';
+import { shouldSaveStep } from '../lib/progress';
 import { CanadaLifeNext } from '../components/CanadaLifeNext';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
@@ -101,6 +103,7 @@ export function StepScreen() {
   const confBefore = useStore((s) => s.confBefore);
   const confAfter = useStore((s) => s.confAfter);
   const reminderAdded = useStore((s) => s.reminderAdded);
+  const accountReady = useAccount((x) => x.status === 'in' && x.ready);
   const hrCopied = useStore((s) => s.hrCopied);
   const testLog = useStore((s) => s.testLog);
   const outcome = useStore((s) => s.outcome);
@@ -138,6 +141,37 @@ export function StepScreen() {
       setState({ testLog: log.map((r) => (r.at === testRowAt ? { ...r, outcome, reminder: reminderAdded, hrCopied } : r)) });
     }
   }, [outcome, reminderAdded, hrCopied, confAfter, setState]);
+
+  // Saves or replaces the step being kept.
+  const commitStep = (o: Outcome | null) => {
+    if (!pick || !a) return;
+    const prev = useStore.getState().commitment;
+    const at = new Date().toISOString();
+    setState({
+      commitment: {
+        lever: pick.id,
+        startedISO: at,
+        startInControl: a.baseSummary.counts[0],
+        startInputs: useStore.getState().inputs,
+        streak: o === 'done' ? 1 : 0,
+        lastCheckISO: o === 'done' ? at : null,
+        outcome: o,
+        ...windfallCarryOver(prev),
+        months: prev?.months,
+      },
+    });
+  };
+
+  // Signing up saves the step now, not only after the summary.
+  const pickId = pick?.id;
+  const hasAnalysis = !!a;
+  useEffect(() => {
+    if (!accountReady || !pickId || !hasAnalysis) return;
+    const state = useStore.getState();
+    if (shouldSaveStep(state.commitment, pickId)) commitStep(state.outcome);
+    // commitStep reads the latest store values when it runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountReady, pickId, hasAnalysis]);
 
   if (!a) return <section className="narrow"><p className="lede">Working out your futures…</p></section>;
 
@@ -208,21 +242,7 @@ export function StepScreen() {
     const outcome = useStore.getState().outcome;
     pin();
     setState({ confAfter: conf });
-    if (pick) {
-      setState({
-        commitment: {
-          lever: pick.id,
-          startedISO: new Date().toISOString(),
-          startInControl: a.baseSummary.counts[0],
-          startInputs: inputs,
-          streak: outcome === 'done' ? 1 : 0,
-          lastCheckISO: outcome === 'done' ? new Date().toISOString() : null,
-          outcome,
-          ...windfallCarryOver(useStore.getState().commitment),
-          months: useStore.getState().commitment?.months,
-        },
-      });
-    }
+    commitStep(outcome);
     if (testMode()) {
       // One row per person: finishing again updates it.
       const { testRowAt, testLog: log, reminderAdded: reminder, hrCopied: copiedHR } = useStore.getState();

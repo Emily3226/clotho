@@ -36,6 +36,10 @@ export function chooseProgress(local: Progress, cloud: Progress | null): 'local'
   return when(b) > when(a) ? 'cloud' : 'local';
 }
 
+// Signed in on Pick one: save the step right away, without waiting for the
+// summary. A step already being kept is only replaced by finishing again.
+export const shouldSaveStep = (c: Commitment | null, lever: string): boolean => !c || (c.lever !== lever && c.streak === 0);
+
 // Saved data is checked before it replaces anything on this device.
 export function parseProgress(json: unknown): Progress | null {
   if (typeof json !== 'string') return null;
