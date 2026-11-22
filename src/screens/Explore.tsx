@@ -489,6 +489,9 @@ function HabitsPanel({ a }: { a: Analysis }) {
                   {row.startsLater && <span className="tag">Starts at your next raise</span>}
                 </h3>
                 <p className="cost">{leverCostLine(row)}</p>
+                {row.startsLater && i === 0 && row.grownPerMonth && (
+                  <p className="hint">It rescues the most because it grows into the biggest amount here. Saving that much from today would do about as well.</p>
+                )}
                 <Explain label={copy.title} text={copy.explain} />
                 {row.id === 'match' && (
                   <p className="hint">
