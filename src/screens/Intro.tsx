@@ -53,7 +53,7 @@ export function Landing() {
         >
           Start
         </button>
-        <span className="hint">{cloudEnabled ? 'No sign-up needed. Stays on this device unless you save it.' : 'No sign-up. Stays on this device.'}</span>
+        <span className="hint">{cloudEnabled ? 'No sign-up needed. Nothing is saved unless you sign up.' : 'No sign-up. Nothing is saved after you leave.'}</span>
       </div>
       <SignInLink />
       <h2 className="small-head">Or try someone else’s</h2>

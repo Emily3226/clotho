@@ -22,7 +22,6 @@ export const ROOM_FOR = [
   { id: 'family', label: 'Helping family' },
 ] as const;
 
-// The habit someone picked, kept on this device for the monthly check-in.
 // One month's check-in, for the progress list.
 export interface MonthRecord {
   month: string;
@@ -30,6 +29,8 @@ export interface MonthRecord {
   saved: number;
 }
 
+// The habit someone picked. It lasts for this visit, or in their account if
+// they sign up.
 export interface Commitment {
   lever: LeverId;
   startedISO: string;
@@ -122,7 +123,7 @@ interface Store {
   answer: (label: string, patch: Partial<Inputs>, whyDown?: string) => void;
   setState: (patch: Partial<Store>) => void;
   restart: () => void;
-  // Removes everything this app has saved on this device.
+  // Clears this visit and anything left in this browser.
   clearAll: () => void;
 }
 
@@ -250,21 +251,18 @@ export const useStore = create<Store>()(
     {
       name: STORE_KEY,
       // v1: dark became the default, so a saved 'auto' from before moves to dark.
-      version: 1,
+      // v2: answers and progress are no longer kept in the browser. Older saves
+      // load for one last visit, so they can still be kept by signing up, and
+      // are removed from storage straight away.
+      version: 2,
       migrate: (old, from) => {
         const s = (old ?? {}) as Partial<Store>;
         return (from < 1 && (!s.theme || s.theme === 'auto') ? { ...s, theme: 'dark' } : s) as Store;
       },
+      // Only the colour theme, and anonymous results in user-test mode.
       partialize: (s) => ({
-        inputs: s.inputs,
-        room: s.room,
-        fieldOther: s.fieldOther,
-        others: s.others,
-        confBefore: s.confBefore,
         theme: s.theme,
-        set: s.set,
-        commitment: s.commitment,
-        testLog: s.testLog,
+        ...(s.testLog.length ? { testLog: s.testLog } : {}),
       }),
     },
   ),

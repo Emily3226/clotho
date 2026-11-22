@@ -1,6 +1,6 @@
 // The Firebase web config. It identifies the project and is not a secret:
 // access is controlled by firestore.rules. While this is null, accounts are
-// switched off and the app works on this device only.
+// switched off and nothing is kept between visits.
 export interface FirebaseWebConfig {
   apiKey: string;
   authDomain: string;

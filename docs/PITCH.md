@@ -23,14 +23,14 @@ Tap **▶ Play one of your lives**. Let one life draw across the river with its 
 "Pick one to try". **Automate $100 a month** is already picked. Show the **Do it now** steps, tap **I set it up**, move confidence up, "See my summary". "One step, done before she leaves."
 
 **2:20 She comes back (15 s)**
-Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **518**. Keeping it up points to **866**, and she's kept it 4 months in a row."
+Don't reload. Tap the **Clotho** logo, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **518**. Keeping it up points to **866**, and she's kept it 4 months in a row."
 
 **2:35 Proof and what's next (25 s)**
 "We tested with **[n]** Gen Z [students]. Confidence went from **[x]** to **[y]** out of 10, and **[z] of [n]** took the step before leaving." (Fill in from the `?test=1` CSV.) "Next: a pilot inside a group plan. Scan the code and try it with your own numbers."
 
 **Keep for questions, not the demo:** **Why 518?** (where the number comes from), **Does the top habit still hold?**, **What if there's no 65?**, **Keep yours reachable?** (open **Jordan**, it needs a workplace plan), and **Assumptions**.
 
-**Backup:** if anything misbehaves, reload; inputs are kept. Have the recorded demo video ready.
+**Backup:** if anything misbehaves, reload and tap **Maya** again; answers aren't kept without an account. Have the recorded demo video ready.
 
 ## Judging criteria → features
 

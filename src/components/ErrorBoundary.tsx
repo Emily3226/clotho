@@ -5,14 +5,14 @@ export function ErrorNote({ onClear }: { onClear?: () => void }) {
   return (
     <section className="narrow error-note" role="alert">
       <h1 className="h-question">That didn’t load.</h1>
-      <p className="lede">Your answers are still saved on this device. Reloading usually fixes it.</p>
+      <p className="lede">Reloading usually fixes it. If you signed up, your progress is safe in your account.</p>
       <div className="row">
         <button type="button" className="primary" onClick={() => window.location.reload()}>
           Reload
         </button>
         {onClear && (
           <button type="button" className="ghost" onClick={onClear}>
-            Clear saved answers and reload
+            Reset and reload
           </button>
         )}
       </div>
