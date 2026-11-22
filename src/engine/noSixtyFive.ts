@@ -7,8 +7,15 @@ import { NO_LEVERS, type AssumptionSetId, type Inputs, type Levers, type Scenari
 
 export const CUT_AGES = [35, 40, 50] as const;
 
-export const cutAgesFor = (age: number): number[] => CUT_AGES.filter((a) => a > age);
-export const defaultCutAge = (age: number): number => (age < 40 ? 40 : 50);
+// 35, 40 and 50 while at least two are ahead; after that, 5, 10 and 15 years out.
+export const cutAgesFor = (age: number): number[] => {
+  const fixed = CUT_AGES.filter((a) => a > age);
+  return fixed.length >= 2 ? fixed : [age + 5, age + 10, age + 15].filter((a) => a < 65);
+};
+export const defaultCutAge = (age: number): number => {
+  const ages = cutAgesFor(age);
+  return ages.includes(40) ? 40 : ages[0];
+};
 
 export interface CutShort {
   cutAge: number;

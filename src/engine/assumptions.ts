@@ -109,6 +109,8 @@ export const A = {
   tightGap: 0.2,
   roomMonths35: 6,
   roomMonths45: 12,
+  // TFSAs began in 2009: room builds from then, or from 18 if later.
+  tfsaYears: 18,
   debtYears: 10,
   // Share of spending someone will trim to keep up debt payments.
   debtTrimShare: 0.15,
@@ -240,7 +242,7 @@ export const ASSUMPTIONS: Assumption[] = [
   illustrative('keepReachable', 'Keep yours reachable', 'Your own contributions go to a TFSA; the employer match stays in the retirement plan', FLEX_PLAN_URL, 'Plan design announced by Canada Life, October 2026; the comparison is ours', 'Same take-home pay and same 1,000 lives. A TFSA has no tax break going in, so the contribution is smaller, but it can be withdrawn without tax. Savings at 65 are compared after the 15% tax on retirement-plan income. Money in a TFSA counts as within reach for the room-to-move checks. Not every plan offers this.'),
   illustrative('raid', 'Emergency withdrawal from the workplace plan', 'About 30% goes to tax; the room is gone', 'https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/making-withdrawals/tax-rates-on-withdrawals.html', 'Our estimate of the final tax', 'The withdrawal is added to that year’s income. Banks hold back 10% up to $5,000, 20% from $5,000 to $15,000 and 30% above that (less in Quebec), and the rest is settled at tax time. One flat 30% is close to the extra tax on earnings of about $30,000 to $60,000. It is on the high side below that and the low side above it.'),
   illustrative('workOptional', 'Work-optional test', 'Income from savings and public pensions covers 70% of the spending you’re used to', FP_URL, 'A common replacement-rate rule of thumb', 'Checked every year from 30. Before 65, savings must first stand in for public pensions until they start, so early freedom takes a lot more.'),
-  illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
+  illustrative('room', 'Room to move', '6 months of spending by 35, 12 months by 45 (later for someone who starts after 28: 7 and 12 years from now)', FP_URL, 'Our definition of flexibility', 'Counts the cushion plus long-term savings you can reach.'),
   official('downPayment', 'Minimum down payment', '5% of the first $500,000, 10% of the rest; 20% at $1.5 million or more', 'https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html', 'Financial Consumer Agency of Canada'),
   illustrative('homePrices', 'Home prices', 'Toronto or Vancouver: condo $650k, townhouse $950k, house $1.4M. Another big city: $400k, $550k, $750k. Smaller city or town: $300k, $400k, $500k.', 'https://stats.crea.ca/en-CA/', 'Illustrative, in the range of CREA average prices', 'Counted on its own: a home goal does not change whether a future is in control. With no home goal, the “I’ll never afford a home” what-if tests a typical home for the city: $850k in Toronto or Vancouver, $550k in another big city, $400k in a smaller city or town, or $500k if no city is given.'),
   illustrative('debt', 'Student debt', 'Paid over 10 years, starting when school ends; the rate is reduced by 2% inflation', 'https://www.canada.ca/en/services/benefits/education/student-aid/grants-loans/repay.html', 'Illustrative', 'The chips use 5% before inflation. The saving you enter includes what goes to student loans, so payments come out of it first, then out of spending (up to 15% of it), and only then out of savings. They pause in a year with time out of work, but not during a gig slow stretch. The federal part of Canada Student Loans is interest-free; provincial parts vary.'),
@@ -252,3 +254,14 @@ export const LIMITATIONS: string[] = [
   'Taxes, CPP and OAS are simplified. The tool uses approximate tax rates and simple pension estimates.',
   'One set of life events cannot cover everyone. There are no partners, children, inheritances or moves between provinces, and field-of-study effects are broad averages, not a prediction for any one person.',
 ];
+
+// Oldest age the app takes. The simulation runs to 70, and both room checks
+// need to fall inside it.
+export const MAX_AGE = 55;
+
+// The two room-to-move checks: 6 months saved by 35 and a year by 45, or
+// later for someone who starts close to them, so there is always time to
+// build up savings (at 33: by 40 and by 45; at 50: by 57 and by 62).
+export function roomAges(startAge: number): [number, number] {
+  return [Math.max(35, startAge + 7), Math.max(45, startAge + 12)];
+}

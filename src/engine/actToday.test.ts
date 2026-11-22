@@ -4,6 +4,8 @@ import { DEFAULT_INPUTS, PERSONAS } from './personas';
 import { simulate, summarise } from './simulate';
 import { NO_LEVERS, leverOnly, type Inputs } from './types';
 import { inputsForStage } from './profile';
+import { MAX_AGE, roomAges } from './assumptions';
+import { cutAgesFor, defaultCutAge } from './noSixtyFive';
 import { leverCostLine } from '../lib/copy';
 
 const SEED = 2026;
@@ -76,4 +78,43 @@ describe('no duplicate or contradicting habits', () => {
       }
     }
   }, 60000);
+});
+
+describe('any age', () => {
+  it('moves the room checks later for someone who starts close to them, and keeps 35 and 45 for everyone else', () => {
+    for (let age = 18; age <= 28; age++) expect(roomAges(age)).toEqual([35, 45]);
+    expect(roomAges(33)).toEqual([40, 45]);
+    expect(roomAges(MAX_AGE)).toEqual([62, 67]);
+    for (let age = 18; age <= MAX_AGE; age++) {
+      const [r1, r2] = roomAges(age);
+      expect(r1).toBeGreaterThanOrEqual(age + 7);
+      expect(r2).toBeGreaterThan(r1);
+      expect(r2).toBeLessThanOrEqual(70);
+    }
+  });
+
+  it('has no cliff after 30: the same person a year older never drops by more than a fifth', () => {
+    let last = inControl(inputsForStage('full', 28));
+    for (let age = 29; age <= 36; age++) {
+      const now = inControl(inputsForStage('full', age));
+      expect(now).toBeGreaterThan(last * 0.8);
+      last = now;
+    }
+  }, 60000);
+
+  it('gives an older person with real savings a real answer', () => {
+    expect(inControl({ ...inputsForStage('full', 50), saved: 250000, monthly: 700 })).toBeGreaterThan(900);
+  });
+
+  it('offers no-65 ages before 65 at any age', () => {
+    for (let age = 18; age <= MAX_AGE; age++) {
+      const ages = cutAgesFor(age);
+      expect(ages.length).toBeGreaterThan(0);
+      for (const a of ages) {
+        expect(a).toBeGreaterThan(age);
+        expect(a).toBeLessThan(65);
+      }
+      expect(ages).toContain(defaultCutAge(age));
+    }
+  });
 });
