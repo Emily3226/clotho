@@ -21,6 +21,7 @@ import type { City, FieldId, Goal, HomeType, Inputs, Living, Stage } from '../en
 import { classifyGoal } from '../narrate/client';
 import { money } from '../lib/format';
 import { STEP, useStore } from '../store';
+import { MAX_AGE } from '../engine/assumptions';
 import { LifeChoices } from './LifeChoices';
 import { OtherAnswer } from './OtherAnswer';
 
@@ -81,6 +82,21 @@ export function AboutYou({ live = false }: { live?: boolean }) {
   const finishValue = left <= 1 ? left : left <= 3 ? 3 : 4;
   const homeWhen = home ? (HOME_WHEN.find((w) => w.age === home.byAge)?.age ?? null) : null;
 
+  // Past 30 the stage's starting savings say little, so ask up front.
+  const older = inputs.age >= 30;
+  const savedField = (
+    <Field
+      id="saved"
+      label="Saved so far"
+      value={inputs.saved}
+      min={0}
+      max={older ? 1000000 : 100000}
+      step={older ? 5000 : 500}
+      prefix="$"
+      hint={older ? 'Everything you could use: savings, TFSA, RRSP and workplace plan.' : undefined}
+      onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })}
+    />
+  );
   return (
     <div className="about">
       <div className="fields two">
@@ -89,15 +105,16 @@ export function AboutYou({ live = false }: { live?: boolean }) {
           label="Age"
           value={inputs.age}
           min={18}
-          max={35}
+          max={MAX_AGE}
           step={1}
           onChange={(v) => {
-            const age = Math.min(35, Math.max(18, Math.round(v)));
+            const age = Math.min(MAX_AGE, Math.max(18, Math.round(v)));
             setState({ inputs: { ...inputs, age, finishAge: Math.max(age, inputs.finishAge), moveOutAge: Math.max(age + 1, inputs.moveOutAge) } });
           }}
         />
         <Field id="monthly" label="You could set aside" value={inputs.monthly} min={0} max={1000} step={5} prefix="$" suffix="a month" hint={inputs.debt ? 'Include what goes to student loans.' : undefined} onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, monthly: v } })} />
       </div>
+      {older && savedField}
 
       <ChipGroup<Stage | 'other'>
         legend="Right now"
@@ -283,7 +300,7 @@ export function AboutYou({ live = false }: { live?: boolean }) {
             prefix="$"
             onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, income: v }, incomeEdited: true })}
           />
-          <Field id="saved" label="Saved so far" value={inputs.saved} min={0} max={100000} step={500} prefix="$" onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })} />
+          {!older && savedField}
           {!isStudent(inputs.stage) && (
             <fieldset className="q">
               <legend>Does your job add money when you save?</legend>

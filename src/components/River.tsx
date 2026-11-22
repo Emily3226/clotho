@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Analysis } from '../engine/analyse';
 import { STATUS_LABELS } from '../engine/types';
+import { roomAges } from '../engine/assumptions';
 import { timeline } from '../lib/copy';
 import { moneyRound, moneyShort, num, reducedMotion } from '../lib/format';
 import { useStore } from '../store';
@@ -23,7 +24,8 @@ const MORPH_MS = 600;
 const DASHES: number[][] = [[], [9, 4], [3, 4], [1, 5]];
 const STATUS_VARS = ['--s0', '--s1', '--s2', '--s3'];
 const Y_TICKS = [10e3, 25e3, 50e3, 100e3, 250e3, 500e3, 1e6, 2e6, 3e6, 5e6, 10e6, 20e6];
-const MILESTONE_AGES = [35, 45, 65];
+// The two room checks and 65, which move later for someone who starts late.
+const milestoneAges = (startAge: number): number[] => [...roomAges(startAge), 65];
 const PLAY_MS = 7000;
 
 function frameOf(a: Analysis): Frame {
@@ -141,7 +143,7 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     ctx.textBaseline = 'top';
     const stepAge = plotW < 420 ? 10 : 5;
     for (let age = Math.ceil(to.startAge / stepAge) * stepAge; age <= to.startAge + to.years; age += stepAge) {
-      if (MILESTONE_AGES.includes(age)) continue;
+      if (milestoneAges(to.startAge).includes(age)) continue;
       ctx.fillText(String(age), X(age - to.startAge), M.top + plotH + 8);
     }
 
@@ -199,7 +201,7 @@ export function River({ analysis, mask, selected, onSelect, playing = null, onPl
     // Milestone markers.
     ctx.textAlign = 'center';
     ctx.font = `600 ${fontPx}px system-ui, sans-serif`;
-    for (const age of MILESTONE_AGES) {
+    for (const age of milestoneAges(to.startAge)) {
       if (age < to.startAge) continue;
       const x = X(age - to.startAge);
       ctx.strokeStyle = colour('--accent');

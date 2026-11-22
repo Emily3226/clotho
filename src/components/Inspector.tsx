@@ -4,6 +4,7 @@ import { STATUS_LABELS } from '../engine/types';
 import { pathFacts, story, timeline } from '../lib/copy';
 import { useNarration } from '../narrate/client';
 import { useStore } from '../store';
+import { roomAges } from '../engine/assumptions';
 
 // One life out of the thousand, told as a short story and a timeline. With a
 // habit switched on, the same life (same luck) can be shown without it.
@@ -26,10 +27,11 @@ export function Inspector({
   const rows = timeline(shown.events, goals);
   const { text, narrated } = useNarration('story', pathFacts(shown, goals), story(shown));
   const m = shown.milestones;
+  const [r1, r2] = roomAges(useStore.getState().inputs.age);
   const marks: [string, boolean | null][] = [
     ['Got through bad years', m.shockProof],
-    ['6 months saved by 35', m.room35],
-    ['A year saved by 45', m.room45],
+    [`6 months saved by ${r1}`, m.room35],
+    [`A year saved by ${r2}`, m.room45],
     ['Home', m.home],
     ['Work optional by 65', m.workOptional65],
     ...goals.map((g, k): [string, boolean | null] => [`${g.label} by ${g.byAge}`, m.goals[k] ?? null]),

@@ -8,7 +8,7 @@ import { KeepReachableCard } from '../components/KeepReachable';
 import { TakeMoneyOut } from '../components/TakeMoneyOut';
 import { River } from '../components/River';
 import { whyNot, type Analysis, type HoldTest, type WhyKey, type WorryCard } from '../engine/analyse';
-import { A } from '../engine/assumptions';
+import { A, roomAges } from '../engine/assumptions';
 import { mulberry32 } from '../engine/rng';
 import { MARKET_SETS } from '../engine/profile';
 import { LEVER_IDS, NO_LEVERS, STATUS_LABELS, leverOnly, type AssumptionSetId, type LeverId, type WorryId } from '../engine/types';
@@ -184,11 +184,12 @@ function Legend({ a }: { a: Analysis | null }) {
 function Milestones({ a }: { a: Analysis }) {
   const m = a.summary.milestoneCounts;
   const goals = a.goals;
+  const [r1, r2] = roomAges(a.startAge);
   const items: [string, number | null, string][] = [
     // Each line finishes "In 849 of your 1,000 futures, …".
     ['Got through bad years', m.shockProof, 'every rough patch (a layoff, a market drop) was covered. You never ran out of money or had to touch your retirement savings.'],
-    ['6 months saved by 35', a.startAge <= 35 ? m.room35 : null, 'by 35 you have 6 months of living costs saved that you can use any time. That’s enough to switch jobs or take a break.'],
-    ['A year saved by 45', m.room45, 'by 45 you have a full year of living costs saved that you can use any time.'],
+    [`6 months saved by ${r1}`, m.room35, `by ${r1} you have 6 months of living costs saved that you can use any time. That’s enough to switch jobs or take a break.`],
+    [`A year saved by ${r2}`, m.room45, `by ${r2} you have a full year of living costs saved that you can use any time.`],
     ['Home', m.home, 'you have the down payment by the age you picked.'],
     ['Work optional by 65', m.workOptional65, 'by 65 your savings plus government pensions (CPP and OAS) pay for at least 70% of what you usually spend. That’s enough to stop working if you want to.'],
     ...goals.map((g, k): [string, number | null, string] => [
@@ -213,10 +214,12 @@ function Milestones({ a }: { a: Analysis }) {
   );
 }
 
-const WHY_LABEL: Record<WhyKey, string> = {
+const whyLabel = (key: WhyKey, startAge: number): string => {
+  const [r1, r2] = roomAges(startAge);
+  return key === 'room45' ? `Less than a year saved by ${r2}` : key === 'room35' ? `Less than 6 months saved by ${r1}` : WHY_LABEL[key as 'workOptional65' | 'shockProof'];
+};
+const WHY_LABEL: Record<'workOptional65' | 'shockProof', string> = {
   workOptional65: 'Work isn’t optional by 65',
-  room45: 'Less than a year saved by 45',
-  room35: 'Less than 6 months saved by 35',
   shockProof: 'A bad year ran short or dipped into the workplace plan',
 };
 const STATUS_MEANS = ['all four checks met', 'work optional by 65, one other check missed', 'work optional by 65 with two or more missed, or close to it', 'the rest'];
@@ -232,7 +235,7 @@ function WhyNumber({ a }: { a: Analysis }) {
     <details className="drawer why-number">
       <summary>Why {num(counts[0])}?</summary>
       <p className="hint">
-        Each of your 1,000 futures gets four checks: getting through bad years, 6 months saved by 35, a year saved by 45, and work optional by 65. In
+        Each of your 1,000 futures gets four checks: getting through bad years, 6 months saved by {roomAges(a.startAge)[0]}, a year saved by {roomAges(a.startAge)[1]}, and work optional by 65. In
         control means all four.
       </p>
       <RangeLine a={a} />
@@ -253,7 +256,7 @@ function WhyNumber({ a }: { a: Analysis }) {
             {why.missed.map((m) => (
               <li key={m.key}>
                 <span>
-                  {WHY_LABEL[m.key]} <b>{num(m.count)}</b>
+                  {whyLabel(m.key, a.startAge)} <b>{num(m.count)}</b>
                 </span>
                 <i style={{ width: `${Math.max(2, (100 * m.count) / why.others)}%` }} aria-hidden="true" />
               </li>

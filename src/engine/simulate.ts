@@ -1,4 +1,4 @@
-import { A, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
+import { A, roomAges, marginalRate, stockShareAt, takeHome, wageGrowthAt } from './assumptions';
 import { FAMILY_RENT_SHARE, GIG, MARKET_SETS, cityInfo, fieldInfo, fieldSalaryFor, homePriceFor, isStudent, minDownPayment } from './profile';
 import { D_FIRST_PAY, D_MOVE_U, D_MOVE_Z, D_RECESSION, drawsFor, PER_PATH, STREAMS, S_BOND, S_COST_U, S_CRASH_U, S_CRASH_Z, S_JOB_U, S_SPELL, S_STOCK, S_WAGE } from './rng';
 import { hasLife, LIFE, lifeCost, lifeEvents, lifestyleShare, lifeWork, normaliseLife } from './lifePlan';
@@ -136,7 +136,7 @@ export function simulate(
     // How far lifestyle has adjusted to pay or costs that differ from the plan.
     let trim = 0;
     let at65 = 0;
-    let tfsaRoom = A.tfsaAnnual * Math.max(0, age - 18);
+    let tfsaRoom = A.tfsaAnnual * Math.min(A.tfsaYears, Math.max(0, age - 18));
     let fhsaLife = 0;
     let spendBase = spend0;
 
@@ -177,6 +177,7 @@ export function simulate(
     // Savings at 65 after the tax still owed on the retirement plan.
     let at65Net = 0;
     let room35 = false;
+    const [roomAgeA, roomAgeB] = roomAges(age);
     let room45 = false;
     let bought = false;
     // Money spent on a home or a goal, grown as if it had stayed invested.
@@ -222,11 +223,11 @@ export function simulate(
         at65Net = cushion + flex + (1 - A.workplaceRetirementTax) * workplace;
       }
       if (a === opts.cutAge) atCut = { yours: cushion + flex + paidFor + (1 - A.raidTax) * workplace, lived };
-      if (a === 35) {
+      if (a === roomAgeA) {
         room35 = cushion + judged >= (A.roomMonths35 / 12) * lastSpend - 1;
         if (detail && room35) events.push({ age: a, type: 'room', value: A.roomMonths35 });
       }
-      if (a === 45) {
+      if (a === roomAgeB) {
         room45 = cushion + judged >= (A.roomMonths45 / 12) * lastSpend - 1;
         if (detail && room45) events.push({ age: a, type: 'room', value: A.roomMonths45 });
       }

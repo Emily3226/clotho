@@ -174,9 +174,8 @@ export function whyNot(paths: { status: number; milestones: Milestones }[], star
     others++;
     for (const k of keys) if (!p.milestones[k]) count[k]++;
   }
+  void startAge;
   const missed = keys
-    // The 35 check only exists for people who start before it.
-    .filter((k) => k !== 'room35' || startAge <= 35)
     .map((key) => ({ key, count: count[key] }))
     .filter((m) => m.count > 0)
     .sort((x, y) => y.count - x.count);
