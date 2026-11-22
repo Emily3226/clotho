@@ -40,10 +40,8 @@ export function MoreWays() {
 
   const life = hasLife(inputs.life) ? inputs.life : null;
   return (
-    <section className="more-ways" aria-labelledby="more-ways-title">
-      <h2 className="small-head" id="more-ways-title">
-        More ways to get ahead
-      </h2>
+    <details className="drawer more-ways">
+      <summary>More ways to get ahead, with no extra money each month</summary>
       <p className="hint">No extra money each month. Your savings already go to your cushion first, then an FHSA if you’re buying a home, then a TFSA, so growth stays tax-free.</p>
       {!results && <p className="hint">Testing them on your futures…</p>}
       <ul className="ways">
@@ -90,6 +88,6 @@ export function MoreWays() {
           )}
         </ul>
       </details>
-    </section>
+    </details>
   );
 }

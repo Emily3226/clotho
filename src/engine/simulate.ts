@@ -77,7 +77,10 @@ export function simulate(
   const matchPct =
     inputs.plan === 'yes' ? inputs.matchPct / 100 : inputs.plan === 'unsure' ? A.defaultMatchPct / 100 : 0;
   const matchOn = levers.match && inputs.plan !== 'no';
-  const empPct = matchOn ? Math.max(planPct, matchPct) : planPct;
+  // +1 point today: on top of what goes in now, matched if the employer
+  // matches more than that.
+  const plusPct = levers.plus1 && inputs.plan === 'yes' ? 0.01 : 0;
+  const empPct = (matchOn ? Math.max(planPct, matchPct) : planPct) + plusPct;
   const matchExtra = empPct - planPct;
   const employerActive = inputs.plan === 'yes' || (inputs.plan === 'unsure' && matchOn);
 
@@ -190,7 +193,7 @@ export function simulate(
     const goalsReached = goals.map(() => false);
     let cushionFullSeen = cushion >= cushionShare * spendStart - 1 && cushionShare > 0 && inputs.saved > 0;
 
-    const trace = opts.trace ? { cushion: [] as number[], plan: [] as number[], flex: [] as number[], target: [] as number[] } : undefined;
+    const trace = opts.trace ? { cushion: [] as number[], plan: [] as number[], flex: [] as number[], target: [] as number[], extra: [] as number[] } : undefined;
     let minTfsaRoom = tfsaRoom;
     let maxFhsaYear = 0;
     let maxRrspOver = 0;
@@ -381,7 +384,9 @@ export function simulate(
         let extra = levers.auto * 12 + (matchExtra * relief + raisePts / 100) * gross;
         if (levers.cushion && cushion < target) extra += A.cushionTopUp * 12;
         if (extra > 0) spend = Math.max(spend - extra, Math.min(spend, 0.4 * nth));
+        if (trace) trace.extra.push(extra);
       }
+      if (trace && delayed) trace.extra.push(0);
 
       // Job loss.
       let months = carry;

@@ -114,7 +114,10 @@ export function StepScreen() {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   const ranking = a?.ranking ?? [];
-  const pick: LeverRow | undefined = ranking.find((r) => r.id === chosen) ?? ranking.find((r) => leverIsOn(levers, r.id));
+  // The best step that can be started today. Saving part of a raise waits
+  // for the raise, so it is never the default here.
+  const today = ranking.find((r) => !r.startsLater);
+  const pick: LeverRow | undefined = ranking.find((r) => r.id === chosen) ?? ranking.find((r) => leverIsOn(levers, r.id)) ?? today;
   const copy = pick ? leverCopy(pick.id, inputs) : null;
   const roomLabels = ROOM_FOR.filter((r) => room.includes(r.id)).map((r) => r.label);
 
@@ -245,6 +248,7 @@ export function StepScreen() {
           return (
             <button type="button" key={r.id} role="radio" aria-checked={on} className={`card choice${on ? ' on' : ''}`} onClick={() => r.id !== pick?.id && setState({ chosen: r.id, outcome: null, confAfter: null, reminderAdded: false, hrCopied: false })}>
               <b>{c.title}</b>
+              {r.startsLater && <span className="tag">Starts at your next raise</span>}
               <span>{leverCostLine(r)}</span>
               <span className="effect">Rescues {num(r.rescued)} futures</span>
             </button>
@@ -284,6 +288,16 @@ export function StepScreen() {
                 {reminderAdded ? 'Reminder downloaded' : 'Add the reminder'}
               </button>
             </div>
+          )}
+          {now.kind === 'plan' && <p className="hint">{CANADA_LIFE_NOTE}</p>}
+          {now.kind === 'raise' && today && (
+            <p className="hint">
+              Want one you can do today too?{' '}
+              <button type="button" className="link" onClick={() => setState({ chosen: today.id, outcome: null, confAfter: null, reminderAdded: false, hrCopied: false })}>
+                {leverCopy(today.id, inputs).title}
+              </button>{' '}
+              rescues {num(today.rescued)}.
+            </p>
           )}
           {noPlan && now.kind === 'bank' && <p className="hint">{NO_PLAN_NOTE}</p>}
 
