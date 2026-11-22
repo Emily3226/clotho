@@ -214,15 +214,11 @@ function Milestones({ a }: { a: Analysis }) {
   );
 }
 
-const whyLabel = (key: WhyKey, startAge: number): string => {
+// A check by the same name as its tile, so the two read as one list.
+const checkName = (key: WhyKey, startAge: number): string => {
   const [r1, r2] = roomAges(startAge);
-  return key === 'room45' ? `Less than a year saved by ${r2}` : key === 'room35' ? `Less than 6 months saved by ${r1}` : WHY_LABEL[key as 'workOptional65' | 'shockProof'];
+  return key === 'room35' ? `6 months saved by ${r1}` : key === 'room45' ? `a year saved by ${r2}` : key === 'workOptional65' ? 'work optional by 65' : 'getting through bad years';
 };
-const WHY_LABEL: Record<'workOptional65' | 'shockProof', string> = {
-  workOptional65: 'Work isn’t optional by 65',
-  shockProof: 'A bad year ran short or dipped into the workplace plan',
-};
-const STATUS_MEANS = ['all four checks met', 'work optional by 65, one other check missed', 'work optional by 65 with two or more missed, or close to it', 'the rest'];
 
 // Where the headline count comes from: what "in control" means, how the
 // other futures are sorted, and which checks they miss.
@@ -231,46 +227,24 @@ function WhyNumber({ a }: { a: Analysis }) {
   const why = useMemo(() => whyNot(a.paths, a.startAge), [a]);
   const counts = a.summary.counts;
   const top = a.ranking[0];
+  const missed = why.missed[0];
   return (
     <details className="drawer why-number">
       <summary>Why {num(counts[0])}?</summary>
-      <p className="hint">
-        Each of your 1,000 futures gets four checks: getting through bad years, 6 months saved by {roomAges(a.startAge)[0]}, a year saved by {roomAges(a.startAge)[1]}, and work optional by 65. In
-        control means all four.
-      </p>
+      <p className="hint">A future is in control when it passes all four checks:</p>
+      <Milestones a={a} />
       <RangeLine a={a} />
-      <ul className="why-status">
-        {STATUS_LABELS.map((label, i) => (
-          <li key={label}>
-            <i className={`status-line s${i}`} aria-hidden="true" />
-            <span>
-              <b>{num(counts[i])}</b> {label.toLowerCase()}: <small>{STATUS_MEANS[i]}</small>
-            </span>
-          </li>
-        ))}
-      </ul>
-      {why.others > 0 && (
-        <>
-          <p className="q-label">What the other {num(why.others)} miss</p>
-          <ul className="why-bars">
-            {why.missed.map((m) => (
-              <li key={m.key}>
-                <span>
-                  {whyLabel(m.key, a.startAge)} <b>{num(m.count)}</b>
-                </span>
-                <i style={{ width: `${Math.max(2, (100 * m.count) / why.others)}%` }} aria-hidden="true" />
-              </li>
-            ))}
-          </ul>
-          <p className="hint">A future can miss more than one, so these can add up to more than {num(why.others)}.</p>
-        </>
-      )}
-      {top && top.rescued > 0 && (
+      {missed && (
         <p className="hint">
-          What moves the most: <b>{leverCopy(top.id, inputs).noun}</b> rescues {num(top.rescued)} of them.
+          Most often missed: <b>{checkName(missed.key, a.startAge)}</b>, by {num(missed.count)} futures.
+          {top && top.rescued > 0 && (
+            <>
+              {' '}
+              <b>{leverCopy(top.id, inputs).noun}</b> rescues {num(top.rescued)}.
+            </>
+          )}
         </p>
       )}
-      <Milestones a={a} />
     </details>
   );
 }
