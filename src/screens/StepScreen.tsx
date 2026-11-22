@@ -6,7 +6,7 @@ import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
 import { CANADA_LIFE_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, testSummary, yearFromToday, type Outcome } from '../lib/doNow';
-import { buildIcs, nextFriday } from '../lib/ics';
+import { buildIcs, googleCalendarUrl, nextFriday } from '../lib/ics';
 import { windfallCarryOver } from '../lib/windfall';
 import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
@@ -151,18 +151,13 @@ export function StepScreen() {
   };
 
   // Monthly on payday, or once on the likely date of the next raise.
+  const remindTitle = copy ? `${APP_NAME}: ${copy.title}` : APP_NAME;
+  const remindText = lines ? `${lines[0]} ${lines[1]} Then open ${APP_NAME} for your 30-second check-in: ${LIVE_URL}` : '';
   const reminder = () => {
     if (!copy || !lines || !now) return;
     pin();
     const raise = now.kind === 'raise';
-    const ics = buildIcs(
-      raise ? raiseDay : payday,
-      `${APP_NAME}: ${copy.title}`,
-      `${lines[0]} ${lines[1]} Then open ${APP_NAME} for your 30-second check-in.`,
-      new Date(),
-      !raise,
-      LIVE_URL,
-    );
+    const ics = buildIcs(raise ? raiseDay : payday, remindTitle, remindText, new Date(), !raise, LIVE_URL);
     download(raise ? 'my-next-raise.ics' : 'my-monthly-step.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
     setState({ reminderAdded: true });
   };
@@ -326,16 +321,36 @@ export function StepScreen() {
               ))}
             </div>
           </div>
-          {outcome === 'notyet' && now.kind !== 'raise' && (
-            <div className="row">
-              <label htmlFor="payday">No problem. Remind me on payday</label>
-              <input id="payday" type="date" value={payday} onChange={(e) => setPayday(e.target.value || nextFriday())} />
-              <button type="button" className="secondary" onClick={reminder}>
-                {reminderAdded ? 'Reminder downloaded' : 'Add a monthly reminder'}
-              </button>
+          {(outcome === 'done' || outcome === 'sent') && <p className="did-it">Done. That’s the hard part.</p>}
+          {now.kind !== 'raise' && (
+            <div className="nudge" role="group" aria-labelledby="nudge-title">
+              <p className="q-label" id="nudge-title">
+                {outcome === 'notyet' ? 'No problem. Want a nudge each payday?' : 'Want a nudge each payday?'}
+              </p>
+              <div className="row">
+                <label htmlFor="payday">Next payday</label>
+                <input id="payday" type="date" value={payday} onChange={(e) => setPayday(e.target.value || nextFriday())} />
+              </div>
+              <div className="row">
+                <a
+                  className="primary button-link"
+                  href={googleCalendarUrl(payday, remindTitle, remindText, true)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => {
+                    pin();
+                    setState({ reminderAdded: true });
+                  }}
+                >
+                  Add to Google Calendar
+                </a>
+                <button type="button" className="secondary" onClick={reminder}>
+                  Apple or Outlook calendar
+                </button>
+              </div>
+              <p className="hint">{reminderAdded ? 'Reminder added. ' : ''}Nothing is sent to us. It lives in your calendar and links back to your check-in.</p>
             </div>
           )}
-          {(outcome === 'done' || outcome === 'sent') && <p className="did-it">Done. That’s the hard part.</p>}
         </div>
       )}
 

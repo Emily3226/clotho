@@ -38,7 +38,7 @@ Reload, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **
 |---|---|
 | Innovation & Creativity | The headline is the futures a habit rescues, lit up in the river, with the same life shown with and without it. Worries are sized and shown next to their protection. A monthly check-in turns a one-off visit into a habit loop. |
 | Technical Complexity | A seeded Monte Carlo engine with common random numbers, three savings buckets, Canadian account limits, job loss, market regimes and emergency withdrawals; runs in a Web Worker at about 20 ms per 1,000 paths; Canvas river with per-path morphing; a narration layer that rejects any number the engine did not compute; a test suite covering determinism, monotonicity, limits and a hand-calculated check. |
-| Completeness | The flow end to end plus the monthly check-in, four personas, monthly calendar file, HR message, 9:16 summary card, assumptions panel with three return settings, user-test mode with CSV export, dark and light themes. Works offline with no key. |
+| Completeness | The flow end to end plus the monthly check-in, four personas, a one-tap monthly reminder (Google Calendar or a calendar file), HR message, 9:16 summary card, assumptions panel with three return settings, user-test mode with CSV export, dark and light themes. Works offline with no key. |
 | Design | Typography-led, one accent colour, no red, counts instead of percentages, motion tied to cause and effect, usable at 375 px and on a projector, keyboard and reduced-motion support. |
 
 ## The Canada Life brief → features

@@ -1654,3 +1654,11 @@ details.why summary {
 .cl-links a {
   font-weight: 600;
 }
+
+/* The payday nudge, after "Did you do it?". */
+.nudge {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
