@@ -4,7 +4,7 @@ import { PERSONAS } from '../engine/personas';
 import { NO_LEVERS } from '../engine/types';
 import { factNumbers, numbersIn, validateNarration } from '../narrate/validate';
 import { pathFacts, story, timeline, worryAnswer } from './copy';
-import { buildIcs, googleCalendarUrl, nextFriday } from './ics';
+import { buildIcs, googleCalendarUrl, monthlyRule, nextFriday } from './ics';
 
 const maya = PERSONAS[0].inputs;
 const analysis = new Engine().analyse(maya, { ai: 'moderate' }, {}, NO_LEVERS, 2026);
@@ -95,7 +95,9 @@ describe('calendar reminder', () => {
 
 describe('Google Calendar reminder', () => {
   it('links an all-day event on the payday, repeating monthly', () => {
-    const url = new URL(googleCalendarUrl('2026-11-27', 'Clotho: Automate $100 a month', 'Set it up. Then check in.', true));
+    const login = new URL(googleCalendarUrl('2026-11-27', 'Clotho: Automate $100 a month', 'Set it up. Then check in.', true));
+    expect(login.origin + login.pathname).toBe('https://accounts.google.com/ServiceLogin');
+    const url = new URL(login.searchParams.get('continue')!);
     expect(url.origin + url.pathname).toBe('https://calendar.google.com/calendar/render');
     expect(url.searchParams.get('action')).toBe('TEMPLATE');
     expect(url.searchParams.get('text')).toBe('Clotho: Automate $100 a month');
@@ -104,8 +106,20 @@ describe('Google Calendar reminder', () => {
     expect(url.searchParams.get('recur')).toBe('RRULE:FREQ=MONTHLY');
   });
 
+  it('never skips a short month', () => {
+    expect(monthlyRule('2026-11-28')).toBe('RRULE:FREQ=MONTHLY');
+    expect(monthlyRule('2026-11-30')).toBe('RRULE:FREQ=MONTHLY;BYMONTHDAY=28,29,30;BYSETPOS=-1');
+    expect(monthlyRule('2027-01-31')).toBe('RRULE:FREQ=MONTHLY;BYMONTHDAY=28,29,30,31;BYSETPOS=-1');
+  });
+
+  it('folds long lines to the 75-byte limit', () => {
+    const ics = buildIcs('2026-11-27', 'Clotho', 'A long description — with an accent, é. '.repeat(8), new Date(Date.UTC(2026, 10, 21)));
+    for (const line of ics.split('\r\n')) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+    expect(ics.replace(/\r\n /g, '')).toContain('A long description — with an accent\\, é.');
+  });
+
   it('crosses a month end and leaves out the repeat for a one-off', () => {
-    const url = new URL(googleCalendarUrl('2026-12-31', 'x', 'y'));
+    const url = new URL(new URL(googleCalendarUrl('2026-12-31', 'x', 'y')).searchParams.get('continue')!);
     expect(url.searchParams.get('dates')).toBe('20261231/20270101');
     expect(url.searchParams.has('recur')).toBe(false);
   });

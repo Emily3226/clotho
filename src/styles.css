@@ -1662,3 +1662,37 @@ details.why summary {
   border-top: 1px solid var(--line);
   padding-top: 12px;
 }
+
+/* Accounts and monthly progress. */
+.account-state {
+  align-self: center;
+  color: var(--accent);
+  font-weight: 600;
+}
+.account-link .hint:empty,
+.nudge .hint:empty,
+.account-panel .hint:empty {
+  display: none;
+}
+.account-panel {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.months ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.months li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+.months b {
+  min-width: 80px;
+}

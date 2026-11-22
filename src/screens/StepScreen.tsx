@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { APP_NAME, LIVE_URL } from '../config';
 import { AnimatedNumber } from '../components/bits';
+import { SaveProgressButton, SaveProgressNote } from '../components/Account';
 import { CanadaLifeNext } from '../components/CanadaLifeNext';
 import type { LeverRow } from '../engine/analyse';
 import { HR_MESSAGE, leverCopy, leverCostLine, planLines } from '../lib/copy';
 import { download, num } from '../lib/format';
 import { CANADA_LIFE_NOTE, NO_PLAN_NOTE, doNow, hrMailto, outcomeLabel, outcomeSuffix, testCsv, testSummary, yearFromToday, type Outcome } from '../lib/doNow';
-import { buildIcs, googleCalendarUrl, nextFriday } from '../lib/ics';
+import { buildIcs, googleCalendarUrl, nextFriday, todayISO } from '../lib/ics';
 import { windfallCarryOver } from '../lib/windfall';
 import { isStudent } from '../engine/profile';
 import { ROOM_FOR, STEP, leverIsOn, testMode, useStore } from '../store';
@@ -110,6 +111,7 @@ export function StepScreen() {
   const [payday, setPayday] = useState(nextFriday());
   const [raiseDay, setRaiseDay] = useState(yearFromToday());
   const [copied, setCopied] = useState(false);
+  const [calNote, setCalNote] = useState<{ id: string; text: string } | null>(null);
   const [conf, setConf] = useState(confAfter ?? confBefore ?? 5);
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -150,16 +152,21 @@ export function StepScreen() {
     if (pick && chosen !== pick.id) setState({ chosen: pick.id });
   };
 
-  // Monthly on payday, or once on the likely date of the next raise.
+  // Only a recurring transfer repeats. A message to HR, a plan change or the
+  // next raise happens once, so its reminder does too.
+  const repeats = now?.kind === 'bank';
+  const isRaise = now?.kind === 'raise';
+  const remindDay = isRaise ? raiseDay : payday;
   const remindTitle = copy ? `${APP_NAME}: ${copy.title}` : APP_NAME;
   const remindText = lines ? `${lines[0]} ${lines[1]} Then open ${APP_NAME} for your 30-second check-in: ${LIVE_URL}` : '';
+  const nudgeQuestion = repeats ? 'Want a reminder each month on payday?' : isRaise ? 'Want a reminder for your next raise?' : 'Want a reminder to do it?';
   const reminder = () => {
-    if (!copy || !lines || !now) return;
+    if (!copy || !lines || !now || !pick) return;
     pin();
-    const raise = now.kind === 'raise';
-    const ics = buildIcs(raise ? raiseDay : payday, remindTitle, remindText, new Date(), !raise, LIVE_URL);
-    download(raise ? 'my-next-raise.ics' : 'my-monthly-step.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const ics = buildIcs(remindDay, remindTitle, remindText, new Date(), repeats, LIVE_URL);
+    download(isRaise ? 'my-next-raise.ics' : repeats ? 'my-monthly-step.ics' : 'my-reminder.ics', new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
     setState({ reminderAdded: true });
+    setCalNote({ id: pick.id, text: 'Downloaded. Open the file to add it to your calendar.' });
   };
   // Saying "I set it up" starts the first month today, at the check-in too.
   const pickOutcome = (o: Outcome) => {
@@ -212,6 +219,7 @@ export function StepScreen() {
           lastCheckISO: outcome === 'done' ? new Date().toISOString() : null,
           outcome,
           ...windfallCarryOver(useStore.getState().commitment),
+          months: useStore.getState().commitment?.months,
         },
       });
     }
@@ -288,15 +296,6 @@ export function StepScreen() {
               <p className="hint">{CANADA_LIFE_NOTE}</p>
             </div>
           )}
-          {now.kind === 'raise' && (
-            <div className="row">
-              <label htmlFor="raise-day">Next raise or review, roughly</label>
-              <input id="raise-day" type="date" value={raiseDay} onChange={(e) => setRaiseDay(e.target.value || yearFromToday())} />
-              <button type="button" className="secondary" onClick={reminder}>
-                {reminderAdded ? 'Reminder downloaded' : 'Add the reminder'}
-              </button>
-            </div>
-          )}
           {now.kind === 'plan' && <p className="hint">{CANADA_LIFE_NOTE}</p>}
           {now.kind === 'raise' && today && (
             <p className="hint">
@@ -322,35 +321,44 @@ export function StepScreen() {
             </div>
           </div>
           {(outcome === 'done' || outcome === 'sent') && <p className="did-it">Done. That’s the hard part.</p>}
-          {now.kind !== 'raise' && (
-            <div className="nudge" role="group" aria-labelledby="nudge-title">
-              <p className="q-label" id="nudge-title">
-                {outcome === 'notyet' ? 'No problem. Want a nudge each payday?' : 'Want a nudge each payday?'}
-              </p>
-              <div className="row">
-                <label htmlFor="payday">Next payday</label>
-                <input id="payday" type="date" value={payday} onChange={(e) => setPayday(e.target.value || nextFriday())} />
-              </div>
-              <div className="row">
-                <a
-                  className="primary button-link"
-                  href={googleCalendarUrl(payday, remindTitle, remindText, true)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => {
-                    pin();
-                    setState({ reminderAdded: true });
-                  }}
-                >
-                  Add to Google Calendar
-                </a>
-                <button type="button" className="secondary" onClick={reminder}>
-                  Apple or Outlook calendar
-                </button>
-              </div>
-              <p className="hint">{reminderAdded ? 'Reminder added. ' : ''}Nothing is sent to us. It lives in your calendar and links back to your check-in.</p>
+          <div className="nudge" role="group" aria-labelledby="nudge-title">
+            <p className="q-label" id="nudge-title">
+              {outcome === 'notyet' ? `No problem. ${nudgeQuestion}` : nudgeQuestion}
+            </p>
+            <div className="row">
+              <label htmlFor="remind-day">{repeats ? 'Next payday' : isRaise ? 'Next raise or review, roughly' : 'Remind me on'}</label>
+              <input
+                id="remind-day"
+                type="date"
+                min={todayISO()}
+                value={remindDay}
+                onChange={(e) => (isRaise ? setRaiseDay(e.target.value || yearFromToday()) : setPayday(e.target.value || nextFriday()))}
+              />
             </div>
-          )}
+            <div className="row">
+              <a
+                className="primary button-link"
+                href={googleCalendarUrl(remindDay, remindTitle, remindText, repeats)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  pin();
+                  setState({ reminderAdded: true });
+                  setCalNote({ id: pick.id, text: 'Opened in Google Calendar. Tap Save there to keep it.' });
+                }}
+              >
+                Add to Google Calendar
+              </a>
+              <button type="button" className="secondary" onClick={reminder}>
+                Apple or Outlook calendar
+              </button>
+              <SaveProgressButton />
+            </div>
+            <p className="hint" aria-live="polite">
+              {calNote?.id === pick.id ? calNote.text : 'Calendar reminders aren’t sent to us. They link back to your check-in.'}
+            </p>
+            <SaveProgressNote />
+          </div>
         </div>
       )}
 

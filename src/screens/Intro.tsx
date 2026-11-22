@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { TAGLINE } from '../config';
+import { SignInLink } from '../components/Account';
+import { cloudEnabled } from '../lib/cloud';
 import { AboutYou } from '../components/AboutYou';
 import { ChipGroup } from '../components/bits';
 import { ConcernEditor } from '../components/ConcernEditor';
@@ -51,8 +53,9 @@ export function Landing() {
         >
           Start
         </button>
-        <span className="hint">No sign-up. Stays on this device.</span>
+        <span className="hint">{cloudEnabled ? 'No sign-up needed. Stays on this device unless you save it.' : 'No sign-up. Stays on this device.'}</span>
       </div>
+      <SignInLink />
       <h2 className="small-head">Or try someone else’s</h2>
       <div className="personas">
         {PERSONAS.filter((p) => !p.compare).map((p) => (
