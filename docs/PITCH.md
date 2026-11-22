@@ -26,7 +26,7 @@ Tap **▶ Play one of your lives**. Each event pauses long enough to read. Read 
 Use the `?demo=1` link and don't reload. Tap the **Clotho** logo, tap **Check in**, then **Demo: jump ahead 3 months**: "She started at **185**. Keeping it up points to **573**, and she's kept it 4 months in a row."
 
 **2:35 Why trust it and what's next (25 s)**
-"Every number comes from the simulation, never from AI. Every assumption is listed in the app with its source, and 162 automated tests check the math. Next: test it with more Gen Z users, then pilot it inside a group plan. Scan the code and try it with your own numbers."
+"Every number comes from the simulation, never from AI. Every assumption is listed in the app and labelled with where it comes from, and 162 automated tests check the math. Next: test it with more Gen Z users, then pilot it inside a group plan. Scan the code and try it with your own numbers."
 
 **Keep for questions, not the demo:** **Why 185?** (where the number comes from), **Does the top habit still hold?**, **What if there's no 65?**, **Keep yours reachable?** (open **Jordan**, it needs a workplace plan), and **Assumptions**.
 

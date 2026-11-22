@@ -1745,3 +1745,20 @@ details.why summary {
     margin: 4px 0 0;
   }
 }
+
+/* Desktop: habit cards fill their rows instead of leaving an empty slot. */
+@media (min-width: 760px) {
+  .choices {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .choices > .choice {
+    grid-column: span 2;
+  }
+  .choices > .choice:last-child:nth-child(3n + 2),
+  .choices > .choice:nth-last-child(2):nth-child(3n + 1) {
+    grid-column: span 3;
+  }
+  .choices > .choice:last-child:nth-child(3n + 1) {
+    grid-column: span 6;
+  }
+}
