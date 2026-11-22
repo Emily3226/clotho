@@ -3,6 +3,7 @@ import { Engine, grownAmount, leverAvailable } from './analyse';
 import { DEFAULT_INPUTS, PERSONAS } from './personas';
 import { simulate, summarise } from './simulate';
 import { NO_LEVERS, leverOnly, type Inputs } from './types';
+import { inputsForStage } from './profile';
 import { leverCostLine } from '../lib/copy';
 
 const SEED = 2026;
@@ -53,4 +54,26 @@ describe('saving part of every raise, honestly', () => {
     const [p] = simulate(maya, {}, leverOnly('raises'), SEED, { calm: true, paths: 1, detail: false, trace: true });
     expect(g.perMonth).toBeCloseTo(p.trace!.extra[g.age - maya.age] / 12, -1);
   });
+});
+
+describe('no duplicate or contradicting habits', () => {
+  it('hides +1% when the match is only one point away, since it is the same step', () => {
+    const fullTime = inputsForStage('full', 26);
+    expect(fullTime.matchPct - fullTime.employeePct).toBe(1);
+    expect(leverAvailable('match', fullTime)).toBe(true);
+    expect(leverAvailable('plus1', fullTime)).toBe(false);
+    expect(leverAvailable('plus1', { ...fullTime, employeePct: 2 })).toBe(true);
+    expect(leverAvailable('plus1', { ...fullTime, employeePct: 4 })).toBe(true);
+  });
+
+  it('names the same habit on a worry card as the habits list ranks first under that worry', () => {
+    for (const p of PERSONAS) {
+      for (const w of ['ai', 'costs', 'recession'] as const) {
+        const sel = { [w]: 'moderate' } as const;
+        const shown = new Engine().analyse(p.inputs, sel, sel, NO_LEVERS, SEED);
+        const card = shown.cards.find((c) => c.id === w)!;
+        if (card.best) expect(card.best.lever).toBe(shown.ranking[0].id);
+      }
+    }
+  }, 60000);
 });

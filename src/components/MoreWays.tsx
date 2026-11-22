@@ -42,7 +42,7 @@ export function MoreWays() {
   return (
     <details className="drawer more-ways">
       <summary>More ways to get ahead, with no extra money each month</summary>
-      <p className="hint">No extra money each month. Your savings already go to your cushion first, then an FHSA if you’re buying a home, then a TFSA, so growth stays tax-free.</p>
+      <p className="hint">Your savings already go to your cushion first, then an FHSA if you’re buying a home, then a TFSA, so growth stays tax-free.</p>
       {!results && <p className="hint">Testing them on your futures…</p>}
       <ul className="ways">
         {results?.map((r) => {

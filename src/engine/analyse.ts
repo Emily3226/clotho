@@ -126,7 +126,8 @@ export function leverAvailable(id: LeverId, inputs: Inputs): boolean {
     return true;
   }
   if (id === 'cushion') return inputs.cushionMonths > 0;
-  if (id === 'plus1') return inputs.plan === 'yes';
+  // With the match one point away, +1% is the same step as taking it.
+  if (id === 'plus1') return inputs.plan === 'yes' && !(inputs.matchPct > inputs.employeePct && inputs.matchPct - inputs.employeePct <= 1);
   return true;
 }
 
@@ -296,15 +297,20 @@ export class Engine {
         }
       }
       const inControl = summarise(worried).counts[0];
+      // The habit that rescues the most futures under this worry: the same
+      // measure the habits list is ranked by, so the two never disagree.
       let best: WorryCard['best'] = null;
+      let bestRescued = 0;
       if (affected > 0) {
         for (const lever of available) {
           const helped = run(s, leverOnly(lever));
           let protects = 0;
           for (let i = 0; i < n; i++) if (mask[i] && helped[i].status < worried[i].status) protects++;
           const kept = summarise(helped).counts[0];
-          if (protects > 0 && (!best || kept > best.inControl || (kept === best.inControl && protects > best.protects))) {
+          const rescued = rescueOf(worried, helped).total;
+          if (protects > 0 && (!best || rescued > bestRescued || (rescued === bestRescued && kept > best.inControl))) {
             best = { lever, protects, inControl: kept };
+            bestRescued = rescued;
           }
         }
       }

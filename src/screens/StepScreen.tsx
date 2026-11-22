@@ -144,9 +144,16 @@ export function StepScreen() {
   const showHR = pick?.id === 'match';
   const noPlan = !isStudent(inputs.stage) && inputs.plan === 'no';
 
+  // Acting on the step shown by default makes it the chosen one, so the
+  // answer stays with this habit even if the ranking or habits change later.
+  const pin = () => {
+    if (pick && chosen !== pick.id) setState({ chosen: pick.id });
+  };
+
   // Monthly on payday, or once on the likely date of the next raise.
   const reminder = () => {
     if (!copy || !lines || !now) return;
+    pin();
     const raise = now.kind === 'raise';
     const ics = buildIcs(
       raise ? raiseDay : payday,
@@ -161,6 +168,7 @@ export function StepScreen() {
   };
   // Saying "I set it up" starts the first month today, at the check-in too.
   const pickOutcome = (o: Outcome) => {
+    pin();
     const next = outcome === o ? null : o;
     setState({ outcome: next });
     // Only while the streak is still just this first answer.
@@ -181,6 +189,7 @@ export function StepScreen() {
       t.remove();
     }
     setCopied(true);
+    pin();
     setState({ hrCopied: true });
     setTimeout(() => setCopied(false), 2500);
   };
@@ -195,6 +204,7 @@ export function StepScreen() {
   const finish = () => {
     // Read from the store, not this render: the outcome may have just changed.
     const outcome = useStore.getState().outcome;
+    pin();
     setState({ confAfter: conf });
     if (pick) {
       setState({
@@ -269,7 +279,10 @@ export function StepScreen() {
             <div className="hr">
               <blockquote>{HR_MESSAGE}</blockquote>
               <div className="row">
-                <a className="primary button-link" href={hrMailto(HR_MESSAGE)} onClick={() => setState({ hrCopied: true })}>
+                <a className="primary button-link" href={hrMailto(HR_MESSAGE)} onClick={() => {
+                  pin();
+                  setState({ hrCopied: true });
+                }}>
                   Open it as an email
                 </a>
                 <button type="button" className="secondary" onClick={copyHR}>
