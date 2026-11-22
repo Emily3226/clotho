@@ -70,7 +70,7 @@ docs/                    ASSUMPTIONS, PITCH, DEVPOST
 
 **Numbers only come from the engine.** The language model is used for wording only. It receives a small JSON of anonymous facts, is told not to add numbers or advice, and every reply is checked: if it contains a number that is not in the facts, or a banned word, it is discarded and the template is shown. This check runs on the server and again in the browser.
 
-**Privacy.** No accounts, no database. Inputs live in `localStorage`. Nothing leaves the device unless AI narration is switched on, and then only counts, ages and events are sent.
+**Privacy.** Accounts are optional and off until a Firebase config is set. Without one, inputs live in `localStorage`. With Google sign-up, a person's answers, chosen step and monthly check-ins are stored in one private Firestore record that only they can read, and they can delete it from the check-in screen. Typed worries stay on the device. Otherwise nothing leaves the device unless AI narration is switched on, and then only counts, ages and events are sent.
 
 **Accessibility.** No red and no alarm colours; status is also shown by line style and by counts. Full keyboard use (arrow keys step through representative futures on the river). `prefers-reduced-motion` swaps the morph for a cross-fade. A text summary of the river updates for screen readers. Light and dark themes.
 
@@ -106,6 +106,13 @@ All of these are listed in the Assumptions panel and in `docs/ASSUMPTIONS.md`.
 Starting pay by field comes from Statistics Canada Table 37-10-0284-01 (median employment income two years after graduation, bachelor's, class of 2022). The figures were gathered while the table was offline; confirm each one against the table before quoting it.
 
 The 2026 limits (TFSA, FHSA, RRSP, CPP, YMPE, OAS) were entered from published figures and marked "as of 2026"; check them against the linked official pages before relying on them.
+
+## Turn on accounts
+
+1. Create a Firebase project and add a web app.
+2. In Authentication, enable the Google provider and add `emily3226.github.io` as an authorized domain.
+3. Create a Firestore database and publish [firestore.rules](firestore.rules).
+4. Paste the web config (`apiKey`, `authDomain`, `projectId`, `appId`) into `src/firebaseConfig.ts`. It is not a secret.
 
 ## Useful scripts
 

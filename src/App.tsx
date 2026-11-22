@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { ErrorNote } from './components/ErrorBoundary';
 import { APP_NAME } from './config';
+import { startCloud } from './lib/cloud';
 import { Explore } from './screens/Explore';
 import { About, Landing } from './screens/Intro';
 import { Return } from './screens/Return';
@@ -19,6 +20,8 @@ export function App() {
   const theme = useStore((s) => s.theme);
   const setState = useStore((s) => s.setState);
   const engineError = useStore((s) => s.engineError);
+
+  useEffect(startCloud, []);
 
   useEffect(() => {
     if (theme === 'auto') document.documentElement.removeAttribute('data-theme');

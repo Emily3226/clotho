@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { AccountPanel, MonthlyProgress } from '../components/Account';
 import { AnimatedNumber, Field } from '../components/bits';
 import { River } from '../components/River';
 import { WindfallQuestion } from '../components/Windfall';
 import { leverCopy } from '../lib/copy';
 import { num } from '../lib/format';
+import { monthKey, recordMonth } from '../lib/progress';
 import { leversFor } from '../lib/windfall';
 import { STEP, demoMode, useStore } from '../store';
 
@@ -51,9 +53,10 @@ export function Return() {
     // Each month done adds what was set aside, plus the habit's amount.
     const extra = commitment.lever.startsWith('auto') ? Number(commitment.lever.slice(4)) : 0;
     const add = months * (inputs.monthly + extra);
+    const saved = Math.round(inputs.saved + add);
     setState({
-      commitment: { ...commitment, streak: streak + months, lastCheckISO: new Date().toISOString() },
-      inputs: { ...inputs, saved: Math.round(inputs.saved + add) },
+      commitment: { ...commitment, streak: streak + months, lastCheckISO: new Date().toISOString(), months: recordMonth(commitment.months, monthKey(), now, saved) },
+      inputs: { ...inputs, saved },
     });
     setAnswer('yes');
   };
@@ -113,7 +116,14 @@ export function Return() {
               prefix="$"
               // Read from the store, so a bonus added below shows here and
               // editing this field builds on it rather than erasing it.
-              onChange={(v) => setState({ inputs: { ...useStore.getState().inputs, saved: v } })}
+              onChange={(v) => {
+                const s = useStore.getState();
+                const c = s.commitment;
+                setState({
+                  inputs: { ...s.inputs, saved: v },
+                  commitment: c ? { ...c, months: recordMonth(c.months, monthKey(), now, v) } : c,
+                });
+              }}
             />
           </>
         )}
@@ -141,6 +151,8 @@ export function Return() {
             Demo: jump ahead 3 months
           </button>
         )}
+        <MonthlyProgress commitment={commitment} />
+        <AccountPanel />
         <div className="nav">
           <button type="button" className="ghost" onClick={() => setStep(STEP.start)}>
             Done

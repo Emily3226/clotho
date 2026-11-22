@@ -23,6 +23,13 @@ export const ROOM_FOR = [
 ] as const;
 
 // The habit someone picked, kept on this device for the monthly check-in.
+// One month's check-in, for the progress list.
+export interface MonthRecord {
+  month: string;
+  pointsTo: number;
+  saved: number;
+}
+
 export interface Commitment {
   lever: LeverId;
   startedISO: string;
@@ -37,6 +44,7 @@ export interface Commitment {
   alsoRaises?: boolean;
   // When "Got a raise or bonus?" was last answered (once a month).
   lastWindfallISO?: string | null;
+  months?: MonthRecord[];
 }
 
 // One anonymous record per finished session, only in user-test mode.
