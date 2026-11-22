@@ -1696,3 +1696,21 @@ details.why summary {
 .months b {
   min-width: 80px;
 }
+
+/* Room for the account button beside the others on a phone. */
+@media (max-width: 520px) {
+  .top {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .top-actions {
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+  .top-actions button {
+    min-height: 44px;
+    padding-inline: 7px;
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+}

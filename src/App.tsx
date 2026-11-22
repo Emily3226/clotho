@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { HeaderAccount } from './components/Account';
 import { AssumptionsPanel } from './components/AssumptionsPanel';
 import { ErrorNote } from './components/ErrorBoundary';
 import { APP_NAME } from './config';
@@ -60,6 +61,7 @@ export function App() {
           </nav>
         )}
         <div className="top-actions">
+          <HeaderAccount />
           <button type="button" className="ghost" onClick={() => setState({ showAssumptions: true })}>
             Assumptions
           </button>
